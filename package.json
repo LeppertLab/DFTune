@@ -1,0 +1,123 @@
+{
+  "name": "project-electrons",
+  "displayName": "Project Electrons: VASP INCAR Builder",
+  "description": "Set up VASP calculations by physical intent instead of raw INCAR tags. Works on remote HPC files over Remote-SSH.",
+  "version": "0.1.0",
+  "publisher": "project-electrons",
+  "private": true,
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters",
+    "Other"
+  ],
+  "keywords": [
+    "VASP",
+    "DFT",
+    "INCAR",
+    "HPC",
+    "materials"
+  ],
+  "extensionKind": [
+    "workspace"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "incar",
+        "aliases": [
+          "INCAR",
+          "VASP INCAR"
+        ],
+        "filenames": [
+          "INCAR"
+        ],
+        "filenamePatterns": [
+          "INCAR.*",
+          "INCAR_*",
+          "*.incar"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "incar",
+        "scopeName": "source.incar",
+        "path": "./syntaxes/incar.tmLanguage.json"
+      }
+    ],
+    "customEditors": [
+      {
+        "viewType": "projectElectrons.incarBuilder",
+        "displayName": "INCAR Builder",
+        "selector": [
+          {
+            "filenamePattern": "INCAR"
+          },
+          {
+            "filenamePattern": "INCAR.*"
+          },
+          {
+            "filenamePattern": "INCAR_*"
+          },
+          {
+            "filenamePattern": "*.incar"
+          }
+        ],
+        "priority": "option"
+      }
+    ],
+    "commands": [
+      {
+        "command": "projectElectrons.openBuilder",
+        "title": "Open INCAR Builder",
+        "category": "VASP",
+        "icon": "$(settings)"
+      },
+      {
+        "command": "projectElectrons.newCalculation",
+        "title": "New VASP Calculation…",
+        "category": "VASP"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "projectElectrons.openBuilder",
+          "when": "editorLangId == incar",
+          "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "projectElectrons.newCalculation",
+          "when": "explorerResourceIsFolder",
+          "group": "navigation@90"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "package": "npm run build -- --production && vsce package --no-dependencies --allow-missing-repository --skip-license"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@types/vscode": "~1.90.0",
+    "@vscode/vsce": "^3.0.0",
+    "esbuild": "^0.24.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

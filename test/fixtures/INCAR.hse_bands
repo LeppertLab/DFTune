@@ -1,0 +1,9 @@
+System = Si HSE06 band structure
+! non-self-consistent hybrid bands are done with zero-weight k-points, not ICHARG=11
+istart = 1 ; icharg = 0
+lhfcalc = .true. ; hfscreen = 0.2 ; gga = pe
+algo = All ; time = 0.4
+precfock = fast
+ismear = 0 ; sigma = 0.01
+lorbit = 11
+lwave = F ; lcharg = F

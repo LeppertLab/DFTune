@@ -1,0 +1,35 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "INCAR",
+  "scopeName": "source.incar",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#assignment" }
+  ],
+  "repository": {
+    "comment": {
+      "name": "comment.line.incar",
+      "match": "[!#].*$"
+    },
+    "assignment": {
+      "begin": "([A-Za-z][A-Za-z0-9_]*)\\s*(=)",
+      "beginCaptures": {
+        "1": { "name": "variable.other.tag.incar" },
+        "2": { "name": "keyword.operator.assignment.incar" }
+      },
+      "end": "(?=[;!#])|(?<!\\\\)$",
+      "patterns": [
+        { "include": "#value" }
+      ]
+    },
+    "value": {
+      "patterns": [
+        { "name": "string.quoted.double.incar", "begin": "\"", "end": "\"" },
+        { "name": "constant.language.boolean.incar", "match": "(?i)\\.(true|false|t|f)\\.|\\b(?i:T|F)\\b" },
+        { "name": "constant.numeric.incar", "match": "(?i)(\\d+\\*)?[+-]?(\\d+\\.?\\d*|\\.\\d+)([ed][+-]?\\d+)?" },
+        { "name": "constant.character.escape.continuation.incar", "match": "\\\\$" },
+        { "name": "string.unquoted.incar", "match": "[A-Za-z_][A-Za-z0-9_]*" }
+      ]
+    }
+  }
+}

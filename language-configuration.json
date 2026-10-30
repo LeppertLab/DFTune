@@ -1,0 +1,9 @@
+{
+  "comments": {
+    "lineComment": "#"
+  },
+  "autoClosingPairs": [
+    { "open": "\"", "close": "\"" }
+  ],
+  "wordPattern": "[A-Za-z0-9_.+\\-*]+"
+}

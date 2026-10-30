@@ -1,0 +1,37 @@
+export * from './incar/parse';
+export * from './incar/edit';
+export * from './incar/values';
+export * from './tags/schema';
+export * from './tags/definitions';
+export * from './intents/types';
+export * from './intents/reader';
+export * from './intents/engine';
+export * from './intents/definitions';
+export * from './intents/hubbard';
+export * from './poscar/read';
+export * from './validation/rules';
+
+import { setTags } from './incar/edit';
+import { parseIncar } from './incar/parse';
+import { INTENTS } from './intents/definitions';
+import { intentChanges } from './intents/engine';
+import { tagReader } from './intents/reader';
+
+/** A fresh INCAR from a set of intent choices (intent id → choice id), grouped with comment headers. */
+export function newIncar(system: string, choices: Record<string, string>): string {
+  let text = `SYSTEM = ${system}\n`;
+  for (const kind of INTENTS) {
+    const choiceId = choices[kind.id];
+    if (!choiceId) continue;
+    const choice = kind.choices.find((c) => c.id === choiceId);
+    if (!choice) continue;
+    const changes = intentChanges(kind, choiceId, tagReader(parseIncar(text)));
+    // Only additions apply to a new file; skip tags an earlier section already wrote.
+    const existing = parseIncar(text).tags;
+    const fresh = Object.fromEntries(Object.entries(changes).filter(([k, v]) => v !== null && !existing.has(k)));
+    if (Object.keys(fresh).length === 0) continue;
+    text += `\n# ${kind.label}: ${choice.label}\n`;
+    text = setTags(text, fresh);
+  }
+  return text;
+}

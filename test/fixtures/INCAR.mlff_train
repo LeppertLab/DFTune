@@ -1,0 +1,21 @@
+SYSTEM = MAPbI3 on-the-fly MLFF training
+
+ML_LMLFF = .TRUE.
+ML_MODE  = train
+
+IBRION = 0            # MD
+MDALGO = 3            # Langevin
+ISIF   = 3            # NpT
+NSW    = 20000
+POTIM  = 2.0
+TEBEG  = 400
+LANGEVIN_GAMMA   = 10.0 10.0 10.0 10.0 10.0
+LANGEVIN_GAMMA_L = 10.0
+PMASS  = 1000
+
+ENCUT  = 500
+ISMEAR = 0 ; SIGMA = 0.05
+LREAL  = Auto
+ISYM   = 0
+LWAVE  = .FALSE. ; LCHARG = .FALSE.
+IVDW   = 12

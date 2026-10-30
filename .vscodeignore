@@ -1,0 +1,13 @@
+src/**
+test/**
+node_modules/**
+**/*.map
+**/*.ts
+tsconfig.json
+esbuild.mjs
+vitest.config.mts
+.gitignore
+.vscode/**
+.claude/**
+dist/harness.js
+*.vsix

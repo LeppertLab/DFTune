@@ -1,0 +1,33 @@
+SYSTEM = Fe3O4 relaxation          ! magnetite, primitive cell
+
+# Electronic
+PREC   = Accurate
+ENCUT  = 520
+EDIFF  = 1E-6
+ALGO   = Fast
+LREAL  = .FALSE.
+LASPH  = .TRUE.
+
+# Ionic
+IBRION = 2 ; ISIF = 3 ; NSW = 60
+EDIFFG = -0.01
+
+# Occupations
+ISMEAR = 0
+SIGMA  = 0.05
+
+# Magnetism
+ISPIN  = 2
+MAGMOM = 4*5.0 2*-5.0 8*0.6
+
+# DFT+U (Dudarev)
+LDAU     = .TRUE.
+LDAUTYPE = 2
+LDAUL    = 2 -1
+LDAUU    = 3.8 0
+LDAUJ    = 0 0
+LMAXMIX  = 4
+
+LWAVE  = .FALSE.
+NCORE  = 16
+KPAR   = 2

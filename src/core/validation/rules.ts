@@ -180,7 +180,7 @@ const RULES: Rule[] = [
   // ISIF without ionic steps.
   (r, _ctx, out) => {
     const isif = r.num('ISIF');
-    if (isif !== undefined && isif >= 3 && effective.nsw(r) === 0) {
+    if (isif !== undefined && isif >= 3 && effective.nsw(r) === 0 && !effective.isPhonon(r)) {
       out.push({ code: 'isif-static', severity: 'info', tag: 'ISIF', message: `ISIF = ${isif} has no effect without ionic steps (NSW = 0).` });
     }
   },
@@ -281,6 +281,25 @@ const RULES: Rule[] = [
   (r, ctx, out) => {
     if (ctx.poscar && ctx.poscar.nions > 20 && !r.has('LREAL')) {
       out.push({ code: 'lreal-large', severity: 'hint', span: { start: 0, end: 0 }, message: `${ctx.poscar.nions} atoms: LREAL = Auto is usually much faster at negligible cost in accuracy.` });
+    }
+  },
+  // Phonons and linear response.
+  (r, _ctx, out) => {
+    const ibrion = effective.ibrion(r);
+    if (effective.isPhonon(r) && (r.num('EDIFF') ?? 1e-4) > 1e-6) {
+      out.push({ code: 'phonon-ediff', severity: 'warning', tag: 'IBRION', message: `IBRION = ${ibrion} needs accurate forces: set EDIFF = 1E-6 or tighter (default 1E-4).` });
+    }
+    if (ibrion === 5 || ibrion === 7) {
+      out.push({ code: 'phonon-symmetry', severity: 'info', tag: 'IBRION', message: `IBRION = ${ibrion} ignores symmetry and is deprecated: IBRION = ${ibrion + 1} gives the same result, often much faster.` });
+    }
+    if (r.bool('LEPSILON') && r.bool('LHFCALC')) {
+      out.push({ code: 'lepsilon-hybrid', severity: 'error', tag: 'LEPSILON', message: 'LEPSILON does not support hybrid functionals: use LOPTICS or LCALCEPS instead.' });
+    }
+    if (r.bool('LEPSILON') && r.bool('LOPTICS')) {
+      out.push({ code: 'lepsilon-loptics', severity: 'warning', tag: 'LOPTICS', message: 'LEPSILON and LOPTICS together are not recommended: run them separately.' });
+    }
+    if (r.bool('LOPTICS') && effective.ismear(r) === -2) {
+      out.push({ code: 'loptics-ismear', severity: 'error', tag: 'ISMEAR', message: 'LOPTICS does not support ISMEAR = -2.' });
     }
   },
   // k points: KPOINTS file vs. KSPACING.

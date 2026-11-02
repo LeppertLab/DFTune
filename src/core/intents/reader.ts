@@ -44,4 +44,6 @@ export const effective = {
   noncollinear: (r: TagReader) => r.bool('LNONCOLLINEAR') === true || r.bool('LSORBIT') === true,
   isRelaxation: (r: TagReader) => effective.nsw(r) > 0 && [1, 2, 3].includes(effective.ibrion(r)),
   isMD: (r: TagReader) => effective.nsw(r) > 0 && effective.ibrion(r) === 0,
+  /** Phonons/Hessian: finite differences (IBRION 5, 6) or DFPT (7, 8); NSW plays no role. */
+  isPhonon: (r: TagReader) => [5, 6, 7, 8].includes(effective.ibrion(r)),
 };

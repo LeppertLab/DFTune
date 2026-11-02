@@ -9,8 +9,8 @@ const ML_TAGS = ['ML_LMLFF', 'ML_MODE'];
 export const calculation: IntentKind = {
   id: 'calculation',
   label: 'Calculation',
-  owns: ['IBRION', 'NSW', 'ISIF', 'EDIFFG', 'POTIM', 'ICHARG', 'MDALGO', 'TEBEG', 'TEEND', 'SMASS',
-    'LANGEVIN_GAMMA', 'LANGEVIN_GAMMA_L', 'PMASS', ...ML_TAGS],
+  owns: ['IBRION', 'NSW', 'ISIF', 'EDIFFG', 'POTIM', 'NFREE', 'ICHARG', 'MDALGO', 'TEBEG', 'TEEND', 'SMASS',
+    'LANGEVIN_GAMMA', 'LANGEVIN_GAMMA_L', 'PMASS', 'LEPSILON', 'LOPTICS', ...ML_TAGS],
   related: [],
   choices: [
     {
@@ -38,7 +38,9 @@ export const calculation: IntentKind = {
       label: 'Single point (SCF)',
       description: 'Self-consistent energy, forces and charge density at a fixed geometry.',
       force: { IBRION: '-1' },
-      matches: (r) => effective.nsw(r) === 0 && ![11, 12].includes(r.num('ICHARG') ?? -1) && !r.bool('ML_LMLFF'),
+      matches: (r) =>
+        effective.nsw(r) === 0 && ![11, 12].includes(r.num('ICHARG') ?? -1) && !r.bool('ML_LMLFF') &&
+        !effective.isPhonon(r) && !r.bool('LEPSILON') && !r.bool('LOPTICS'),
     },
     {
       id: 'relax-ions',
@@ -83,6 +85,58 @@ export const calculation: IntentKind = {
         'Copy CHGCAR from the converged SCF run. Use the same functional and LMAXMIX.',
         'DOS: denser Γ-centred mesh with ISMEAR = -5. Bands: line-mode KPOINTS with ISMEAR = 0.',
       ],
+    },
+    {
+      id: 'phonon-fd',
+      label: 'Phonons (finite differences)',
+      description: 'Γ-point phonons and the force-constant matrix from displaced structures.',
+      force: { IBRION: '6' },
+      suggest: { NFREE: '2', POTIM: '0.015' },
+      matches: (r) => [5, 6].includes(effective.ibrion(r)) && effective.isif(r) < 3,
+      hints: [
+        'Use EDIFF = 1E-6 or tighter; forces from a loose SCF give wrong frequencies.',
+        'For phonons away from Γ, use a supercell (e.g. with phonopy).',
+      ],
+    },
+    {
+      id: 'elastic',
+      label: 'Elastic constants (finite differences)',
+      description: 'Elastic tensor (and phonons) from displaced ions and strained cells.',
+      force: { IBRION: '6', ISIF: '3' },
+      suggest: { NFREE: '2', POTIM: '0.015' },
+      matches: (r) => [5, 6].includes(effective.ibrion(r)) && effective.isif(r) >= 3,
+      hints: [
+        'Use EDIFF = 1E-6 or tighter and a converged ENCUT (~1.3 × ENMAX) for reliable stresses.',
+        'Start from a structure relaxed with the same settings.',
+      ],
+    },
+    {
+      id: 'phonon-dfpt',
+      label: 'Phonons (DFPT)',
+      description: 'Γ-point phonons from density-functional perturbation theory; with LEPSILON also Born charges.',
+      force: { IBRION: '8' },
+      related: ['LEPSILON'],
+      matches: (r) => [7, 8].includes(effective.ibrion(r)),
+      hints: ['Use EDIFF = 1E-6 or tighter.'],
+    },
+    {
+      id: 'dielectric',
+      label: 'Dielectric tensor (DFPT)',
+      description: 'Static dielectric tensor, Born effective charges and piezoelectric tensor (ion-clamped).',
+      force: { LEPSILON: '.TRUE.', IBRION: '-1' },
+      related: ['LRPA'],
+      matches: (r) => r.bool('LEPSILON') === true && !effective.isPhonon(r) && effective.nsw(r) === 0,
+      hints: ['Does not need extra empty bands. Not available for hybrid functionals: use LOPTICS or LCALCEPS there.'],
+    },
+    {
+      id: 'optics',
+      label: 'Optical properties (LOPTICS)',
+      description: 'Frequency-dependent dielectric function from a sum over empty bands.',
+      force: { LOPTICS: '.TRUE.', IBRION: '-1' },
+      suggest: { NEDOS: '2001' },
+      related: ['NBANDS', 'CSHIFT'],
+      matches: (r) => r.bool('LOPTICS') === true && !r.bool('LEPSILON') && effective.nsw(r) === 0,
+      hints: ['Raise NBANDS to 2–3× the default and converge the spectrum with it.'],
     },
     {
       id: 'md-nvt',

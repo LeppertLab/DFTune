@@ -52,12 +52,17 @@ const LATEX = {
   omega: 'ω', rho: 'ρ', pi: 'π', chi: 'χ', epsilon: 'ε', times: '×', cdot: '·',
 };
 
+const ENTITIES = {
+  le: '≤', ge: '≥', ne: '≠', lt: '<', gt: '>', nbsp: ' ', amp: '&', Aring: 'Å', times: '×', lang: '⟨', rang: '⟩', nabla: '∇',
+  alpha: 'α', beta: 'β', gamma: 'γ', Gamma: 'Γ', delta: 'δ', eta: 'η', lambda: 'λ', mu: 'μ', psi: 'ψ', sigma: 'σ', omega: 'ω',
+};
+
 /** Wikitext → plain text, good enough for one-line summaries. */
 function plain(s) {
   return s
     .replace(/\{\{!\}\}/g, '|')
     .replace(/\{\{=\}\}/g, '=')
-    .replace(/&le;/g, '≤').replace(/&ge;/g, '≥').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+    .replace(/&([a-zA-Z]+);/g, (m, name) => ENTITIES[name] ?? m)
     .replace(/\\ldots/g, '…')
     .replace(/<math>(.*?)<\/math>/g, '$1')
     .replace(/<[^>]+>/g, '')

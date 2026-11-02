@@ -295,7 +295,9 @@ export const TAG_DEFS: TagDef[] = [
   // ── Response & dipoles ───────────────────────────────────────────────────
   bool('LEPSILON', 'response', 'Static dielectric tensor and Born charges via DFPT.', false),
   bool('LOPTICS', 'response', 'Frequency-dependent dielectric function (needs many empty bands).', false),
-  bool('LCALCEPS', 'response', 'Dielectric tensor from finite electric fields.', false, { advanced: true }),
+  { name: 'CSHIFT', type: 'real', category: 'response', unit: 'eV', summary: 'Lorentzian broadening (complex shift) of the dielectric function in the Kramers–Kronig transformation.', advanced: true },
+  bool('LRPA', 'response', 'Local field effects on the Hartree level only (RPA). Keep .FALSE. for LEPSILON.', false, { advanced: true }),
+  bool('LCALCEPS', 'response', 'Dielectric tensor, Born charges and piezoelectric tensor from finite electric fields (works with hybrids).', false, { advanced: true }),
   bool('LDIPOL', 'response', 'Dipole correction to the potential (slabs, molecules).', false),
   {
     name: 'IDIPOL', type: 'int', category: 'response', summary: 'Direction of the dipole correction.',

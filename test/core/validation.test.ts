@@ -123,6 +123,16 @@ describe('validation', () => {
     ]);
   });
 
+  it('checks phonon and linear-response setups', () => {
+    expect(codes('IBRION = 6\nISIF = 3\n')).toContain('phonon-ediff');
+    expect(codes('IBRION = 6\nISIF = 3\nEDIFF = 1E-7\n')).not.toContain('phonon-ediff');
+    expect(codes('IBRION = 6\nISIF = 3\nEDIFF = 1E-7\n')).not.toContain('isif-static');
+    expect(codes('IBRION = 7\nEDIFF = 1E-7\n')).toContain('phonon-symmetry');
+    expect(codes('LEPSILON = .TRUE.\nLHFCALC = .TRUE.\n')).toContain('lepsilon-hybrid');
+    expect(codes('LEPSILON = .TRUE.\nLOPTICS = .TRUE.\n')).toContain('lepsilon-loptics');
+    expect(codes('LOPTICS = .TRUE.\nISMEAR = -2\n')).toContain('loptics-ismear');
+  });
+
   it('checks the INCAR against the KPOINTS file', () => {
     const kcodes = (text: string, kpoints: KpointsInfo | null) => validate(parseIncar(text), { kpoints }).map((d) => d.code);
     const gamma = readKpoints(fixture('KPOINTS'))!;

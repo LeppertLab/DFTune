@@ -42,21 +42,49 @@ export function registerLanguageFeatures(context: vscode.ExtensionContext) {
     }, 250));
   };
 
-  vscode.workspace.textDocuments.forEach(refresh);
-  // A POSCAR or KPOINTS changed: recheck the INCARs open in that directory.
-  const inputWatcher = watchInputs((uri) => {
-    const dir = vscode.Uri.joinPath(uri, '..').toString();
-    for (const doc of vscode.workspace.textDocuments) {
-      if (vscode.Uri.joinPath(doc.uri, '..').toString() === dir) refresh(doc);
+  // Watch POSCAR/KPOINTS only in folders with an open INCAR: a workspace-wide watcher can be
+  // expensive on large cluster file systems (GPFS, Lustre).
+  const watchers = new Map<string, { watcher: vscode.Disposable; docs: Set<string> }>();
+  const dirOf = (uri: vscode.Uri) => vscode.Uri.joinPath(uri, '..');
+  const track = (doc: vscode.TextDocument) => {
+    if (doc.languageId !== 'incar') return;
+    const dir = dirOf(doc.uri);
+    let entry = watchers.get(dir.toString());
+    if (!entry) {
+      // A POSCAR or KPOINTS changed: recheck the INCARs open in that folder.
+      const watcher = watchInputs(() => {
+        for (const d of vscode.workspace.textDocuments) if (dirOf(d.uri).toString() === dir.toString()) refresh(d);
+      }, dir);
+      entry = { watcher, docs: new Set() };
+      watchers.set(dir.toString(), entry);
     }
-  });
+    entry.docs.add(doc.uri.toString());
+  };
+  const untrack = (doc: vscode.TextDocument) => {
+    const key = dirOf(doc.uri).toString();
+    const entry = watchers.get(key);
+    if (!entry?.docs.delete(doc.uri.toString()) || entry.docs.size) return;
+    entry.watcher.dispose();
+    watchers.delete(key);
+  };
+
+  for (const doc of vscode.workspace.textDocuments) {
+    track(doc);
+    refresh(doc);
+  }
 
   context.subscriptions.push(
     collection,
-    inputWatcher,
-    vscode.workspace.onDidOpenTextDocument(refresh),
+    { dispose: () => watchers.forEach((e) => e.watcher.dispose()) },
+    vscode.workspace.onDidOpenTextDocument((doc) => {
+      track(doc);
+      refresh(doc);
+    }),
     vscode.workspace.onDidChangeTextDocument((e) => refresh(e.document)),
-    vscode.workspace.onDidCloseTextDocument((doc) => collection.delete(doc.uri)),
+    vscode.workspace.onDidCloseTextDocument((doc) => {
+      untrack(doc);
+      collection.delete(doc.uri);
+    }),
     vscode.languages.registerHoverProvider('incar', { provideHover }),
     vscode.languages.registerCompletionItemProvider('incar', { provideCompletionItems }, '=', ' '),
   );

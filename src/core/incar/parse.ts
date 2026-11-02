@@ -45,6 +45,8 @@ export interface IncarDoc {
   entries: Entry[];
   issues: ParseIssue[];
   comments: Span[];
+  /** Closed `GROUP { ... }` blocks, from the group name to the closing brace (outermost and nested). */
+  blocks: { name: string; span: Span }[];
   /** First occurrence of each tag. */
   tags: Map<string, Entry>;
 }
@@ -65,6 +67,7 @@ export function parseIncar(text: string): IncarDoc {
   let inQuote = false;
   /** Open `GROUP {` blocks, outermost first. */
   const blocks: { name: string; span: Span }[] = [];
+  const closedBlocks: { name: string; span: Span }[] = [];
 
   const flush = (end: number) => {
     const span = trimSpan(text, stmtStart, end);
@@ -76,7 +79,9 @@ export function parseIncar(text: string): IncarDoc {
       return;
     }
     if (statement === '}') {
-      if (!blocks.pop()) issues.push({ message: "'}' without a matching 'GROUP {'", span });
+      const open = blocks.pop();
+      if (open) closedBlocks.push({ name: [...blocks.map((b) => b.name), open.name].join('/'), span: { start: open.span.start, end: span.end } });
+      else issues.push({ message: "'}' without a matching 'GROUP {'", span });
       return;
     }
     const eq = text.indexOf('=', span.start);
@@ -141,7 +146,7 @@ export function parseIncar(text: string): IncarDoc {
 
   const tags = new Map<string, Entry>();
   for (const e of entries) if (!tags.has(e.key)) tags.set(e.key, e);
-  return { text, entries, issues, comments, tags };
+  return { text, entries, issues, comments, blocks: closedBlocks, tags };
 }
 
 function cleanValue(raw: string): string {
@@ -162,7 +167,7 @@ export function computeLineStarts(text: string): number[] {
   return starts;
 }
 
-function lineOf(lineStarts: number[], offset: number): number {
+export function lineOf(lineStarts: number[], offset: number): number {
   let lo = 0;
   let hi = lineStarts.length - 1;
   while (lo < hi) {

@@ -13,6 +13,7 @@ It is built for the usual HPC workflow: VS Code connected to a cluster with **Re
   - Live checks (see below).
 - **The INCAR text stays the source of truth.** The builder applies minimal text edits, so comments, alignment, tag order and unknown tags survive. Undo/redo, git diffs and the plain text editor all stay in sync, and typing in the text updates the builder.
 - **Plain-text support** for people who prefer the editor: syntax highlighting, hover docs, completion of tags and values, and diagnostics in the Problems panel.
+- **Format Document** (Alt+Shift+F) tidies an INCAR, e.g. one written by pymatgen: one statement per line, tag names in upper case, tags grouped by category under `# Category` headers, `=` signs and trailing comments aligned. Values and comments are kept exactly; hand-written section headings on the same topic replace the default headers. It refuses to run while the file has syntax problems. Each step can be switched off in the settings (`projectElectrons.format.*`).
 - **New VASP Calculation…** (right-click a folder): answer a few quick picks and get a commented INCAR.
 
 ### Checks

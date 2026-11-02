@@ -4,16 +4,20 @@
 import * as vscode from 'vscode';
 import {
   CATEGORY_LABELS,
+  DEFAULT_FORMAT_OPTIONS,
   KNOWN_TAG_NAMES,
   TAG_DEFS,
   TAGS,
   entryAt,
+  formatIncar,
   knownTag,
+  minimalEdit,
   parseIncar,
   tagDef,
   validate,
   wikiUrl,
   type Diagnostic,
+  type FormatOptions,
   type KnownTag,
   type TagDef,
 } from '../core';
@@ -86,6 +90,7 @@ export function registerLanguageFeatures(context: vscode.ExtensionContext) {
       collection.delete(doc.uri);
     }),
     vscode.languages.registerHoverProvider('incar', { provideHover }),
+    vscode.languages.registerDocumentFormattingEditProvider('incar', { provideDocumentFormattingEdits }),
     vscode.languages.registerCompletionItemProvider('incar', { provideCompletionItems }, '=', ' '),
   );
 }
@@ -141,6 +146,24 @@ export function knownTagMarkdown(tag: KnownTag): vscode.MarkdownString {
 }
 
 const PATCH_LABELS: Partial<Record<KnownTag['source'], string>> = { vtst: 'VTST Tools', vaspsol: 'VASPsol' };
+
+function provideDocumentFormattingEdits(doc: vscode.TextDocument): vscode.TextEdit[] {
+  const config = vscode.workspace.getConfiguration('projectElectrons.format', doc.uri);
+  const options: FormatOptions = {
+    groupByCategory: config.get('groupByCategory', DEFAULT_FORMAT_OPTIONS.groupByCategory),
+    categoryHeaders: config.get('categoryHeaders', DEFAULT_FORMAT_OPTIONS.categoryHeaders),
+    alignEquals: config.get('alignEquals', DEFAULT_FORMAT_OPTIONS.alignEquals),
+    alignComments: config.get('alignComments', DEFAULT_FORMAT_OPTIONS.alignComments),
+  };
+  const before = doc.getText();
+  const after = formatIncar(before, options);
+  if (after === undefined) {
+    vscode.window.showWarningMessage('INCAR not formatted: fix the syntax problems in the Problems panel first, so no text gets moved to the wrong place.');
+    return [];
+  }
+  const edit = minimalEdit(before, after);
+  return edit ? [vscode.TextEdit.replace(new vscode.Range(doc.positionAt(edit.start), doc.positionAt(edit.end)), edit.text)] : [];
+}
 
 function provideHover(doc: vscode.TextDocument, position: vscode.Position): vscode.Hover | undefined {
   const parsed = parseIncar(doc.getText());

@@ -1,5 +1,6 @@
 export * from './incar/parse';
 export * from './incar/edit';
+export * from './incar/format';
 export * from './incar/values';
 export * from './tags/schema';
 export * from './tags/definitions';

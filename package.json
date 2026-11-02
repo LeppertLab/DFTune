@@ -84,6 +84,31 @@
         "category": "VASP"
       }
     ],
+    "configuration": {
+      "title": "VASP INCAR",
+      "properties": {
+        "projectElectrons.format.groupByCategory": {
+          "type": "boolean",
+          "default": true,
+          "description": "Format Document: sort tags into categories (General, Electronic minimization, …). Off keeps the file order."
+        },
+        "projectElectrons.format.categoryHeaders": {
+          "type": "boolean",
+          "default": true,
+          "description": "Format Document: write a `# Category` comment above each group. A hand-written heading on the same topic is kept instead."
+        },
+        "projectElectrons.format.alignEquals": {
+          "type": "boolean",
+          "default": true,
+          "description": "Format Document: line up the `=` signs within a group."
+        },
+        "projectElectrons.format.alignComments": {
+          "type": "boolean",
+          "default": true,
+          "description": "Format Document: line up trailing comments within a group."
+        }
+      }
+    },
     "menus": {
       "editor/title": [
         {

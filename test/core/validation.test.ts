@@ -39,9 +39,57 @@ describe('validation', () => {
     expect(codes('MAGMOM = x*1\n')).toContain('bad-value');
   });
 
-  it('suggests a known tag for typos but ignores unknown tags otherwise', () => {
+  it('suggests a known tag for typos', () => {
     const ds = validate(parseIncar('ENCTU = 400\nLWANNIER90 = .TRUE.\n'));
     expect(ds.filter((d) => d.code === 'unknown-tag').map((d) => d.message)).toEqual(['Unknown tag ENCTU. Did you mean ENCUT?']);
+  });
+
+  it('accepts valid but uncommon tags', () => {
+    const text = [
+      'POMASS = 2.014 15.999', // deuterated water
+      'LVTOT = .TRUE.',
+      'LIBXC1_P3 = 0.5', // numbered family documented as LIBXC1_Pn
+      'XC2_P1 = 0.2',
+      'KERNEL_TRUNCATION/LTRUNCATE = .TRUE.', // grouped tag, VASP 6.5
+      'IOPT = 3', // VTST
+      'LCLIMB = .TRUE.',
+      'LSOL = .TRUE.', // VASPsol
+      'EB_K = 78.4',
+      '',
+    ].join('\n');
+    const doc = parseIncar(text);
+    expect(doc.issues).toEqual([]);
+    expect(validate(doc).filter((d) => d.code === 'unknown-tag')).toEqual([]);
+  });
+
+  it('notes undocumented tags and prefers common tags for suggestions', () => {
+    const ds = validate(parseIncar('MY_CUSTOM_FLAG = 1\nISMAER = 0\n'));
+    expect(ds.filter((d) => d.code === 'unknown-tag').map((d) => [d.severity, d.message])).toEqual([
+      ['info', 'MY_CUSTOM_FLAG is not a documented VASP tag; VASP ignores tags it does not know.'],
+      ['warning', 'Unknown tag ISMAER. Did you mean ISMEAR?'],
+    ]);
+  });
+
+  it('warns about deprecated tags', () => {
+    const ds = validate(parseIncar('ML_ISTART = 0\nENAUG = 600\n'));
+    expect(ds.filter((d) => d.code === 'deprecated').map((d) => d.message)).toEqual([
+      expect.stringMatching(/^ML_ISTART is deprecated: .*ML_MODE/),
+      expect.stringMatching(/^ENAUG is deprecated/),
+    ]);
+  });
+
+  it('recognizes older tag names', () => {
+    const ds = validate(parseIncar('ML_FF_LMLFF = .TRUE.\nLVDW = .TRUE.\n'));
+    expect(ds.filter((d) => d.code === 'unknown-tag')).toEqual([]);
+    expect(ds.filter((d) => d.code === 'alias').map((d) => d.message)).toEqual([
+      'ML_FF_LMLFF is an older or alternative name for ML_LMLFF; check that your VASP version still reads it.',
+      'LVDW is an older or alternative name for IVDW; check that your VASP version still reads it.',
+    ]);
+  });
+
+  it('checks POMASS against the POSCAR species', () => {
+    expect(codes('POMASS = 55.8 16.0\n', poscar)).not.toContain('species-length');
+    expect(codes('POMASS = 55.8\n', poscar)).toContain('species-length');
   });
 
   it('accepts equivalent spellings', () => {

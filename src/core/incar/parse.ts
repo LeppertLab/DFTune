@@ -46,7 +46,8 @@ export interface IncarDoc {
   tags: Map<string, Entry>;
 }
 
-const TAG_NAME = /^[A-Za-z][A-Za-z0-9_]*$/;
+// Grouped tags (VASP ≥ 6.5) are written GROUP/TAG, e.g. KERNEL_TRUNCATION/LTRUNCATE.
+const TAG_NAME = /^[A-Za-z][A-Za-z0-9_]*(?:\/[A-Za-z][A-Za-z0-9_]*)*$/;
 
 export function parseIncar(text: string): IncarDoc {
   const entries: Entry[] = [];

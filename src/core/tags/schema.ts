@@ -60,5 +60,5 @@ export interface TagDef {
 }
 
 export function wikiUrl(tag: string): string {
-  return `https://vasp.at/wiki/${encodeURIComponent(tag)}`;
+  return `https://vasp.at/wiki/${encodeURIComponent(tag).replace(/%2F/g, '/')}`;
 }

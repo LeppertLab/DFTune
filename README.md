@@ -8,7 +8,7 @@ It is built for the usual HPC workflow: VS Code connected to a cluster with **Re
 
 - **INCAR Builder** (open an INCAR, then click the gear in the editor title bar or run *VASP: Open INCAR Builder*)
   - *Setup* cards: pick "Relax ions + cell", "HSE06", "Spin-polarized"… and see which tags that writes. The current INCAR is read back into these choices; anything that doesn't fit a preset shows up as *Custom* and is never overwritten silently.
-  - *All tags*: about 100 common tags with typed fields, defaults, units, descriptions and VASP wiki links. Tags outside this list are kept and remain editable as raw text.
+  - *All tags*: about 100 common tags with typed fields, defaults, units, descriptions and VASP wiki links. Every other tag is kept and remains editable as raw text, with its description from the VASP wiki.
   - DFT+U table per species, read from the neighbouring POSCAR.
   - Live checks (see below).
 - **The INCAR text stays the source of truth.** The builder applies minimal text edits, so comments, alignment, tag order and unknown tags survive. Undo/redo, git diffs and the plain text editor all stay in sync, and typing in the text updates the builder.
@@ -17,10 +17,12 @@ It is built for the usual HPC workflow: VS Code connected to a cluster with **Re
 
 ### Checks
 
-Typos (`ENCTU` → did you mean `ENCUT`?), invalid values, duplicates, and physics/setup pitfalls such as:
+Typos (`ENCTU` → did you mean `ENCUT`?), tags VASP doesn't know (it silently ignores them), deprecated and renamed tags, invalid values, duplicates, and physics/setup pitfalls such as:
 `NSW > 0` without `IBRION` (silently runs MD), MD without `POTIM`/`TEBEG`, tetrahedron smearing with forces, Methfessel–Paxton by default, Pulay stress in cell relaxations, meta-GGA without `LASPH`, hybrid parameters without `LHFCALC`, `MAGMOM` length vs. atom count (×3 if noncollinear), per-species arrays (`LDAUU`, `LANGEVIN_GAMMA`) vs. POSCAR species, `LMAXMIX` for d/f +U, `ICHARG = 11` with ionic steps, `NCORE` and `NPAR` both set, and `LREAL` for large cells.
 
 The POSCAR is found next to the INCAR (`POSCAR.relax` for `INCAR.relax`, otherwise `POSCAR`).
+
+Known tags are the ~600 INCAR tags on the VASP wiki (including numbered families such as `LIBXC1_Pn` and grouped tags such as `KERNEL_TRUNCATION/LTRUNCATE`), their wiki redirects (older names such as `ML_FF_*`), and the tags of the VTST and VASPsol patches.
 
 ## Development
 
@@ -43,7 +45,7 @@ npm run package     # build a .vsix
 | `src/webview/` | React UI of the builder |
 | `test/` | vitest suites, fixtures, browser harness |
 
-Tag defaults follow the [VASP wiki](https://vasp.at/wiki) for VASP 6. To add a tag, add a `TagDef` to `src/core/tags/definitions.ts`. To add a preset, add a choice to `src/core/intents/definitions.ts`; the tests check automatically that every choice is detected again after it is applied.
+Tag defaults follow the [VASP wiki](https://vasp.at/wiki) for VASP 6. To add a tag, add a `TagDef` to `src/core/tags/definitions.ts`. The full tag list in `src/core/tags/wikiTags.generated.ts` is refreshed with `node scripts/fetch-wiki-tags.mjs`. Patch tags (VTST, VASPsol) live in `src/core/tags/known.ts`. To add a preset, add a choice to `src/core/intents/definitions.ts`; the tests check automatically that every choice is detected again after it is applied.
 
 ## Installing on a cluster
 

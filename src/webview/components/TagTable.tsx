@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CATEGORY_LABELS, TAG_DEFS, wikiUrl, type Category, type Diagnostic, type IncarDoc, type TagChanges } from '../../core';
+import { CATEGORY_LABELS, TAG_DEFS, TAGS, knownTag, wikiUrl, type Category, type Diagnostic, type IncarDoc, type KnownTag, type TagChanges } from '../../core';
 import { loadUiState, vscode } from '../vscode';
 import { TagField } from './TagField';
 
@@ -37,8 +37,8 @@ export function TagTable({ doc, diagnostics, onApply, onReveal }: Props) {
   const byCategory = new Map<Category, typeof visible>();
   for (const def of visible) byCategory.set(def.category, [...(byCategory.get(def.category) ?? []), def]);
 
-  // Tags in the file that the knowledge base doesn't cover: shown and editable as raw text.
-  const unknown = [...doc.tags.values()].filter((e) => !TAG_DEFS.some((d) => d.name === e.key) && matches(e.key));
+  // Tags in the file without a curated definition: shown and editable as raw text.
+  const unknown = [...doc.tags.values()].filter((e) => !TAGS.has(e.key) && matches(e.key, knownTag(e.key)?.summary));
 
   return (
     <div className="tag-table">
@@ -55,11 +55,22 @@ export function TagTable({ doc, diagnostics, onApply, onReveal }: Props) {
       {unknown.length > 0 && (
         <details open>
           <summary>Other tags in this file ({unknown.length})</summary>
-          {unknown.map((e) => (
-            <Row key={e.key} name={e.key} summary="Not in the builder's tag list; edited as raw text." set onReveal={() => onReveal(e.span.start, e.span.end)}>
-              <TagField name={e.key} value={e.value} onChange={(v) => onApply({ [e.key]: v })} />
-            </Row>
-          ))}
+          {unknown.map((e) => {
+            const known = knownTag(e.key);
+            return (
+              <Row
+                key={e.key}
+                name={e.key}
+                page={known ? known.page ?? null : undefined}
+                summary={otherTagSummary(known)}
+                set
+                problem={!known || !!known.deprecated || !!known.aliasOf}
+                onReveal={() => onReveal(e.span.start, e.span.end)}
+              >
+                <TagField name={e.key} value={e.value} onChange={(v) => onApply({ [e.key]: v })} />
+              </Row>
+            );
+          })}
         </details>
       )}
 
@@ -89,11 +100,23 @@ export function TagTable({ doc, diagnostics, onApply, onReveal }: Props) {
   );
 }
 
-function Row(props: { name: string; summary: string; set: boolean; problem?: boolean; onReveal?(): void; children: React.ReactNode }) {
+function otherTagSummary(known: KnownTag | undefined): string {
+  if (!known) return 'Not a documented VASP tag; VASP ignores tags it does not know.';
+  const parts = [known.summary || 'Valid VASP tag.'];
+  if (known.aliasOf) parts.unshift(`Older or alternative name for ${known.aliasOf}.`);
+  if (known.deprecated) parts.push(`Deprecated: ${known.deprecated}`);
+  if (known.source === 'vtst') parts.push('Needs a VASP build with the VTST patch.');
+  if (known.source === 'vaspsol') parts.push('Needs a VASP build with the VASPsol patch.');
+  return parts.join(' ');
+}
+
+/** `page`: wiki page to link (defaults to the name); null for no link. */
+function Row(props: { name: string; page?: string | null; summary: string; set: boolean; problem?: boolean; onReveal?(): void; children: React.ReactNode }) {
+  const page = props.page === undefined ? props.name : props.page;
   return (
     <div className={`tag-row${props.set ? ' set' : ''}${props.problem ? ' problem' : ''}`}>
       <div className="tag-name">
-        <a href={wikiUrl(props.name)} title="Open on the VASP wiki">{props.name}</a>
+        {page ? <a href={wikiUrl(page)} title="Open on the VASP wiki">{props.name}</a> : props.name}
         {props.onReveal && (
           <button className="icon-button" onClick={props.onReveal} title="Show in the text editor">↗</button>
         )}

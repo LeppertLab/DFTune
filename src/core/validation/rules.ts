@@ -5,6 +5,7 @@ import { expandArray, parseBool, parseInt_, parseReal } from '../incar/values';
 import { effective, tagReader, type TagReader } from '../intents/reader';
 import type { PoscarInfo } from '../poscar/read';
 import { TAGS, tagDef } from '../tags/definitions';
+import { KNOWN_TAG_NAMES, knownTag } from '../tags/known';
 import type { TagDef } from '../tags/schema';
 
 export type Severity = 'error' | 'warning' | 'info' | 'hint';
@@ -44,11 +45,22 @@ function checkTags(doc: IncarDoc, out: Diagnostic[]) {
     }
     seen.add(e.key);
     const def = tagDef(e.key);
+    const known = knownTag(e.key);
+    if (known?.deprecated) {
+      out.push({ code: 'deprecated', severity: 'warning', message: `${e.key} is deprecated: ${known.deprecated}`, span: e.keySpan });
+    }
+    if (known?.aliasOf) {
+      out.push({ code: 'alias', severity: 'info', message: `${e.key} is an older or alternative name for ${known.aliasOf}; check that your VASP version still reads it.`, span: e.keySpan });
+    }
     if (!def) {
+      if (known) continue;
+      // VASP silently ignores tags it doesn't know, so a typo quietly changes the calculation.
       const close = closestTag(e.key);
-      if (close) {
-        out.push({ code: 'unknown-tag', severity: 'warning', message: `Unknown tag ${e.key}. Did you mean ${close}?`, span: e.keySpan });
-      }
+      out.push(
+        close
+          ? { code: 'unknown-tag', severity: 'warning', message: `Unknown tag ${e.key}. Did you mean ${close}?`, span: e.keySpan }
+          : { code: 'unknown-tag', severity: 'info', message: `${e.key} is not a documented VASP tag; VASP ignores tags it does not know.`, span: e.keySpan },
+      );
       continue;
     }
     const problem = checkValue(def, e.value);
@@ -112,10 +124,11 @@ export function sameValue(def: TagDef, a: string, b: string): boolean {
 function closestTag(key: string): string | undefined {
   let best: string | undefined;
   let bestDist = key.length > 5 ? 2 : 1;
-  for (const name of TAGS.keys()) {
+  // Curated (common) tags first, so they win ties against rarely used ones.
+  for (const name of [...TAGS.keys(), ...KNOWN_TAG_NAMES]) {
     if (Math.abs(name.length - key.length) > bestDist) continue;
     const d = editDistance(key, name);
-    if (d > 0 && d <= bestDist) {
+    if (d > 0 && (best ? d < bestDist : d <= bestDist)) {
       best = name;
       bestDist = d;
     }

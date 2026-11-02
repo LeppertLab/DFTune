@@ -12,7 +12,7 @@
       "match": "[!#].*$"
     },
     "assignment": {
-      "begin": "([A-Za-z][A-Za-z0-9_]*)\\s*(=)",
+      "begin": "([A-Za-z][A-Za-z0-9_/]*)\\s*(=)",
       "beginCaptures": {
         "1": { "name": "variable.other.tag.incar" },
         "2": { "name": "keyword.operator.assignment.incar" }

@@ -266,6 +266,7 @@ export const TAG_DEFS: TagDef[] = [
   { name: 'LANGEVIN_GAMMA', type: 'realArray', category: 'md', perSpecies: true, unit: 'ps⁻¹', summary: 'Langevin friction per species.' },
   { name: 'LANGEVIN_GAMMA_L', type: 'real', category: 'md', unit: 'ps⁻¹', summary: 'Langevin friction for the lattice (NpT).' },
   { name: 'PMASS', type: 'real', category: 'md', unit: 'amu', summary: 'Fictitious mass of the lattice (NpT).', default: '1000' },
+  { name: 'POMASS', type: 'realArray', category: 'md', perSpecies: true, unit: 'amu', summary: 'Atomic mass per species, overriding the POTCAR masses (e.g. deuterium instead of hydrogen in MD). Give one value per species.', defaultNote: 'masses from POTCAR', advanced: true },
   { name: 'NBLOCK', type: 'int', category: 'md', summary: 'Steps between pair-correlation/DOS updates and XDATCAR writes.', default: '1', advanced: true },
 
   // ── Output ───────────────────────────────────────────────────────────────

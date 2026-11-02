@@ -11,3 +11,4 @@ vitest.config.mts
 .claude/**
 dist/harness.js
 *.vsix
+scripts/**

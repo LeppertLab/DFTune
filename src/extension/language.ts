@@ -4,13 +4,17 @@
 import * as vscode from 'vscode';
 import {
   CATEGORY_LABELS,
+  KNOWN_TAG_NAMES,
   TAG_DEFS,
+  TAGS,
   entryAt,
+  knownTag,
   parseIncar,
   tagDef,
   validate,
   wikiUrl,
   type Diagnostic,
+  type KnownTag,
   type TagDef,
 } from '../core';
 import { findPoscar } from './poscar';
@@ -87,17 +91,40 @@ export function tagMarkdown(def: TagDef, currentValue?: string): vscode.Markdown
     }
     md.appendMarkdown('\n');
   }
+  const deprecated = knownTag(def.name)?.deprecated;
+  if (deprecated) md.appendMarkdown(`⚠ Deprecated: ${deprecated}\n\n`);
   md.appendMarkdown(`[VASP wiki](${wikiUrl(def.name)})`);
   return md;
 }
+
+/** Hover text for a valid tag outside the curated definitions (wiki summary only). */
+export function knownTagMarkdown(tag: KnownTag): vscode.MarkdownString {
+  const md = new vscode.MarkdownString();
+  md.appendMarkdown(`**${tag.name}**${PATCH_LABELS[tag.source] ? ` · ${PATCH_LABELS[tag.source]}` : ''}\n\n`);
+  if (tag.aliasOf) md.appendMarkdown(`Older or alternative name for **${tag.aliasOf}**.\n\n`);
+  md.appendMarkdown(`${tag.summary || 'No description available.'}\n\n`);
+  const facts: string[] = [];
+  if (tag.type) facts.push(`type: \`${tag.type}\``);
+  if (tag.default) facts.push(`default: ${tag.default}`);
+  if (facts.length) md.appendMarkdown(facts.join(' · ') + '\n\n');
+  if (tag.deprecated) md.appendMarkdown(`⚠ Deprecated: ${tag.deprecated}\n\n`);
+  if (tag.page) md.appendMarkdown(`[VASP wiki](${wikiUrl(tag.page)})`);
+  else if (tag.source === 'vtst') md.appendMarkdown('Only read by VASP builds with the [VTST](https://theory.cm.utexas.edu/vtsttools/) patch.');
+  else if (tag.source === 'vaspsol') md.appendMarkdown('Only read by VASP builds with the [VASPsol](https://github.com/henniggroup/VASPsol) patch.');
+  return md;
+}
+
+const PATCH_LABELS: Partial<Record<KnownTag['source'], string>> = { vtst: 'VTST Tools', vaspsol: 'VASPsol' };
 
 function provideHover(doc: vscode.TextDocument, position: vscode.Position): vscode.Hover | undefined {
   const parsed = parseIncar(doc.getText());
   const entry = entryAt(parsed, doc.offsetAt(position));
   if (!entry) return undefined;
+  const range = new vscode.Range(doc.positionAt(entry.keySpan.start), doc.positionAt(entry.keySpan.end));
   const def = tagDef(entry.key);
-  if (!def) return undefined;
-  return new vscode.Hover(tagMarkdown(def, entry.value), new vscode.Range(doc.positionAt(entry.keySpan.start), doc.positionAt(entry.keySpan.end)));
+  if (def) return new vscode.Hover(tagMarkdown(def, entry.value), range);
+  const known = knownTag(entry.key);
+  return known ? new vscode.Hover(knownTagMarkdown(known), range) : undefined;
 }
 
 function provideCompletionItems(doc: vscode.TextDocument, position: vscode.Position): vscode.CompletionItem[] {
@@ -105,7 +132,7 @@ function provideCompletionItems(doc: vscode.TextDocument, position: vscode.Posit
   const statement = line.slice(line.lastIndexOf(';') + 1);
   if (/[!#]/.test(statement)) return [];
 
-  const assign = statement.match(/^\s*([A-Za-z][A-Za-z0-9_]*)\s*=\s*([^=]*)$/);
+  const assign = statement.match(/^\s*([A-Za-z][A-Za-z0-9_/]*)\s*=\s*([^=]*)$/);
   if (assign) {
     // Value position: offer the tag's documented values.
     const def = tagDef(assign[1]);
@@ -119,9 +146,9 @@ function provideCompletionItems(doc: vscode.TextDocument, position: vscode.Posit
     });
   }
 
-  if (!/^\s*[A-Za-z0-9_]*$/.test(statement)) return [];
+  if (!/^\s*[A-Za-z0-9_/]*$/.test(statement)) return [];
   const present = parseIncar(doc.getText()).tags;
-  return TAG_DEFS.filter((d) => !present.has(d.name)).map((def) => {
+  const curated = TAG_DEFS.filter((d) => !present.has(d.name)).map((def) => {
     const item = new vscode.CompletionItem(def.name, vscode.CompletionItemKind.Property);
     item.detail = CATEGORY_LABELS[def.category];
     item.documentation = tagMarkdown(def);
@@ -129,4 +156,16 @@ function provideCompletionItems(doc: vscode.TextDocument, position: vscode.Posit
     item.sortText = (def.advanced ? '1' : '0') + def.name;
     return item;
   });
+  // The rest of the documented tags, listed after the curated ones.
+  const rest = KNOWN_TAG_NAMES.filter((name) => !TAGS.has(name) && !present.has(name)).map((name) => {
+    const known = knownTag(name)!;
+    const item = new vscode.CompletionItem(name, vscode.CompletionItemKind.Property);
+    item.detail = PATCH_LABELS[known.source] ?? (known.deprecated ? 'Deprecated' : 'Other VASP tag');
+    item.documentation = knownTagMarkdown(known);
+    item.insertText = new vscode.SnippetString(`${name} = \${1}`);
+    item.sortText = '2' + name;
+    if (known.deprecated) item.tags = [vscode.CompletionItemTag.Deprecated];
+    return item;
+  });
+  return [...curated, ...rest];
 }

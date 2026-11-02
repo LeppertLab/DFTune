@@ -3,6 +3,7 @@ export * from './incar/edit';
 export * from './incar/values';
 export * from './tags/schema';
 export * from './tags/definitions';
+export * from './tags/known';
 export * from './intents/types';
 export * from './intents/reader';
 export * from './intents/engine';

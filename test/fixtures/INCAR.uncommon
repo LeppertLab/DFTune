@@ -1,0 +1,13 @@
+SYSTEM = D2O MD in implicit solvent: valid but uncommon tags
+
+IBRION = 0 ; MDALGO = 2 ; NSW = 1000 ; POTIM = 0.5 ; TEBEG = 300 ; ISYM = 0
+ISMEAR = 0 ; SIGMA = 0.05
+POMASS = 2.014 15.999     # deuterium instead of hydrogen
+LVTOT  = .TRUE.
+
+LSOL   = .TRUE.           # VASPsol
+EB_K   = 78.4
+
+ML_ISTART = 0             # deprecated, use ML_MODE
+LVDW   = .TRUE.           # legacy name of IVDW
+NEW_FLAG = 1              # not a VASP tag

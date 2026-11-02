@@ -12,3 +12,4 @@ vitest.config.mts
 dist/harness.js
 *.vsix
 scripts/**
+.github/**

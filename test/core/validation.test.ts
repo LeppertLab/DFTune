@@ -54,7 +54,8 @@ describe('validation', () => {
 
   it('flags syntax errors, bad values and duplicates', () => {
     expect(codes('ENCUT 400\n')).toContain('syntax');
-    expect(codes('NSW = ten\nLWAVE = yes\nISPIN = 3\n').filter((c) => c === 'bad-value')).toHaveLength(3);
+    expect(codes('NSW = ten\nLWAVE = yes\nISPIN = 3\n').filter((c) => c === 'bad-value')).toHaveLength(2);
+    expect(codes('ISPIN = 3\n')).toContain('unknown-option');
     expect(codes('NSW = 1\nNSW = 2\n')).toContain('duplicate');
     expect(codes('MAGMOM = x*1\n')).toContain('bad-value');
   });
@@ -80,6 +81,9 @@ describe('validation', () => {
     const doc = parseIncar(text);
     expect(doc.issues).toEqual([]);
     expect(validate(doc).filter((d) => d.code === 'unknown-tag')).toEqual([]);
+    // The same grouped tags written as a block.
+    const block = validate(parseIncar('KERNEL_TRUNCATION {\n  LTRUNCATE = T\n  IDIMENSIONALITY = 2\n}\n'));
+    expect(block.filter((d) => ['syntax', 'unknown-tag', 'bad-value'].includes(d.code))).toEqual([]);
   });
 
   it('notes undocumented tags and prefers common tags for suggestions', () => {
@@ -152,6 +156,17 @@ describe('validation', () => {
     expect(kcodes('ISMEAR = -5\n', gamma)).not.toContain('tetra-mesh');
     expect(kcodes('ISMEAR = -5\n', single)).toContain('tetra-few-k');
     expect(kcodes('ISMEAR = 0\n', single)).not.toContain('tetra-few-k');
+  });
+
+  it('keeps errors for what stops VASP', () => {
+    const severities = (text: string) => validate(parseIncar(text), { poscar }).map((d) => `${d.code}:${d.severity}`);
+    // Too few values stop VASP while reading; extra values are ignored (POSCAR: Fe, O).
+    expect(severities('LANGEVIN_GAMMA = 10\n')).toContain('species-length:error');
+    expect(severities('LANGEVIN_GAMMA = 10 10 10\n')).toContain('species-length:warning');
+    expect(severities('ISPIN = 2\nMAGMOM = 20*1\n')).toContain('magmom-length:warning');
+    expect(severities('ISPIN = 2\nMAGMOM = 2*1\n')).toContain('magmom-length:error');
+    // VASP skips lines without '=', so the tag is just not set.
+    expect(severities('ENCUT 400\n')).toContain('syntax:warning');
   });
 
   it('checks POMASS against the POSCAR species', () => {

@@ -28,7 +28,8 @@ export interface ValidationContext {
 
 export function validate(doc: IncarDoc, ctx: ValidationContext = {}): Diagnostic[] {
   const out: Diagnostic[] = [];
-  for (const issue of doc.issues) out.push({ code: 'syntax', severity: 'error', message: issue.message, span: issue.span });
+  // VASP skips lines it can't make sense of, so the tag is silently not set: a warning, not an error.
+  for (const issue of doc.issues) out.push({ code: 'syntax', severity: 'warning', message: issue.message, span: issue.span });
   checkTags(doc, out);
   const r = tagReader(doc);
   for (const rule of RULES) rule(r, ctx, out);
@@ -72,8 +73,13 @@ function checkTags(doc: IncarDoc, out: Diagnostic[]) {
       );
       continue;
     }
-    const problem = checkValue(def, e.value);
-    if (problem) out.push({ code: 'bad-value', severity: 'error', message: `${e.key}: ${problem}`, span: e.valueSpan.start === e.valueSpan.end ? e.span : e.valueSpan });
+    const span = e.valueSpan.start === e.valueSpan.end ? e.span : e.valueSpan;
+    // A value VASP cannot read stops it ("Error reading item"); a readable value outside the
+    // documented options may still run, so that is only a warning.
+    const unreadable = checkValue({ ...def, open: true }, e.value);
+    const unlisted = !unreadable && checkValue(def, e.value);
+    if (unreadable) out.push({ code: 'bad-value', severity: 'error', message: `${e.key}: ${unreadable}`, span });
+    else if (unlisted) out.push({ code: 'unknown-option', severity: 'warning', message: `${e.key}: ${unlisted}`, span });
   }
 }
 
@@ -128,6 +134,11 @@ export function sameValue(def: TagDef, a: string, b: string): boolean {
       return norm(a) === norm(b);
     }
   }
+}
+
+/** Too few values stop VASP while reading the INCAR; extra values are silently ignored. */
+function lengthSeverity(actual: number, expected: number): { severity: Severity } {
+  return { severity: actual < expected ? 'error' : 'warning' };
 }
 
 function closestTag(key: string): string | undefined {
@@ -233,7 +244,12 @@ const RULES: Rule[] = [
     if (magmom && ctx.poscar && (effective.ispin(r) === 2 || nc)) {
       const expected = ctx.poscar.nions * (nc ? 3 : 1);
       if (magmom.length !== expected) {
-        out.push({ code: 'magmom-length', severity: 'error', tag: 'MAGMOM', message: `MAGMOM has ${magmom.length} values; POSCAR has ${ctx.poscar.nions} atoms, so ${expected} are needed${nc ? ' (3 per atom)' : ''}.` });
+        out.push({
+          code: 'magmom-length',
+          ...lengthSeverity(magmom.length, expected),
+          tag: 'MAGMOM',
+          message: `MAGMOM has ${magmom.length} values; POSCAR has ${ctx.poscar.nions} atoms, so ${expected} are needed${nc ? ' (3 per atom)' : ''}.`,
+        });
       }
     }
   },
@@ -246,7 +262,7 @@ const RULES: Rule[] = [
       if (def.category === 'ldau' && r.bool('LDAU') !== true) continue;
       const items = r.array(def.name);
       if (items && items.length !== ntyp) {
-        out.push({ code: 'species-length', severity: 'error', tag: def.name, message: `${def.name} has ${items.length} values; POSCAR has ${ntyp} species${ctx.poscar.species ? ` (${ctx.poscar.species.join(' ')})` : ''}.` });
+        out.push({ code: 'species-length', ...lengthSeverity(items.length, ntyp), tag: def.name, message: `${def.name} has ${items.length} values; POSCAR has ${ntyp} species${ctx.poscar.species ? ` (${ctx.poscar.species.join(' ')})` : ''}.` });
       }
     }
   },
@@ -268,7 +284,7 @@ const RULES: Rule[] = [
   // Non-SCF runs.
   (r, _ctx, out) => {
     if (r.num('ICHARG') === 11 && effective.nsw(r) > 0) {
-      out.push({ code: 'nonscf-ionic', severity: 'error', tag: 'ICHARG', message: 'ICHARG = 11 keeps the density fixed; it cannot be combined with ionic steps.' });
+      out.push({ code: 'nonscf-ionic', severity: 'warning', tag: 'ICHARG', message: 'ICHARG = 11 keeps the density fixed; it cannot be combined with ionic steps.' });
     }
   },
   // Parallelization.
@@ -293,13 +309,13 @@ const RULES: Rule[] = [
       out.push({ code: 'phonon-symmetry', severity: 'info', tag: 'IBRION', message: `IBRION = ${ibrion} ignores symmetry and is deprecated: IBRION = ${ibrion + 1} gives the same result, often much faster.` });
     }
     if (r.bool('LEPSILON') && r.bool('LHFCALC')) {
-      out.push({ code: 'lepsilon-hybrid', severity: 'error', tag: 'LEPSILON', message: 'LEPSILON does not support hybrid functionals: use LOPTICS or LCALCEPS instead.' });
+      out.push({ code: 'lepsilon-hybrid', severity: 'warning', tag: 'LEPSILON', message: 'LEPSILON does not support hybrid functionals: use LOPTICS or LCALCEPS instead.' });
     }
     if (r.bool('LEPSILON') && r.bool('LOPTICS')) {
       out.push({ code: 'lepsilon-loptics', severity: 'warning', tag: 'LOPTICS', message: 'LEPSILON and LOPTICS together are not recommended: run them separately.' });
     }
     if (r.bool('LOPTICS') && effective.ismear(r) === -2) {
-      out.push({ code: 'loptics-ismear', severity: 'error', tag: 'ISMEAR', message: 'LOPTICS does not support ISMEAR = -2.' });
+      out.push({ code: 'loptics-ismear', severity: 'warning', tag: 'ISMEAR', message: 'LOPTICS does not support ISMEAR = -2.' });
     }
   },
   // k points: KPOINTS file vs. KSPACING.

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.0 (2026-11-02)
+
+### Added
+- **Format Document** (Alt+Shift+F) for INCAR files: one statement per line, upper-case tag names, tags grouped by category under `# Category` headers, `=` signs and trailing comments aligned. Values and comments are kept exactly, hand-written section headings on the same topic replace the default headers, and nothing is formatted while the file has syntax problems. Each step can be switched off (`projectElectrons.format.*`).
+- `GROUP { ... }` blocks of nested tags (`KERNEL_TRUNCATION`, `PLUGINS`, per-image tags) are read: the tags inside get hover, checks and builder editing, and unbalanced braces are reported.
+
+### Changed
+- Errors are reserved for INCAR problems that stop VASP: unreadable values, arrays with too few values, and too few k points for the tetrahedron method. Arrays with too many values, values outside the documented options, lines that are not `TAG = value`, and unsupported combinations are now warnings.
+
+### Fixed
+- The ↗ buttons, diagnostics and *Show text* in the builder jump to the editor that already shows the INCAR instead of opening a new split.
+
 ## 0.3.0 (2026-11-02)
 
 ### Added

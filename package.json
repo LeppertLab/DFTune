@@ -2,7 +2,7 @@
   "name": "project-electrons",
   "displayName": "Project Electrons: VASP INCAR Builder",
   "description": "Set up VASP calculations by physical intent instead of raw INCAR tags. Works on remote HPC files over Remote-SSH.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "publisher": "project-electrons",
   "private": true,
   "engines": {

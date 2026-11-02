@@ -40,6 +40,25 @@ describe('parseIncar', () => {
     expect(doc.issues.map((i) => i.message)).toEqual(["Expected 'TAG = value'", 'Missing tag name before =']);
   });
 
+  it('reads GROUP { ... } blocks as GROUP/TAG', () => {
+    const text = 'ENCUT = 400\nKERNEL_TRUNCATION {\n   LTRUNCATE = T   ! on\n   ISURFACE  = 3\n}\nPLUGINS/STRUCTURE = T\n';
+    const doc = parseIncar(text);
+    expect(doc.issues).toEqual([]);
+    expect(doc.entries.map((e) => [e.key, e.value])).toEqual([
+      ['ENCUT', '400'],
+      ['KERNEL_TRUNCATION/LTRUNCATE', 'T'],
+      ['KERNEL_TRUNCATION/ISURFACE', '3'],
+      ['PLUGINS/STRUCTURE', 'T'],
+    ]);
+    // Edits inside a block touch only the value.
+    expect(setTag(text, 'KERNEL_TRUNCATION/ISURFACE', '2')).toBe(text.replace('ISURFACE  = 3', 'ISURFACE  = 2'));
+  });
+
+  it('reports unbalanced blocks', () => {
+    expect(parseIncar('PLUGINS {\nSTRUCTURE = T\n').issues.map((i) => i.message)).toEqual(["'PLUGINS {' is never closed with '}'"]);
+    expect(parseIncar('NSW = 1\n}\n').issues.map((i) => i.message)).toEqual(["'}' without a matching 'GROUP {'"]);
+  });
+
   it('uses the first occurrence for duplicates', () => {
     const doc = parseIncar('NSW = 1\nNSW = 2\n');
     expect(doc.tags.get('NSW')?.value).toBe('1');
@@ -84,6 +103,11 @@ describe('editing', () => {
 
   it('removes continued statements and duplicates', () => {
     expect(removeTag('MAGMOM = 1 \\\n 2\nNSW = 1\nMAGMOM = 3\n', 'MAGMOM')).toBe('NSW = 1\n');
+  });
+
+  it('keeps Windows line endings', () => {
+    const text = 'ENCUT = 400\r\nISMEAR = 1\r\nSIGMA = 0.2\r\n';
+    expect(setTags(text, { ENCUT: '520', SIGMA: null, EDIFF: '1E-6' })).toBe('ENCUT = 520\r\nISMEAR = 1\r\nEDIFF = 1E-6\r\n');
   });
 
   it('applies a batch of changes', () => {

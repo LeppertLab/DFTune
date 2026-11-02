@@ -11,6 +11,9 @@
 //   MAGMOM = 1 1 1 \            line continuation with a trailing backslash
 //            -1 -1 -1
 //   SYSTEM = "a quoted value"   quoted values may span lines
+//   GROUP {                     nested tags: entries get the key GROUP/TAG
+//      TAG = value
+//   }
 
 export interface Span {
   start: number;
@@ -46,8 +49,10 @@ export interface IncarDoc {
   tags: Map<string, Entry>;
 }
 
-// Grouped tags (VASP ≥ 6.5) are written GROUP/TAG, e.g. KERNEL_TRUNCATION/LTRUNCATE.
+// Grouped tags (VASP ≥ 6.5) are written GROUP/TAG, e.g. KERNEL_TRUNCATION/LTRUNCATE, or inside a
+// `GROUP { ... }` block. Entries inside a block get the full GROUP/TAG key.
 const TAG_NAME = /^[A-Za-z][A-Za-z0-9_]*(?:\/[A-Za-z][A-Za-z0-9_]*)*$/;
+const BLOCK_OPEN = /^([A-Za-z][A-Za-z0-9_]*(?:\/[A-Za-z][A-Za-z0-9_]*)*)\s*\{$/;
 
 export function parseIncar(text: string): IncarDoc {
   const entries: Entry[] = [];
@@ -58,10 +63,22 @@ export function parseIncar(text: string): IncarDoc {
 
   let stmtStart = 0;
   let inQuote = false;
+  /** Open `GROUP {` blocks, outermost first. */
+  const blocks: { name: string; span: Span }[] = [];
 
   const flush = (end: number) => {
     const span = trimSpan(text, stmtStart, end);
     if (span.start === span.end) return;
+    const statement = text.slice(span.start, span.end);
+    const open = statement.match(BLOCK_OPEN);
+    if (open) {
+      blocks.push({ name: open[1].toUpperCase(), span });
+      return;
+    }
+    if (statement === '}') {
+      if (!blocks.pop()) issues.push({ message: "'}' without a matching 'GROUP {'", span });
+      return;
+    }
     const eq = text.indexOf('=', span.start);
     if (eq < 0 || eq >= span.end) {
       issues.push({ message: "Expected 'TAG = value'", span });
@@ -79,7 +96,7 @@ export function parseIncar(text: string): IncarDoc {
     let valueSpan = trimSpan(text, eq + 1, span.end);
     if (valueSpan.start === valueSpan.end) valueSpan = { start: eq + 1, end: eq + 1 };
     entries.push({
-      key: rawKey.toUpperCase(),
+      key: [...blocks.map((b) => b.name), rawKey.toUpperCase()].join('/'),
       value: cleanValue(text.slice(valueSpan.start, valueSpan.end)),
       keySpan,
       valueSpan,
@@ -120,6 +137,7 @@ export function parseIncar(text: string): IncarDoc {
     issues.push({ message: 'Unterminated quote', span: trimSpan(text, stmtStart, n) });
   }
   flush(n);
+  for (const b of blocks) issues.push({ message: `'${b.name} {' is never closed with '}'`, span: b.span });
 
   const tags = new Map<string, Entry>();
   for (const e of entries) if (!tags.has(e.key)) tags.set(e.key, e);

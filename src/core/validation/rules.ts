@@ -5,7 +5,7 @@ import { expandArray, parseBool, parseInt_, parseReal } from '../incar/values';
 import { effective, tagReader, type TagReader } from '../intents/reader';
 import type { PoscarInfo } from '../poscar/read';
 import { TAGS, tagDef } from '../tags/definitions';
-import { KNOWN_TAG_NAMES, knownTag } from '../tags/known';
+import { KNOWN_TAG_NAMES, knownTag, wikiValueType } from '../tags/known';
 import type { TagDef } from '../tags/schema';
 
 export type Severity = 'error' | 'warning' | 'info' | 'hint';
@@ -52,8 +52,14 @@ function checkTags(doc: IncarDoc, out: Diagnostic[]) {
     if (known?.aliasOf) {
       out.push({ code: 'alias', severity: 'info', message: `${e.key} is an older or alternative name for ${known.aliasOf}; check that your VASP version still reads it.`, span: e.keySpan });
     }
+    if (!def && known) {
+      // Uncurated tags: check the value against the type the wiki states, when it is clear-cut.
+      const type = wikiValueType(known.type);
+      const problem = type && checkValue({ name: known.name, type, category: 'general', summary: '' }, e.value);
+      if (problem) out.push({ code: 'bad-value', severity: 'error', message: `${e.key}: ${problem}`, span: e.valueSpan.start === e.valueSpan.end ? e.span : e.valueSpan });
+      continue;
+    }
     if (!def) {
-      if (known) continue;
       // VASP silently ignores tags it doesn't know, so a typo quietly changes the calculation.
       const close = closestTag(e.key);
       out.push(

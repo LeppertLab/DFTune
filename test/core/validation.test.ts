@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { parseIncar } from '../../src/core/incar/parse';
 import { readPoscar, type PoscarInfo } from '../../src/core/poscar/read';
 import { TAG_DEFS } from '../../src/core/tags/definitions';
+import { wikiValueType } from '../../src/core/tags/known';
+import { WIKI_TAGS } from '../../src/core/tags/wikiTags.generated';
 import { checkValue, validate } from '../../src/core/validation/rules';
 
 const fixture = (name: string) => readFileSync(join(__dirname, '..', 'fixtures', name), 'utf8');
@@ -76,6 +78,22 @@ describe('validation', () => {
       expect.stringMatching(/^ML_ISTART is deprecated: .*ML_MODE/),
       expect.stringMatching(/^ENAUG is deprecated/),
     ]);
+  });
+
+  it('checks values of uncurated tags against the wiki type', () => {
+    expect(codes('LSCK = yes\n')).toContain('bad-value'); // logical
+    expect(codes('NOMEGA = 50.5\n')).toContain('bad-value'); // integer
+    expect(codes('ENCUTGW = high\n')).toContain('bad-value'); // real
+    expect(codes('LSCK = .TRUE.\nNOMEGA = 50\nENCUTGW = 300\n')).not.toContain('bad-value');
+  });
+
+  it('accepts the wiki defaults of uncurated tags', () => {
+    for (const [name, [, type, def]] of Object.entries(WIKI_TAGS)) {
+      const t = wikiValueType(type);
+      // Only literal defaults; many are prose ("set in accordance with PREC").
+      if (!t || !/^(-?[\d.]+([eEdD][-+]?\d+)?|\.(TRUE|FALSE)\.)$/i.test(def)) continue;
+      expect(checkValue({ name, type: t, category: 'general', summary: '' }, def), `${name} = ${def}`).toBeUndefined();
+    }
   });
 
   it('recognizes older tag names', () => {

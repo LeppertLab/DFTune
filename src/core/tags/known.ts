@@ -4,6 +4,7 @@
 // one-line description.
 
 import { tagDef } from './definitions';
+import type { TagType } from './schema';
 import { WIKI_ALIASES, WIKI_TAGS } from './wikiTags.generated';
 
 export interface KnownTag {
@@ -88,6 +89,22 @@ export function knownTag(name: string): KnownTag | undefined {
     const [summary] = WIKI_TAGS[target];
     return { name: upper, page: target, aliasOf: target, source: 'vasp', summary };
   }
+  return undefined;
+}
+
+/**
+ * Value type implied by the wiki's free-text type ("logical", "real array", "0 | 1 | 2"…), for
+ * checking values of tags without a curated definition. Undefined when it is not clear-cut.
+ */
+export function wikiValueType(type: string | undefined): TagType | undefined {
+  const t = type?.trim().toLowerCase();
+  if (!t) return undefined;
+  if (t === 'real' || t === 'positive real') return 'real';
+  if (t === 'integer' || /^-?\d+(\s*\|\s*-?\d+)+$/.test(t)) return 'int';
+  if (t === 'logical' || /^\.(true|false)\.\s*\|\s*\.(true|false)\.?$/.test(t)) return 'bool';
+  // "real (array)": a single value or one per species/atom.
+  if (t === 'real array' || t === 'real (array)') return 'realArray';
+  if (t === 'integer array' || t === 'array of three integers') return 'intArray';
   return undefined;
 }
 

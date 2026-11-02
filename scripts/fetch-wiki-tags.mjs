@@ -100,7 +100,8 @@ for (const title of titles) {
   const text = (contents.get(title) ?? '').replace(/\{\{!\}\}/g, '¦');
   const name = title.replace(/ /g, '_');
   const tagdef = text.match(/\{\{TAGDEF\|([^|}]*)(?:\|([^|}]*))?(?:\|((?:[^{}]|\{\{[^{}]*\}\})*))?\}\}/);
-  const desc = text.match(/Description:\s*(.+)/);
+  // The description runs until a blank line or the '----' rule, and may wrap.
+  const desc = text.match(/Description:\s*([\s\S]*?)(?:\n\s*\n|\n?-{4}|$)/);
   // Pages without a description line: fall back to the first prose paragraph.
   const para = text
     .split(/\n\s*\n/)

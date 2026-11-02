@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { minimalEdit, setTags } from '../core';
 import type { FromWebview, ToWebview } from './messages';
-import { findPoscar, watchPoscar } from './poscar';
+import { findInputs, watchInputs } from './inputs';
 
 export const VIEW_TYPE = 'projectElectrons.incarBuilder';
 
@@ -24,12 +24,13 @@ export class IncarEditorProvider implements vscode.CustomTextEditorProvider {
     panel.webview.html = this.html(panel.webview, dist);
 
     const post = async () => {
-      const poscar = await findPoscar(document.uri);
+      const { poscar, kpoints } = await findInputs(document.uri);
       const message: ToWebview = {
         type: 'update',
         text: document.getText(),
         fileName: vscode.workspace.asRelativePath(document.uri),
-        poscar: poscar && { ...poscar.info, fileName: poscar.uri.path.split('/').pop() ?? 'POSCAR' },
+        poscar: poscar && { ...poscar.info, fileName: poscar.fileName },
+        kpoints: kpoints ? { ...kpoints.info, fileName: kpoints.fileName } : null,
       };
       panel.webview.postMessage(message);
     };
@@ -38,7 +39,7 @@ export class IncarEditorProvider implements vscode.CustomTextEditorProvider {
       vscode.workspace.onDidChangeTextDocument((e) => {
         if (e.document.uri.toString() === document.uri.toString() && e.contentChanges.length) post();
       }),
-      watchPoscar(document.uri, post),
+      watchInputs(post, vscode.Uri.joinPath(document.uri, '..')),
       panel.webview.onDidReceiveMessage((msg: FromWebview) => this.handle(document, msg, post)),
     ];
     panel.onDidDispose(() => disposables.forEach((d) => d.dispose()));

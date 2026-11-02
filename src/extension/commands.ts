@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { INTENTS, newIncar } from '../core';
 import { VIEW_TYPE } from './incarEditor';
-import { findPoscar } from './poscar';
+import { findPoscar } from './inputs';
 
 export function registerCommands(context: vscode.ExtensionContext) {
   context.subscriptions.push(

@@ -17,7 +17,7 @@ import {
   type KnownTag,
   type TagDef,
 } from '../core';
-import { findPoscar } from './poscar';
+import { findInputs, watchInputs } from './inputs';
 
 const SEVERITY: Record<Diagnostic['severity'], vscode.DiagnosticSeverity> = {
   error: vscode.DiagnosticSeverity.Error,
@@ -36,26 +36,24 @@ export function registerLanguageFeatures(context: vscode.ExtensionContext) {
     clearTimeout(timers.get(key));
     timers.set(key, setTimeout(async () => {
       timers.delete(key);
-      const poscar = await findPoscar(doc.uri);
-      collection.set(doc.uri, toVscodeDiagnostics(doc, validate(parseIncar(doc.getText()), { poscar: poscar?.info })));
+      const { poscar, kpoints } = await findInputs(doc.uri);
+      const diagnostics = validate(parseIncar(doc.getText()), { poscar: poscar?.info, kpoints: kpoints?.info ?? null });
+      collection.set(doc.uri, toVscodeDiagnostics(doc, diagnostics));
     }, 250));
   };
 
   vscode.workspace.textDocuments.forEach(refresh);
-  const poscarWatcher = vscode.workspace.createFileSystemWatcher('**/POSCAR*');
-  const refreshSiblings = (uri: vscode.Uri) => {
+  // A POSCAR or KPOINTS changed: recheck the INCARs open in that directory.
+  const inputWatcher = watchInputs((uri) => {
     const dir = vscode.Uri.joinPath(uri, '..').toString();
     for (const doc of vscode.workspace.textDocuments) {
       if (vscode.Uri.joinPath(doc.uri, '..').toString() === dir) refresh(doc);
     }
-  };
-  poscarWatcher.onDidChange(refreshSiblings);
-  poscarWatcher.onDidCreate(refreshSiblings);
-  poscarWatcher.onDidDelete(refreshSiblings);
+  });
 
   context.subscriptions.push(
     collection,
-    poscarWatcher,
+    inputWatcher,
     vscode.workspace.onDidOpenTextDocument(refresh),
     vscode.workspace.onDidChangeTextDocument((e) => refresh(e.document)),
     vscode.workspace.onDidCloseTextDocument((doc) => collection.delete(doc.uri)),

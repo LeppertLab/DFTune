@@ -1,6 +1,7 @@
 // Checks on an INCAR, shared by the Problems panel and the builder.
 
 import type { IncarDoc, Span } from '../incar/parse';
+import { meshSize, type KpointsInfo } from '../kpoints/read';
 import { expandArray, parseBool, parseInt_, parseReal } from '../incar/values';
 import { effective, tagReader, type TagReader } from '../intents/reader';
 import type { PoscarInfo } from '../poscar/read';
@@ -21,6 +22,8 @@ export interface Diagnostic {
 
 export interface ValidationContext {
   poscar?: PoscarInfo;
+  /** The KPOINTS file next to the INCAR; null when there is none, undefined when not looked up. */
+  kpoints?: KpointsInfo | null;
 }
 
 export function validate(doc: IncarDoc, ctx: ValidationContext = {}): Diagnostic[] {
@@ -278,6 +281,33 @@ const RULES: Rule[] = [
   (r, ctx, out) => {
     if (ctx.poscar && ctx.poscar.nions > 20 && !r.has('LREAL')) {
       out.push({ code: 'lreal-large', severity: 'hint', span: { start: 0, end: 0 }, message: `${ctx.poscar.nions} atoms: LREAL = Auto is usually much faster at negligible cost in accuracy.` });
+    }
+  },
+  // k points: KPOINTS file vs. KSPACING.
+  (r, ctx, out) => {
+    if (ctx.kpoints && r.has('KSPACING')) {
+      out.push({ code: 'kspacing-ignored', severity: 'warning', tag: 'KSPACING', message: 'KSPACING is ignored: VASP takes the k points from the KPOINTS file when there is one.' });
+    }
+    if (ctx.kpoints === null && !r.has('KSPACING')) {
+      out.push({ code: 'no-kpoints', severity: 'info', span: { start: 0, end: 0 }, message: 'No KPOINTS file: VASP generates a mesh from the default KSPACING = 0.5 Å⁻¹. Set KSPACING explicitly or add a KPOINTS file.' });
+    }
+    if (ctx.kpoints?.mode === 'line' && r.num('ICHARG') !== 11) {
+      out.push({ code: 'line-mode-scf', severity: 'warning', span: { start: 0, end: 0 }, message: 'The KPOINTS file is in line mode, which is meant for non-self-consistent band structures (ICHARG = 11).' });
+    }
+  },
+  // Tetrahedron methods need a Γ-centred mesh with enough k points.
+  (r, ctx, out) => {
+    if (![-4, -5, -14, -15].includes(effective.ismear(r))) return;
+    const k = ctx.kpoints;
+    if (k?.mode === 'mesh' && k.centering === 'monkhorst-pack') {
+      out.push({ code: 'tetra-mesh', severity: 'warning', tag: 'ISMEAR', message: 'Tetrahedron methods need a Γ-centred mesh, but KPOINTS uses Monkhorst–Pack.' });
+    }
+    if (k === null && r.bool('KGAMMA') === false) {
+      out.push({ code: 'tetra-mesh', severity: 'warning', tag: 'KGAMMA', message: 'Tetrahedron methods need a Γ-centred mesh: remove KGAMMA = .FALSE.' });
+    }
+    const n = k ? meshSize(k) : undefined;
+    if (n !== undefined && n < 4) {
+      out.push({ code: 'tetra-few-k', severity: 'error', tag: 'ISMEAR', message: `The tetrahedron method needs at least 4 k points; KPOINTS has ${n}. Use ISMEAR = 0 for small meshes.` });
     }
   },
 ];

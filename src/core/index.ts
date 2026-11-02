@@ -10,6 +10,7 @@ export * from './intents/engine';
 export * from './intents/definitions';
 export * from './intents/hubbard';
 export * from './poscar/read';
+export * from './kpoints/read';
 export * from './validation/rules';
 
 import { setTags } from './incar/edit';

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { INTENTS, parseIncar, tagReader, validate, type TagChanges } from '../core';
+import { INTENTS, describeKpoints, parseIncar, tagReader, validate, type TagChanges } from '../core';
 import type { ToWebview } from '../extension/messages';
 import { Diagnostics } from './components/Diagnostics';
 import { HubbardCard } from './components/HubbardCard';
@@ -24,7 +24,7 @@ export function App() {
   const derived = useMemo(() => {
     if (!state) return undefined;
     const doc = parseIncar(state.text);
-    return { doc, reader: tagReader(doc), diagnostics: validate(doc, { poscar: state.poscar }) };
+    return { doc, reader: tagReader(doc), diagnostics: validate(doc, { poscar: state.poscar, kpoints: state.kpoints }) };
   }, [state]);
 
   if (!state || !derived) return <div className="loading">Loading INCAR…</div>;
@@ -42,6 +42,11 @@ export function App() {
             {state.poscar
               ? `${state.poscar.fileName}: ${state.poscar.nions} atoms${species ? ` · ${species.map((s, i) => `${s}${state.poscar!.counts[i]}`).join(' ')}` : ''}`
               : 'No POSCAR next to this INCAR: per-atom and per-species checks are off.'}
+          </div>
+          <div className="muted">
+            {state.kpoints
+              ? `${state.kpoints.fileName}: ${describeKpoints(state.kpoints)}`
+              : `No KPOINTS: mesh from KSPACING = ${reader.raw('KSPACING') ? `${reader.raw('KSPACING')} Å⁻¹` : '0.5 Å⁻¹ (default)'}`}
           </div>
         </div>
         <button className="secondary" onClick={() => reveal(0)} title="Show the INCAR text beside the builder">

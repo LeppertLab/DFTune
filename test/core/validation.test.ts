@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { parseIncar } from '../../src/core/incar/parse';
+import { describeKpoints, meshSize, readKpoints, type KpointsInfo } from '../../src/core/kpoints/read';
 import { readPoscar, type PoscarInfo } from '../../src/core/poscar/read';
 import { TAG_DEFS } from '../../src/core/tags/definitions';
 import { wikiValueType } from '../../src/core/tags/known';
@@ -23,6 +24,23 @@ describe('POSCAR', () => {
     expect(readPoscar(vasp4)).toMatchObject({ species: undefined, counts: [6, 8], nions: 14 });
     lines[5] = 'Fe_pv/1a2b3c O/4d5e6f';
     expect(readPoscar(lines.join('\n'))?.species).toEqual(['Fe', 'O']);
+  });
+});
+
+describe('KPOINTS', () => {
+  it('reads the common formats', () => {
+    expect(readKpoints(fixture('KPOINTS'))).toEqual({ mode: 'mesh', centering: 'gamma', subdivisions: [4, 4, 4] });
+    expect(readKpoints('mp\n0\nMonkhorst-pack\n 6 6 1\n')).toEqual({ mode: 'mesh', centering: 'monkhorst-pack', subdivisions: [6, 6, 1] });
+    expect(readKpoints('auto\n0\nAuto\n  30\n')).toEqual({ mode: 'auto', length: 30 });
+    expect(readKpoints(fixture('KPOINTS.bands'))).toEqual({ mode: 'line', points: 40 });
+    expect(readKpoints('ibz\n2\nReciprocal\n0 0 0 1\n0.5 0 0 1\nTetrahedra\n')).toEqual({ mode: 'explicit', nkpts: 2, tetrahedra: true });
+    expect(readKpoints('not a KPOINTS file\nabc\n')).toBeUndefined();
+  });
+
+  it('summarizes and sizes meshes', () => {
+    const k = readKpoints(fixture('KPOINTS'))!;
+    expect(describeKpoints(k)).toBe('Γ-centred 4×4×4 mesh');
+    expect(meshSize(k)).toBe(64);
   });
 });
 
@@ -103,6 +121,27 @@ describe('validation', () => {
       'ML_FF_LMLFF is an older or alternative name for ML_LMLFF; check that your VASP version still reads it.',
       'LVDW is an older or alternative name for IVDW; check that your VASP version still reads it.',
     ]);
+  });
+
+  it('checks the INCAR against the KPOINTS file', () => {
+    const kcodes = (text: string, kpoints: KpointsInfo | null) => validate(parseIncar(text), { kpoints }).map((d) => d.code);
+    const gamma = readKpoints(fixture('KPOINTS'))!;
+    const mp = readKpoints('mp\n0\nMonkhorst-Pack\n6 6 6\n')!;
+    const single = readKpoints('gamma only\n0\nGamma\n1 1 1\n')!;
+    const line = readKpoints(fixture('KPOINTS.bands'))!;
+
+    expect(kcodes('KSPACING = 0.3\n', gamma)).toContain('kspacing-ignored');
+    expect(kcodes('KSPACING = 0.3\n', null)).not.toContain('kspacing-ignored');
+    expect(kcodes('ISMEAR = 0\n', null)).toContain('no-kpoints');
+    expect(kcodes('ISMEAR = 0\n', undefined as never)).not.toContain('no-kpoints');
+    expect(kcodes('ISMEAR = 0\n', line)).toContain('line-mode-scf');
+    expect(kcodes('ISMEAR = 0\nICHARG = 11\n', line)).not.toContain('line-mode-scf');
+
+    expect(kcodes('ISMEAR = -5\n', mp)).toContain('tetra-mesh');
+    expect(kcodes('ISMEAR = -5\nKGAMMA = .FALSE.\n', null)).toContain('tetra-mesh');
+    expect(kcodes('ISMEAR = -5\n', gamma)).not.toContain('tetra-mesh');
+    expect(kcodes('ISMEAR = -5\n', single)).toContain('tetra-few-k');
+    expect(kcodes('ISMEAR = 0\n', single)).not.toContain('tetra-few-k');
   });
 
   it('checks POMASS against the POSCAR species', () => {

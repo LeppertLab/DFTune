@@ -20,7 +20,9 @@ It is built for the usual HPC workflow: VS Code connected to a cluster with **Re
 Typos (`ENCTU` → did you mean `ENCUT`?), tags VASP doesn't know (it silently ignores them), deprecated and renamed tags, invalid values, duplicates, and physics/setup pitfalls such as:
 `NSW > 0` without `IBRION` (silently runs MD), MD without `POTIM`/`TEBEG`, tetrahedron smearing with forces, Methfessel–Paxton by default, Pulay stress in cell relaxations, meta-GGA without `LASPH`, hybrid parameters without `LHFCALC`, `MAGMOM` length vs. atom count (×3 if noncollinear), per-species arrays (`LDAUU`, `LANGEVIN_GAMMA`) vs. POSCAR species, `LMAXMIX` for d/f +U, `ICHARG = 11` with ionic steps, `NCORE` and `NPAR` both set, and `LREAL` for large cells.
 
-The POSCAR is found next to the INCAR (`POSCAR.relax` for `INCAR.relax`, otherwise `POSCAR`).
+With a KPOINTS file it also checks: `KSPACING` ignored because KPOINTS exists, no KPOINTS and no `KSPACING` (default mesh), line-mode KPOINTS without `ICHARG = 11`, and tetrahedron smearing with a Monkhorst–Pack mesh or fewer than 4 k points.
+
+POSCAR and KPOINTS are found next to the INCAR (`POSCAR.relax` for `INCAR.relax`, otherwise `POSCAR`; likewise for KPOINTS).
 
 Known tags are the ~600 INCAR tags on the VASP wiki (including numbered families such as `LIBXC1_Pn` and grouped tags such as `KERNEL_TRUNCATION/LTRUNCATE`), their wiki redirects (older names such as `ML_FF_*`), and the tags of the VTST and VASPsol patches.
 

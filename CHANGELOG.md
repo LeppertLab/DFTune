@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.3.0 (2026-11-02)
+
+### Added
+- New calculation types in the Calculation card and in *New VASP Calculation…*:
+  - phonons from finite differences (`IBRION = 6`) and from DFPT (`IBRION = 8`)
+  - elastic constants (`IBRION = 6`, `ISIF = 3`)
+  - dielectric tensor and Born charges (`LEPSILON`)
+  - optical properties (`LOPTICS`)
+- Checks for these setups: `EDIFF` too loose for phonons, `IBRION = 5/7` without symmetry, `LEPSILON` with hybrid functionals, `LEPSILON` together with `LOPTICS`, `LOPTICS` with `ISMEAR = -2`.
+- Curated `CSHIFT`, `LRPA` and `LCALCEPS`.
+- Pushing a `v*` tag publishes a GitHub Release with the `.vsix` attached.
+
+### Changed
+- POSCAR and KPOINTS are watched only in folders with an open INCAR, instead of across the whole workspace (lighter on large cluster file systems).
+
+### Fixed
+- `ISIF ≥ 3` with `IBRION = 5–8` (elastic constants) is no longer reported as having no effect.
+- Greek letters and symbols in wiki descriptions (η, Å, ⟨⟩) are shown instead of HTML codes.
+
 ## 0.2.0 (2026-11-02)
 
 ### Added

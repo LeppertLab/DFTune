@@ -60,7 +60,7 @@ export class IncarEditorProvider implements vscode.CustomTextEditorProvider {
         break;
       }
       case 'reveal': {
-        const editor = await vscode.window.showTextDocument(document, { viewColumn: vscode.ViewColumn.Beside, preserveFocus: false });
+        const editor = await vscode.window.showTextDocument(document, { viewColumn: textColumn(document.uri), preserveFocus: false });
         const range = new vscode.Range(document.positionAt(msg.offset), document.positionAt(msg.end ?? msg.offset));
         editor.selection = new vscode.Selection(range.start, range.end);
         editor.revealRange(range, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
@@ -88,4 +88,20 @@ export class IncarEditorProvider implements vscode.CustomTextEditorProvider {
 </body>
 </html>`;
   }
+}
+
+/**
+ * Where to show the INCAR text: the editor group that already has it open (a visible one first),
+ * so jumping from the builder reuses that editor instead of opening a new split every time.
+ */
+function textColumn(uri: vscode.Uri): vscode.ViewColumn {
+  const same = (other: vscode.Uri) => other.toString() === uri.toString();
+  const visible = vscode.window.visibleTextEditors.find((e) => same(e.document.uri) && e.viewColumn !== undefined);
+  if (visible?.viewColumn) return visible.viewColumn;
+  for (const group of vscode.window.tabGroups.all) {
+    // Not the group where the builder itself is showing: that would hide the builder.
+    const builderShown = group.activeTab?.input instanceof vscode.TabInputCustom && same(group.activeTab.input.uri);
+    if (!builderShown && group.tabs.some((t) => t.input instanceof vscode.TabInputText && same(t.input.uri))) return group.viewColumn;
+  }
+  return vscode.ViewColumn.Beside;
 }

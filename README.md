@@ -52,7 +52,7 @@ Tag defaults follow the [VASP wiki](https://vasp.at/wiki) for VASP 6. To add a t
 
 ## Installing on a cluster
 
-Download the `.vsix` from the [latest release](https://github.com/LeppertLab/dftune/releases/latest), or build it yourself (`npm run package`). Then, in a VS Code window connected over Remote-SSH, run *Extensions: Install from VSIX…*. VS Code installs it on the remote host.
+Download the `.vsix` from the [latest release](https://github.com/LeppertLab/DFTune/releases/latest), or build it yourself (`npm run package`). Then, in a VS Code window connected over Remote-SSH, run *Extensions: Install from VSIX…*. VS Code installs it on the remote host.
 
 ## License
 

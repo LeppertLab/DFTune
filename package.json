@@ -7,11 +7,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/LeppertLab/dftune"
+    "url": "https://github.com/LeppertLab/DFTune"
   },
-  "homepage": "https://github.com/LeppertLab/dftune#readme",
+  "homepage": "https://github.com/LeppertLab/DFTune#readme",
   "bugs": {
-    "url": "https://github.com/LeppertLab/dftune/issues"
+    "url": "https://github.com/LeppertLab/DFTune/issues"
   },
   "private": true,
   "engines": {

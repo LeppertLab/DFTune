@@ -28,7 +28,7 @@ function content(text: string) {
 describe('formatIncar', () => {
   it('never loses or changes a statement or a comment', () => {
     for (const text of [...incars, ...TRICKY]) {
-      const out = formatIncar(text)!;
+      const out = formatIncar(text, { ...DEFAULT_FORMAT_OPTIONS, logicals: 'keep' })!;
       const before = content(text);
       const after = content(out);
       expect(after.entries).toEqual(before.entries);
@@ -100,6 +100,22 @@ describe('formatIncar', () => {
     const options = { ...DEFAULT_FORMAT_OPTIONS, groupByCategory: false };
     expect(formatIncar('nsw = 10\nencut = 400\n', options)).toBe('NSW   = 10\nENCUT = 400\n');
     expect(formatIncar('encut = 400\n', { ...DEFAULT_FORMAT_OPTIONS, categoryHeaders: false })).toBe('ENCUT = 400\n');
+  });
+
+  it('spells logical values one way, including inside blocks', () => {
+    // Requested while testing 0.5.0.
+    const text = 'LWAVE = F\nLCHARG = .true.\nLASPH = True\nLREAL = .FALSE.\nSYSTEM = T\nKERNEL_TRUNCATION {\n  LTRUNCATE = .T.\n}\n';
+    const dotted = formatIncar(text)!;
+    expect(dotted).toMatch(/LWAVE\s+= \.FALSE\./);
+    expect(dotted).toMatch(/LCHARG\s+= \.TRUE\./);
+    expect(dotted).toMatch(/LASPH\s+= \.TRUE\./);
+    expect(dotted).toContain('LTRUNCATE = .TRUE.');
+    expect(dotted).toContain('SYSTEM = T'); // a string tag, not a logical
+    const short = formatIncar(text, { ...DEFAULT_FORMAT_OPTIONS, logicals: 'T' })!;
+    expect(short).toMatch(/LWAVE\s+= F\n/);
+    expect(short).toMatch(/LREAL\s+= \.FALSE\./); // LREAL also takes Auto/On: left as written
+    expect(short).toContain('LTRUNCATE = T');
+    expect(formatIncar(text, { ...DEFAULT_FORMAT_OPTIONS, logicals: 'keep' })).toContain('LASPH = True');
   });
 
   it('refuses to format text it cannot place', () => {

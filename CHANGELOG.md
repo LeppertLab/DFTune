@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.1 (2026-11-04)
+
+### Added
+- Format Document spells the values of logical tags one way across the file, including inside `GROUP { }` blocks: `.TRUE.`/`.FALSE.` (default) or `T`/`F`, set with `dftune.format.logicals` (`keep` leaves them as written).
+
+### Fixed
+- An empty `GROUP { }` block (e.g. `KERNEL_TRUNCATION { }`) now gets its card in the builder; on one line it was a syntax error before. Setting a value in the card opens the block up.
+
 ## 0.5.0 (2026-11-03)
 
 ### Changed

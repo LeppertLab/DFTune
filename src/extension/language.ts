@@ -154,6 +154,7 @@ function provideDocumentFormattingEdits(doc: vscode.TextDocument): vscode.TextEd
     categoryHeaders: config.get('categoryHeaders', DEFAULT_FORMAT_OPTIONS.categoryHeaders),
     alignEquals: config.get('alignEquals', DEFAULT_FORMAT_OPTIONS.alignEquals),
     alignComments: config.get('alignComments', DEFAULT_FORMAT_OPTIONS.alignComments),
+    logicals: config.get('logicals', DEFAULT_FORMAT_OPTIONS.logicals),
   };
   const before = doc.getText();
   const after = formatIncar(before, options);

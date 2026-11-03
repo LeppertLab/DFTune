@@ -6,8 +6,9 @@
 // Formatting is idempotent: the category headers it writes are recognized and replaced.
 
 import { CATEGORY_LABELS, type Category } from '../tags/schema';
-import { TAG_DEFS } from '../tags/definitions';
-import { isKnownTag, tagCategory } from '../tags/known';
+import { TAG_DEFS, tagDef } from '../tags/definitions';
+import { fallbackDef, isKnownTag, tagCategory } from '../tags/known';
+import { formatBool, parseBool } from './values';
 import { computeLineStarts, lineOf, parseIncar, type Span } from './parse';
 
 export interface FormatOptions {
@@ -19,6 +20,8 @@ export interface FormatOptions {
   alignEquals: boolean;
   /** Line up trailing comments within a group. */
   alignComments: boolean;
+  /** Spelling of logical values of logical tags: `.TRUE.`/`.FALSE.`, `T`/`F`, or as written. */
+  logicals: '.TRUE.' | 'T' | 'keep';
 }
 
 export const DEFAULT_FORMAT_OPTIONS: FormatOptions = {
@@ -26,7 +29,26 @@ export const DEFAULT_FORMAT_OPTIONS: FormatOptions = {
   categoryHeaders: true,
   alignEquals: true,
   alignComments: true,
+  logicals: '.TRUE.',
 };
+
+/**
+ * Rewrites the values of logical tags (T, .t., True, .TRUE., …) in one spelling, everywhere in the
+ * file including GROUP { } blocks. Values that are not plain logicals are left alone.
+ */
+export function unifyLogicals(text: string, style: FormatOptions['logicals']): string {
+  if (style === 'keep') return text;
+  let out = text;
+  for (const e of [...parseIncar(text).entries].reverse()) {
+    if ((tagDef(e.key) ?? fallbackDef(e.key))?.type !== 'bool') continue;
+    const raw = text.slice(e.valueSpan.start, e.valueSpan.end);
+    const value = parseBool(raw);
+    if (value === undefined) continue;
+    const spelled = style === 'T' ? (value ? 'T' : 'F') : formatBool(value);
+    if (spelled !== raw) out = out.slice(0, e.valueSpan.start) + spelled + out.slice(e.valueSpan.end);
+  }
+  return out;
+}
 
 const OTHER = 'Other tags';
 const CATEGORY_ORDER = Object.keys(CATEGORY_LABELS) as Category[];
@@ -77,9 +99,10 @@ const SECTION_WORDS: Record<Category | typeof OTHER, RegExp> = {
  * The formatted text, or undefined when the INCAR has syntax problems: text the parser cannot
  * place could otherwise be lost or moved to the wrong statement.
  */
-export function formatIncar(text: string, options: FormatOptions = DEFAULT_FORMAT_OPTIONS): string | undefined {
+export function formatIncar(original: string, options: FormatOptions = DEFAULT_FORMAT_OPTIONS): string | undefined {
+  if (parseIncar(original).issues.length) return undefined;
+  const text = unifyLogicals(original, options.logicals);
   const doc = parseIncar(text);
-  if (doc.issues.length) return undefined;
   if (!doc.entries.length && !doc.comments.length) return text.trim() ? undefined : text;
   const eol = text.includes('\r\n') ? '\r\n' : '\n';
   const lineStarts = computeLineStarts(text);

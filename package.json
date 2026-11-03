@@ -2,7 +2,7 @@
   "name": "dftune",
   "displayName": "DFTune: DFT Input Builder",
   "description": "Set up DFT calculations by physical intent instead of raw input tags. Supports VASP INCAR files; works on remote HPC files over Remote-SSH.",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "publisher": "DaanHolleman",
   "license": "MIT",
   "repository": {
@@ -117,6 +117,21 @@
           "type": "boolean",
           "default": true,
           "description": "Format Document: line up trailing comments within a group."
+        },
+        "dftune.format.logicals": {
+          "type": "string",
+          "enum": [
+            ".TRUE.",
+            "T",
+            "keep"
+          ],
+          "enumDescriptions": [
+            "Write .TRUE. and .FALSE.",
+            "Write T and F",
+            "Keep each value as written"
+          ],
+          "default": ".TRUE.",
+          "description": "Format Document: spelling of true/false values of logical tags (T, .t., True, .TRUE., … all mean the same to VASP)."
         }
       }
     },

@@ -2,7 +2,7 @@
   "name": "dftune",
   "displayName": "DFTune: DFT Input Builder",
   "description": "Set up DFT calculations by physical intent instead of raw input tags. Supports VASP INCAR files; works on remote HPC files over Remote-SSH.",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "publisher": "leppertlab",
   "license": "MIT",
   "repository": {
@@ -149,7 +149,7 @@
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "@types/vscode": "~1.90.0",
-    "@vscode/vsce": "^3.0.0",
+    "@vscode/vsce": "^4.1.0",
     "esbuild": "^0.24.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

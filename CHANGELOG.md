@@ -1,11 +1,23 @@
 # Changelog
 
-## Unreleased
+## 0.5.0 (2026-11-03)
 
 ### Changed
 - Renamed from *Project Electrons* to **DFTune**, now at [LeppertLab/dftune](https://github.com/LeppertLab/dftune). The extension ID changed to `leppertlab.dftune`: uninstall the old *Project Electrons* extension after installing this one.
 - Commands, the builder and settings use the `dftune.` prefix; `projectElectrons.format.*` settings become `dftune.format.*`.
+- Tag groups reorganized: *General* is gone; PREC, ENCUT, NBANDS, KSPACING, ISYM and similar are in **Electronic structure** (formerly *Electronic minimization*), ISTART, ICHARG and the output switches in **Flow control** (formerly *Output files & DOS*), which comes last. New **Many-body (GW, BSE, RPA)** group; *Linear response & dipoles* is now *Response properties*.
 - Licensed under MIT; the tag descriptions from the VASP Wiki are under the GNU FDL 1.2.
+
+### Added
+- Documented tags without a curated definition are sorted into a group using the VASP Wiki's categories (about 595 of 609 tags), get a typed field in the builder, and show defaults that depend on other tags on hover.
+- A builder card for each nested-tag group used in the file (e.g. `KERNEL_TRUNCATION`), listing all its documented tags; values set there go inside the existing `{ }` block.
+- `INIWAV` and `IWAVPR` as curated tags.
+- Releases are also published to the VS Code Marketplace (Trusted Publishing from GitHub Actions).
+
+### Fixed
+- Format Document keeps commented-out tags (`# ML_MB = 2000`) with their group, and comment lines that close a paragraph with that paragraph.
+- Format Document puts `SYSTEM` first.
+- Long nested tag names no longer overlap the input field in the builder.
 
 ## 0.4.0 (2026-11-02)
 

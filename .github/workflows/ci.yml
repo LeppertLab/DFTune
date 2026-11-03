@@ -25,15 +25,21 @@ jobs:
           path: '*.vsix'
           if-no-files-found: error
 
-  # A pushed tag such as v0.3.0 becomes a GitHub Release with the .vsix attached.
+  # A pushed tag such as v0.5.0 becomes a GitHub Release with the .vsix attached, and the same
+  # .vsix is published to the VS Code Marketplace with Trusted Publishing (no stored token).
+  # The Marketplace policy names this repository and this workflow file (ci.yml).
   release:
     needs: build
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write # the GitHub Release
+      id-token: write # the OIDC token vsce exchanges for a Marketplace session
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22 # vsce 4 needs Node 22
       - uses: actions/download-artifact@v4
         with:
           name: vsix
@@ -46,6 +52,8 @@ jobs:
           # The section for this version: from its "## x.y.z" heading up to the next "## ".
           awk -v v="${GITHUB_REF_NAME#v}" '/^## /{p = index($0, "## " v " ") == 1 || $0 == "## " v; next} p' CHANGELOG.md > notes.md
           test -s notes.md || echo "See CHANGELOG.md." > notes.md
-      - run: gh release create "$GITHUB_REF_NAME" *.vsix --title "$GITHUB_REF_NAME" --notes-file notes.md
+      # Skipped when re-running a job whose release already exists.
+      - run: gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" *.vsix --title "$GITHUB_REF_NAME" --notes-file notes.md
         env:
           GH_TOKEN: ${{ github.token }}
+      - run: npx --yes @vscode/vsce@4.1.0 publish --oidc --packagePath *.vsix

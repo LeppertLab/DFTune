@@ -2,7 +2,7 @@
 
 # DFTune
 
-A VS Code extension for setting up DFT calculations by **physical intent** (calculation type, functional, magnetism, smearing, accuracy, DFT+U) instead of remembering tags and magic numbers. It currently supports VASP INCAR files (builder, checks, formatting) and KPOINTS files (checks, formatting); Quantum ESPRESSO is planned.
+A VS Code extension for setting up DFT calculations by **physical intent** (calculation type, functional, magnetism, smearing, accuracy, DFT+U) instead of remembering tags and magic numbers. It currently supports VASP: an INCAR builder, plus checks, hovers and formatting for INCAR, KPOINTS and POSCAR files; Quantum ESPRESSO is planned.
 
 It is built for the usual HPC workflow: VS Code connected to a cluster with **Remote-SSH**. The extension runs on the cluster (`extensionKind: workspace`) and edits the INCAR in place, so no files are copied back and forth. The builder UI is bundled locally and needs no internet access.
 
@@ -17,6 +17,7 @@ It is built for the usual HPC workflow: VS Code connected to a cluster with **Re
 - **Plain-text support** for people who prefer the editor: syntax highlighting, hover docs, completion of tags and values, and diagnostics in the Problems panel.
 - **Format Document** (Alt+Shift+F) tidies an INCAR, e.g. one written by pymatgen: one statement per line, tag names in upper case, tags grouped by category under `# Category` headers, `=` signs and trailing comments aligned, and logical values spelled one way (`.TRUE.`/`.FALSE.` or `T`/`F`). Other values and all comments are kept exactly; hand-written section headings on the same topic replace the default headers. It refuses to run while the file has syntax problems. Each step can be switched off in the settings (`dftune.format.*`).
 - **KPOINTS files** (`KPOINTS`, `KPOINTS.*`, `KPOINTS_*`, `*.kpoints`) get syntax highlighting, checks in the Problems panel and Format Document. The checks read the file the way VASP does, by line position, and flag what it cannot read: a missing or non-numeric count, subdivisions or coordinates, a file that ends before the announced k points, line-mode points that don't come in pairs, tetrahedron corners outside the k-point list. Softer notes: an even Monkhorst–Pack mesh (no Γ), a mode word VASP reads as generating vectors, all-zero weights, text VASP ignores. Format Document only changes whitespace: mode words get one spelling (`gamma` → `Gamma`), k points and vectors are lined up on the decimal point with their labels in one column, and line-mode segments are separated by one blank line. Numbers are copied as written, and it refuses to run while the file has errors.
+- **POSCAR and CONTCAR files** (also `POSCAR.*`, `CONTCAR.*`, `*.vasp`) get highlighting, checks, hovers and Format Document. Checks: unreadable numbers, a zero or invalid scaling factor, a flat or left-handed cell, element names that don't match the atom counts or aren't elements, missing atoms, selective-dynamics flags that aren't T/F, atoms closer than 0.5 Å (also across the cell boundary), and Direct/Cartesian mix-ups (fractional coordinates of 3.5, or Cartesian ones that all fit in 1 Å). Hover over a position for the atom's number, element and coordinates in the other system (and which directions selective dynamics frees); over the lattice for lengths and angles; over a count for the atom range of that element; over the scale for the cell volume. Format Document lines up the lattice and the positions on the decimal point, puts element names above their counts, and spells `Direct`/`Cartesian`/`Selective dynamics` one way, keeping every number as written and CONTCAR velocities untouched.
 - **New VASP Calculation…** (right-click a folder): answer a few quick picks and get a commented INCAR.
 
 ### Checks
@@ -35,6 +36,7 @@ Known tags are the ~600 INCAR tags on the VASP wiki (including numbered families
 ```bash
 npm install
 npm test            # unit tests for the parser, intents and validation (vitest)
+npm run smoke       # after a build: the bundled extension activates and its providers run (stubbed VS Code API)
 npm run build       # bundle to dist/
 npm run package     # build a .vsix
 ```

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.0 (2026-11-03)
+
+### Added
+- POSCAR and CONTCAR files (`POSCAR`, `CONTCAR`, `POSCAR.*`, `CONTCAR.*`, `*.vasp`, `*.poscar`): highlighting, checks, hovers and Format Document.
+  - Checks: unreadable numbers, zero or invalid scaling factors, a flat or left-handed cell, element names vs. atom counts, unknown element names, missing atoms, selective-dynamics flags, atoms closer than 0.5 Å (including periodic images), and coordinates that look like the other kind (Direct vs. Cartesian).
+  - Hover: atom number, element and coordinates on a position line; lattice lengths and angles; the atom range of each element; cell volume.
+  - Format Document: aligned lattice vectors and positions, element names above their counts, one spelling of Direct/Cartesian/Selective dynamics. Numbers are kept as written; CONTCAR velocities are left alone.
+- CI runs a smoke test on the packaged extension (activation and providers, against a stubbed VS Code API).
+
 ## 0.6.0 (2026-11-03)
 
 ### Added

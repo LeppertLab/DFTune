@@ -1,8 +1,8 @@
 {
   "name": "dftune",
   "displayName": "DFTune: DFT Input Builder",
-  "description": "Set up DFT calculations by physical intent instead of raw input tags. Supports VASP INCAR files (builder, linting, formatting) and KPOINTS files (linting, formatting); works on remote HPC files over Remote-SSH.",
-  "version": "0.6.0",
+  "description": "Set up DFT calculations by physical intent instead of raw input tags. VASP INCAR builder, plus checks, hovers and formatting for INCAR, KPOINTS and POSCAR files; works on remote HPC files over Remote-SSH.",
+  "version": "0.7.0",
   "publisher": "DaanHolleman",
   "icon": "images/icon.png",
   "license": "MIT",
@@ -28,6 +28,7 @@
     "DFT",
     "INCAR",
     "KPOINTS",
+    "POSCAR",
     "HPC",
     "materials",
     "Quantum ESPRESSO",
@@ -69,7 +70,28 @@
           "KPOINTS_*",
           "*.kpoints"
         ],
-        "configuration": "./kpoints-language-configuration.json"
+        "configuration": "./positional-language-configuration.json"
+      },
+      {
+        "id": "poscar",
+        "aliases": [
+          "POSCAR",
+          "VASP POSCAR",
+          "CONTCAR"
+        ],
+        "filenames": [
+          "POSCAR",
+          "CONTCAR"
+        ],
+        "filenamePatterns": [
+          "POSCAR.*",
+          "POSCAR_*",
+          "CONTCAR.*",
+          "CONTCAR_*",
+          "*.vasp",
+          "*.poscar"
+        ],
+        "configuration": "./positional-language-configuration.json"
       }
     ],
     "grammars": [
@@ -82,6 +104,11 @@
         "language": "kpoints",
         "scopeName": "source.kpoints",
         "path": "./syntaxes/kpoints.tmLanguage.json"
+      },
+      {
+        "language": "poscar",
+        "scopeName": "source.poscar",
+        "path": "./syntaxes/poscar.tmLanguage.json"
       }
     ],
     "customEditors": [
@@ -180,6 +207,7 @@
     "watch": "node esbuild.mjs --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "smoke": "node test/harness/smoke.cjs",
     "package": "npm run build -- --production && vsce package --no-dependencies"
   },
   "devDependencies": {

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "POSCAR",
+  "scopeName": "source.poscar",
+  "patterns": [
+    { "name": "comment.line.poscar", "match": "[!#].*$" },
+    {
+      "name": "keyword.other.poscar",
+      "match": "(?i)^\\s*(?:selective(?:\\s+dynamics)?|direct|cartesian|lattice velocities and vectors)\\b"
+    },
+    {
+      "name": "constant.numeric.poscar",
+      "match": "(?<![\\w.])[+-]?(?:\\d+\\.?\\d*|\\.\\d+)(?:[eEdD][+-]?\\d+)?(?![\\w.])"
+    },
+    { "name": "constant.language.boolean.poscar", "match": "(?<![\\w.])\\.?[TF]\\.?(?![\\w.])" },
+    { "name": "entity.name.type.element.poscar", "match": "\\b[A-Z][a-z]?(?:_[A-Za-z0-9]+)?\\b" }
+  ]
+}

@@ -19,6 +19,7 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run package
+      - run: npm run smoke # the packaged bundle activates and its providers run
       - uses: actions/upload-artifact@v4
         with:
           name: vsix

@@ -10,6 +10,7 @@
 // Idempotent. Returns undefined while the file has errors, since lines whose role is unclear
 // must not be moved around (same policy as the INCAR formatter).
 
+import { alignedRows, canonicalWord, joinLines, plain } from '../lines';
 import { parseKpoints, type KLine } from './parse';
 
 const MODE_WORDS: Record<string, string> = {
@@ -39,56 +40,9 @@ const COORD_WORDS: Record<string, string> = {
   cartesian: 'Cartesian',
 };
 
-/** Replaces the first word of `text` when it is a known spelling; the rest of the line is kept. */
-function canonicalWord(text: string, words: Record<string, string>): string {
-  const t = text.trim();
-  const whole = words[t.toLowerCase().replace(/\s+/g, ' ')];
-  if (whole) return whole;
-  const m = t.match(/^(\S+)(.*)$/);
-  if (!m) return t;
-  const word = words[m[1].toLowerCase()];
-  return word ? word + m[2] : t;
-}
-
-function rest(l: KLine): string {
-  const t = l.tokens[l.numeric];
-  return t ? l.text.slice(t.start - l.start).trimEnd() : '';
-}
-
-/** `numbers  rest` with single spaces; the line has no neighbours to line up with. */
-function plain(l: KLine): string {
-  const nums = l.tokens.slice(0, l.numeric).map((t) => t.text);
-  const r = rest(l);
-  return [nums.join(' '), r].filter(Boolean).join('  ');
-}
-
-/** Integer and fraction part of a number as written, so columns line up on the decimal point. */
-function split(token: string): [string, string] {
-  const dot = token.indexOf('.');
-  return dot < 0 ? [token, ''] : [token.slice(0, dot), token.slice(dot)];
-}
-
-/** Lines `ls` (all with the same count of numeric tokens), aligned in columns. */
-function alignedRows(ls: KLine[]): string[] {
-  const n = ls[0].numeric;
-  const parts = ls.map((l) => l.tokens.slice(0, n).map((t) => split(t.text)));
-  const intW: number[] = [];
-  const fracW: number[] = [];
-  for (let c = 0; c < n; c++) {
-    intW.push(Math.max(...parts.map((p) => p[c][0].length)));
-    fracW.push(Math.max(...parts.map((p) => p[c][1].length)));
-  }
-  return ls.map((l, i) => {
-    const cells = parts[i].map(([int, frac], c) => int.padStart(intW[c]) + frac.padEnd(fracW[c]));
-    const r = rest(l);
-    return (cells.join('  ') + (r ? '  ' + r : '')).trimEnd();
-  });
-}
-
 export function formatKpoints(text: string): string | undefined {
   const doc = parseKpoints(text);
   if (doc.diagnostics.some((d) => d.severity === 'error')) return undefined;
-  const eol = text.includes('\r\n') ? '\r\n' : '\n';
   const out: string[] = [];
   const { lines } = doc;
 
@@ -139,6 +93,5 @@ export function formatKpoints(text: string): string | undefined {
         out.push(plain(l));
     }
   }
-  while (out.length && out[out.length - 1] === '') out.pop();
-  return out.join(eol) + eol;
+  return joinLines(out, text);
 }

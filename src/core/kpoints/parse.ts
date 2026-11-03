@@ -13,6 +13,7 @@
 //            explicit: N × `kx ky kz weight` [+ Tetrahedra]; line mode: coordinate line + pairs of points
 
 import type { Span } from '../incar/parse';
+import { isInteger, isNumber, splitLines, toNumber, type Line } from '../lines';
 import type { Diagnostic } from '../validation/rules';
 
 export type LineRole =
@@ -31,24 +32,7 @@ export type LineRole =
   | 'blank'
   | 'extra';
 
-export interface Token {
-  text: string;
-  start: number;
-  end: number;
-}
-
-export interface KLine {
-  /** Zero-based line number. */
-  n: number;
-  /** Offset of the first character and of the end of the text (before the line break). */
-  start: number;
-  end: number;
-  text: string;
-  role: LineRole;
-  /** Number of leading tokens that are data (the rest of the line is free text). */
-  numeric: number;
-  tokens: Token[];
-}
+export type KLine = Line<LineRole>;
 
 export interface KpointsDoc {
   lines: KLine[];
@@ -57,27 +41,8 @@ export interface KpointsDoc {
   layout?: 'auto' | 'mesh' | 'vectors' | 'explicit' | 'line';
 }
 
-const NUMBER = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eEdD][+-]?\d+)?$/;
-const INTEGER = /^[+-]?\d+$/;
-export const isNumber = (s: string) => NUMBER.test(s);
-
-function tokenize(text: string, offset: number): Token[] {
-  const tokens: Token[] = [];
-  for (const m of text.matchAll(/\S+/g)) tokens.push({ text: m[0], start: offset + m.index!, end: offset + m.index! + m[0].length });
-  return tokens;
-}
-
 export function parseKpoints(text: string): KpointsDoc {
-  const lines: KLine[] = [];
-  let pos = 0;
-  for (const [n, raw] of text.split('\n').entries()) {
-    const body = raw.endsWith('\r') ? raw.slice(0, -1) : raw;
-    lines.push({ n, start: pos, end: pos + body.length, text: body, role: 'extra', numeric: 0, tokens: tokenize(body, pos) });
-    pos += raw.length + 1;
-  }
-  // The newline that ends the file does not start a line of its own.
-  if (lines.length > 1 && lines[lines.length - 1].text === '') lines.pop();
-
+  const lines = splitLines<LineRole>(text, 'extra');
   const diagnostics: Diagnostic[] = [];
   const doc: KpointsDoc = { lines, diagnostics };
   const error = (message: string, span: Span, code = 'kpoints-syntax') => diagnostics.push({ code, severity: 'error', message, span });
@@ -103,9 +68,9 @@ export function parseKpoints(text: string): KpointsDoc {
         error(`${what}: "${t.text}" is not a number, VASP cannot read it.`, t);
         return undefined;
       }
-      values.push(Number(t.text.replace(/[dD]/, 'e')));
+      values.push(toNumber(t.text));
     }
-    l.numeric = n;
+    l.fields = n;
     return values;
   };
 
@@ -138,11 +103,11 @@ export function parseKpoints(text: string): KpointsDoc {
   if (!countLine) return doc;
   countLine.role = 'count';
   const countTok = countLine.tokens[0];
-  if (!countTok || !INTEGER.test(countTok.text)) {
+  if (!countTok || !isInteger(countTok.text)) {
     error(countTok ? `Line 2 must start with the number of k points (0 for a mesh), found "${countTok.text}".` : 'Line 2 must hold the number of k points (0 for a mesh).', countTok ?? lineSpan(countLine));
     return doc;
   }
-  countLine.numeric = 1;
+  countLine.fields = 1;
   const count = Number(countTok.text);
   if (count < 0) {
     error('The number of k points cannot be negative.', countTok);
@@ -218,7 +183,7 @@ export function parseKpoints(text: string): KpointsDoc {
       // The shift is optional: unreadable text there is a problem, but VASP does not stop reading the mesh.
       const d = diagnostics[diagnostics.length - 1];
       if (!required) d.severity = 'warning';
-      l.numeric = 0;
+      l.fields = 0;
     }
   }
 

@@ -70,6 +70,15 @@ describe('formatIncar', () => {
     expect(out).toBe('# DFT+U (Dudarev)\nLDAU  = .TRUE.\n# U on Fe d\nLDAUU = 3.8 0\n');
   });
 
+  it('sorts commented-out tags with their category and keeps closing comments with their paragraph', () => {
+    // From testing 0.4.0: "# ML_MB" was moved to the paragraph below it.
+    const text = '# MLFF Settings\nML_MODE      = run\nML_LMLFF     = .TRUE.\n# ML_MB      = 2000\n\n# Write/Start\nNWRITE       = 0\nISTART       = 0\n';
+    const out = formatIncar(text)!;
+    const mlff = out.slice(out.indexOf('# MLFF Settings'));
+    expect(mlff).toBe('# MLFF Settings\nML_LMLFF = .TRUE.\nML_MODE  = run\n# ML_MB      = 2000\n');
+    expect(formatIncar('ENCUT = 400\n! check this later\n\nNSW = 0\n')).toContain('ENCUT = 400\n! check this later\n');
+  });
+
   it('keeps comments at the top and bottom of the file there', () => {
     const out = formatIncar('# my run\n\nENCUT = 400\n\n# end notes\n')!;
     expect(out).toBe('# my run\n\n# General\nENCUT = 400\n\n# end notes\n');

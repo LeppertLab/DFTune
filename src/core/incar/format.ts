@@ -7,6 +7,7 @@
 
 import { CATEGORY_LABELS, type Category } from '../tags/schema';
 import { TAG_DEFS, tagDef } from '../tags/definitions';
+import { isKnownTag } from '../tags/known';
 import { computeLineStarts, lineOf, parseIncar, type Span } from './parse';
 
 export interface FormatOptions {
@@ -39,7 +40,12 @@ interface Item {
   /** Comment lines directly above the statement. */
   leading: string[];
   trailing?: string;
-  /** For a statement: `KEY`, raw value. For a GROUP { … } block: its verbatim text. */
+  /** Comment lines below the statement that close its paragraph (a blank line follows them). */
+  after: string[];
+  /**
+   * For a statement: `KEY`, raw value. For a GROUP { … } block or a commented-out statement: its
+   * verbatim text (and for the latter the tag in `key`, for sorting).
+   */
   key?: string;
   value?: string;
   block?: string;
@@ -83,18 +89,27 @@ export function formatIncar(text: string, options: FormatOptions = DEFAULT_FORMA
   const blocks = doc.blocks.filter((b) => !doc.blocks.some((o) => o !== b && o.span.start <= b.span.start && b.span.end <= o.span.end));
   const inBlock = (s: Span) => blocks.some((b) => b.span.start <= s.start && s.end <= b.span.end);
 
+  // A comment line that is itself a statement of a known tag ("# ML_MB = 2000") is a switched-off
+  // setting: it is sorted with that tag's category and kept verbatim.
+  const disabled = doc.comments
+    .filter((c) => !inBlock(c) && !doc.entries.some((e) => line(e.span.start) === line(c.start)))
+    .map((c) => ({ span: c, key: text.slice(c.start, c.end).match(DISABLED)?.[1].toUpperCase() }))
+    .filter((d): d is { span: Span; key: string } => !!d.key && isKnownTag(d.key));
+
   const items: Item[] = [
     ...doc.entries
       .filter((e) => !inBlock(e.span))
       .map((e): Item => ({
         span: e.span,
         leading: [],
+        after: [],
         key: e.key,
         value: text.slice(e.valueSpan.start, e.valueSpan.end),
-        group: tagDef(e.key)?.category ?? OTHER,
+        group: categoryOf(e.key),
         order: 0,
       })),
-    ...blocks.map((b): Item => ({ span: b.span, leading: [], block: text.slice(b.span.start, b.span.end), group: OTHER, order: 0 })),
+    ...disabled.map((d): Item => ({ span: d.span, leading: [], after: [], key: d.key, block: text.slice(d.span.start, d.span.end), group: categoryOf(d.key), order: 0 })),
+    ...blocks.map((b): Item => ({ span: b.span, leading: [], after: [], block: text.slice(b.span.start, b.span.end), group: OTHER, order: 0 })),
   ].sort((a, b) => a.span.start - b.span.start);
   items.forEach((item, i) => (item.order = i));
 
@@ -104,7 +119,7 @@ export function formatIncar(text: string, options: FormatOptions = DEFAULT_FORMA
   const preamble: string[] = [];
   let pending: { text: string; start: number; end: number }[] = [];
   let next = 0;
-  const comments = doc.comments.filter((c) => !inBlock(c));
+  const comments = doc.comments.filter((c) => !inBlock(c) && !disabled.some((d) => d.span === c));
   for (const c of comments) {
     while (next < items.length && items[next].span.start < c.start) {
       attachPending(items[next]);
@@ -126,12 +141,15 @@ export function formatIncar(text: string, options: FormatOptions = DEFAULT_FORMA
     if (!pending.length) return;
     const last = pending[pending.length - 1];
     const blankLineBetween = line(item.span.start) - line(last.end) > 1;
+    const previous = items[item.order - 1];
     if (item.order === 0 && blankLineBetween) {
       preamble.push(...pending.map((p) => p.text));
+    } else if (blankLineBetween && previous) {
+      // Separated from the next statement by a blank line: these close the paragraph above.
+      previous.after.push(...pending.map((p) => p.text));
     } else {
       item.leading.push(...pending.map((p) => p.text));
       // A single comment line opening a paragraph is a section heading written by hand.
-      const previous = items[item.order - 1];
       item.section = pending.length === 1 && (!previous || line(pending[0].start) - line(previous.span.end) > 1);
     }
     pending = [];
@@ -183,7 +201,8 @@ export function formatIncar(text: string, options: FormatOptions = DEFAULT_FORMA
 }
 
 function formatGroup(items: Item[], options: FormatOptions): string[] {
-  const keyWidth = options.alignEquals ? Math.max(...items.filter((i) => i.key).map((i) => i.key!.length), 0) : 0;
+  const statements = items.filter((i) => i.block === undefined);
+  const keyWidth = options.alignEquals ? Math.max(...statements.map((i) => i.key!.length), 0) : 0;
   const bodies = items.map((item) => {
     if (item.block !== undefined) return item.block;
     const key = item.key!.padEnd(keyWidth);
@@ -202,9 +221,16 @@ function formatGroup(items: Item[], options: FormatOptions): string[] {
       const width = lastLine(body).length;
       body += ' '.repeat(Math.max(0, column - width) + 2) + item.trailing;
     }
-    out.push(body);
+    out.push(body, ...item.after);
   });
   return out;
+}
+
+/** `# TAG = value` on its own line. */
+const DISABLED = /^[#!]+\s*([A-Za-z][A-Za-z0-9_]*(?:\/[A-Za-z][A-Za-z0-9_]*)*)\s*=/;
+
+function categoryOf(key: string): Item['group'] {
+  return tagDef(key)?.category ?? OTHER;
 }
 
 function isHeader(comment: string): boolean {

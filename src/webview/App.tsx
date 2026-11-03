@@ -34,7 +34,8 @@ export function App() {
   const reveal = (offset: number, end?: number) => vscode.postMessage({ type: 'reveal', offset, end });
   const species = state.poscar?.species;
   // Nested-tag groups used in this file (KERNEL_TRUNCATION, PLUGINS, …) each get a card.
-  const groups = [...new Set([...doc.tags.keys()].map(tagGroup).filter((g): g is string => !!g))];
+  // Also for an empty `GROUP { }` block, so it can be filled in from the card.
+  const groups = [...new Set([...doc.blocks.map((b) => b.name), ...[...doc.tags.keys()].map(tagGroup)].filter((g): g is string => !!g))];
 
   return (
     <div className="app">

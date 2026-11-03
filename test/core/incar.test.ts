@@ -61,6 +61,17 @@ describe('parseIncar', () => {
     expect(setTag('ENCUT = 400\n', 'PLUGINS/STRUCTURE', 'T')).toBe('ENCUT = 400\nPLUGINS/STRUCTURE = T\n');
   });
 
+  it('reads empty blocks and fills them in', () => {
+    // From testing 0.5.0: the group card should already appear for an empty block.
+    for (const text of ['KERNEL_TRUNCATION { }\n', 'KERNEL_TRUNCATION {\n}\n']) {
+      const doc = parseIncar(text);
+      expect(doc.issues).toEqual([]);
+      expect(doc.blocks.map((b) => b.name)).toEqual(['KERNEL_TRUNCATION']);
+    }
+    expect(setTag('NSW = 0\nKERNEL_TRUNCATION { }\n', 'KERNEL_TRUNCATION/LTRUNCATE', 'T')).toBe('NSW = 0\nKERNEL_TRUNCATION {\n  LTRUNCATE = T\n}\n');
+    expect(setTag('KERNEL_TRUNCATION {\n}\n', 'KERNEL_TRUNCATION/LTRUNCATE', 'T')).toBe('KERNEL_TRUNCATION {\n  LTRUNCATE = T\n}\n');
+  });
+
   it('reports unbalanced blocks', () => {
     expect(parseIncar('PLUGINS {\nSTRUCTURE = T\n').issues.map((i) => i.message)).toEqual(["'PLUGINS {' is never closed with '}'"]);
     expect(parseIncar('NSW = 1\n}\n').issues.map((i) => i.message)).toEqual(["'}' without a matching 'GROUP {'"]);

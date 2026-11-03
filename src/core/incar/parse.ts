@@ -55,6 +55,8 @@ export interface IncarDoc {
 // `GROUP { ... }` block. Entries inside a block get the full GROUP/TAG key.
 const TAG_NAME = /^[A-Za-z][A-Za-z0-9_]*(?:\/[A-Za-z][A-Za-z0-9_]*)*$/;
 const BLOCK_OPEN = /^([A-Za-z][A-Za-z0-9_]*(?:\/[A-Za-z][A-Za-z0-9_]*)*)\s*\{$/;
+/** `GROUP { }` on one line: an empty block, e.g. a placeholder to fill in from the builder. */
+const BLOCK_EMPTY = /^([A-Za-z][A-Za-z0-9_]*(?:\/[A-Za-z][A-Za-z0-9_]*)*)\s*\{\s*\}$/;
 
 export function parseIncar(text: string): IncarDoc {
   const entries: Entry[] = [];
@@ -76,6 +78,11 @@ export function parseIncar(text: string): IncarDoc {
     const open = statement.match(BLOCK_OPEN);
     if (open) {
       blocks.push({ name: open[1].toUpperCase(), span });
+      return;
+    }
+    const empty = statement.match(BLOCK_EMPTY);
+    if (empty) {
+      closedBlocks.push({ name: [...blocks.map((b) => b.name), empty[1].toUpperCase()].join('/'), span });
       return;
     }
     if (statement === '}') {

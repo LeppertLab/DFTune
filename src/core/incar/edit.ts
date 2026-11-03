@@ -31,9 +31,14 @@ export function setTag(text: string, key: string, value: string): string {
   const slash = K.lastIndexOf('/');
   const block = slash > 0 ? doc.blocks.find((b) => b.name === K.slice(0, slash)) : undefined;
   if (block) {
-    // Before the line with the closing brace, indented like the block's first tag.
     const close = block.span.end - 1;
     const lineStart = text.lastIndexOf('\n', close - 1) + 1;
+    if (lineStart <= block.span.start) {
+      // `GROUP { }` on one line: open it up around the new tag.
+      const brace = text.indexOf('{', block.span.start);
+      return `${text.slice(0, brace)}{${eol}  ${K.slice(slash + 1)} = ${value}${eol}}${text.slice(close + 1)}`;
+    }
+    // Before the line with the closing brace, indented like the block's first tag.
     const first = doc.entries.find((e) => e.span.start > block.span.start && e.span.end < block.span.end);
     const lead = first ? text.slice(text.lastIndexOf('\n', first.span.start - 1) + 1, first.span.start) : '';
     const indent = first && /^[ \t]*$/.test(lead) ? lead : '  ';

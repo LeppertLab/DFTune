@@ -6,8 +6,8 @@
 // Formatting is idempotent: the category headers it writes are recognized and replaced.
 
 import { CATEGORY_LABELS, type Category } from '../tags/schema';
-import { TAG_DEFS, tagDef } from '../tags/definitions';
-import { isKnownTag } from '../tags/known';
+import { TAG_DEFS } from '../tags/definitions';
+import { isKnownTag, tagCategory } from '../tags/known';
 import { computeLineStarts, lineOf, parseIncar, type Span } from './parse';
 
 export interface FormatOptions {
@@ -57,8 +57,8 @@ interface Item {
 
 /** Words that mark a hand-written section heading as being about a category. */
 const SECTION_WORDS: Record<Category | typeof OTHER, RegExp> = {
-  general: /\b(general|basic|start(ing)?|setup)\b/i,
-  electronic: /\b(electronic|scf|convergence|minimi[sz]ation)\b/i,
+  flow: /\b(flow|output|input|i\/o|write|start|restart|files?|dos)\b/i,
+  electronic: /\b(electronic|scf|convergence|minimi[sz]ation|basis|cutoff|precision|accuracy)\b/i,
   smearing: /\b(smearing|occupations?)\b/i,
   xc: /\b(exchange|functional|xc|hybrid|hse\d*|pbe\d*|gga|meta-?gga|r?scan)\b/i,
   vdw: /\b(vdw|van der waals|dispersion|d3|d4)\b/i,
@@ -66,8 +66,8 @@ const SECTION_WORDS: Record<Category | typeof OTHER, RegExp> = {
   ldau: /(dft\s*\+\s*u|\bldau\b|\bhubbard\b|\+u\b)/i,
   ionic: /\b(ionic|relax\w*|geometry|optimi[sz]ation)\b/i,
   md: /\b(md|molecular dynamics|thermostat|barostat)\b/i,
-  output: /\b(output|dos|write|files?)\b/i,
-  response: /\b(dielectric|optic\w*|response|born)\b/i,
+  response: /\b(dielectric|optic\w*|response|born|phonons?)\b/i,
+  manybody: /\b(gw|bse|rpa|acfdt|mp2|many[- ]body)\b/i,
   parallel: /\b(parallel\w*)\b/i,
   mlff: /\b(mlff|machine[- ]learn\w*|force fields?)\b/i,
   [OTHER]: /\bother\b/i,
@@ -87,7 +87,8 @@ export function formatIncar(text: string, options: FormatOptions = DEFAULT_FORMA
 
   // Outermost blocks are kept whole; statements and comments inside them are part of the block.
   const blocks = doc.blocks.filter((b) => !doc.blocks.some((o) => o !== b && o.span.start <= b.span.start && b.span.end <= o.span.end));
-  const inBlock = (s: Span) => blocks.some((b) => b.span.start <= s.start && s.end <= b.span.end);
+  const inside = (outer: Span, s: Span) => outer.start <= s.start && s.end <= outer.end;
+  const inBlock = (s: Span) => blocks.some((b) => inside(b.span, s));
 
   // A comment line that is itself a statement of a known tag ("# ML_MB = 2000") is a switched-off
   // setting: it is sorted with that tag's category and kept verbatim.
@@ -109,7 +110,15 @@ export function formatIncar(text: string, options: FormatOptions = DEFAULT_FORMA
         order: 0,
       })),
     ...disabled.map((d): Item => ({ span: d.span, leading: [], after: [], key: d.key, block: text.slice(d.span.start, d.span.end), group: categoryOf(d.key), order: 0 })),
-    ...blocks.map((b): Item => ({ span: b.span, leading: [], after: [], block: text.slice(b.span.start, b.span.end), group: OTHER, order: 0 })),
+    // A block goes with the category of the first tag inside it that has one.
+    ...blocks.map((b): Item => ({
+      span: b.span,
+      leading: [],
+      after: [],
+      block: text.slice(b.span.start, b.span.end),
+      group: doc.entries.filter((e) => inside(b.span, e.span)).map((e) => categoryOf(e.key)).find((g) => g !== OTHER) ?? OTHER,
+      order: 0,
+    })),
   ].sort((a, b) => a.span.start - b.span.start);
   items.forEach((item, i) => (item.order = i));
 
@@ -158,10 +167,14 @@ export function formatIncar(text: string, options: FormatOptions = DEFAULT_FORMA
   // Group and order.
   const groups = new Map<string, Item[]>();
   if (options.groupByCategory) {
+    // SYSTEM is the title of the run: first, without a header.
+    groups.set(TITLE, items.filter(isTitle));
     for (const g of [...CATEGORY_ORDER, OTHER]) groups.set(g, []);
-    for (const item of items) groups.get(item.group)!.push(item);
+    for (const item of items) if (!isTitle(item)) groups.get(item.group)!.push(item);
     for (const [g, list] of groups) {
-      if (g !== OTHER) list.sort((a, b) => (DEF_ORDER.get(a.key!) ?? 0) - (DEF_ORDER.get(b.key!) ?? 0) || a.order - b.order);
+      // Curated tags in their definition order, then the rest (and blocks) in file order.
+      const rank = (i: Item) => (i.key !== undefined ? DEF_ORDER.get(i.key) : undefined) ?? Infinity;
+      if (g !== OTHER) list.sort((a, b) => rank(a) - rank(b) || a.order - b.order);
     }
   } else {
     groups.set('', items);
@@ -182,7 +195,7 @@ export function formatIncar(text: string, options: FormatOptions = DEFAULT_FORMA
     }
     const used = new Set<Item>();
     for (const [g, list] of groups) {
-      if (!list.length) continue;
+      if (!list.length || g === TITLE) continue;
       const own = list.map((item) => paragraphs.get(item)).find((o) => o && !used.has(o) && SECTION_WORDS[g as Item['group']].test(o.leading[0]));
       if (own) used.add(own);
       headers.set(g, own ? own.leading[0] : `# ${g === OTHER ? OTHER : CATEGORY_LABELS[g as Category]}`);
@@ -226,11 +239,17 @@ function formatGroup(items: Item[], options: FormatOptions): string[] {
   return out;
 }
 
+const TITLE = 'SYSTEM';
+
+function isTitle(item: Item): boolean {
+  return item.key === TITLE && item.block === undefined;
+}
+
 /** `# TAG = value` on its own line. */
 const DISABLED = /^[#!]+\s*([A-Za-z][A-Za-z0-9_]*(?:\/[A-Za-z][A-Za-z0-9_]*)*)\s*=/;
 
 function categoryOf(key: string): Item['group'] {
-  return tagDef(key)?.category ?? OTHER;
+  return tagCategory(key) ?? OTHER;
 }
 
 function isHeader(comment: string): boolean {

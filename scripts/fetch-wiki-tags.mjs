@@ -66,6 +66,7 @@ function plain(s) {
     .replace(/\\ldots/g, '…')
     .replace(/<math>(.*?)<\/math>/g, '$1')
     .replace(/<[^>]+>/g, '')
+    .replace(/\{\{TAG\|([^|}]+)\|([^|}=]+)\}\}/g, '$1 = $2')
     .replace(/\{\{(?:TAG|TAGO|FILE|sc)\|([^|}]+)[^}]*\}\}/gi, '$1')
     .replace(/\{\{[^{}]*\}\}/g, '')
     .replace(/\[\[(?:[^|\]]*\|)?([^\]]+)\]\]/g, '$1')
@@ -97,8 +98,70 @@ function deprecation(text, name) {
   return '';
 }
 
+/** Wiki categories of each page. */
+async function pageCategories(titles) {
+  const cats = new Map();
+  for (let i = 0; i < titles.length; i += 50) {
+    let cont = {};
+    do {
+      const j = await query({ action: 'query', prop: 'categories', cllimit: 'max', titles: titles.slice(i, i + 50).join('|'), ...cont });
+      for (const p of Object.values(j.query.pages)) {
+        for (const c of p.categories ?? []) cats.set(p.title, [...(cats.get(p.title) ?? []), c.title.replace(/^Category:/, '')]);
+      }
+      cont = j.continue;
+    } while (cont);
+  }
+  return cats;
+}
+
+// Wiki category → the extension's category (see src/core/tags/schema.ts). The first match in this
+// order wins, so specific topics come before broad ones.
+const CATEGORY_MAP = [
+  ['mlff', ['Machine-learned force fields']],
+  ['ldau', ['DFT+U', 'Strongly correlated electrons']],
+  ['vdw', ['Van der Waals functionals']],
+  ['manybody', ['GW', 'Many-body perturbation theory', 'Bethe-Salpeter equations', 'ACFDT', 'Low-scaling GW and RPA', 'Constrained-random-phase approximation', 'MP2']],
+  ['xc', ['Exchange-correlation functionals', 'Hybrid functionals']],
+  ['spin', ['Magnetism', 'Spin-orbit coupling', 'Noncollinear magnetism', 'Spin spirals']],
+  ['md', ['Molecular dynamics', 'Advanced molecular-dynamics sampling', 'Thermostats', 'Ensemble properties', 'Ensembles']],
+  ['response', ['Dielectric properties', 'Linear response', 'NMR', 'Berry phases', 'Phonons', 'Electron-phonon interactions', 'XAS', 'Electrostatics']],
+  ['ionic', ['Ionic minimization', 'Transition states', 'Forces']],
+  ['smearing', ['Electronic occupancy']],
+  ['parallel', ['Parallelization', 'Performance', 'Memory']],
+  ['flow', ['Files', 'Density of states', 'Wannier functions', 'Band structure', 'Calculation setup']],
+  ['electronic', ['Electronic minimization', 'Density mixing', 'Electronic ground-state properties', 'Projector-augmented-wave method', 'Symmetry', 'Crystal momentum', 'Charge density', 'Potential', 'Molecules', '2D materials']],
+];
+
+function categoryOf(wikiCategories) {
+  return CATEGORY_MAP.find(([, names]) => names.some((n) => wikiCategories.includes(n)))?.[0] ?? '';
+}
+
+/** "{{DEF|TAG|12|if IBRION=0|0|else}}" → "12 if IBRION=0; 0 else". */
+function conditionalDefault(text) {
+  const def = text.match(/\{\{DEF\|((?:[^{}]|\{\{[^{}]*\}\})*)\}\}/);
+  if (!def) return '';
+  // Split at '|' outside nested templates such as {{TAG|ML_MODE|run}}.
+  const raw = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < def[1].length; i++) {
+    if (def[1].startsWith('{{', i)) depth++;
+    else if (def[1].startsWith('}}', i)) depth--;
+    else if (def[1][i] === '|' && depth === 0) {
+      raw.push(def[1].slice(start, i));
+      start = i + 1;
+    }
+  }
+  raw.push(def[1].slice(start));
+  const args = raw.slice(1).map((a) => plain(a));
+  const parts = [];
+  for (let i = 0; i < args.length; i += 2) if (args[i]) parts.push([args[i], args[i + 1]].filter(Boolean).join(' '));
+  return parts.join('; ');
+}
+
 const titles = (await categoryTitles('Category:INCAR_tag')).filter((t) => !NOT_TAGS.has(t));
 const contents = await pageContents(titles);
+const wikiCategories = await pageCategories(titles);
 const tags = [];
 for (const title of titles) {
   // {{!}} is a literal '|' inside template arguments; hide it from the TAGDEF split.
@@ -117,7 +180,8 @@ for (const title of titles) {
   tags.push({
     name,
     type: tagdef?.[2] ? plain(tagdef[2]).replace(/^\[|\]$/g, '') : '',
-    default: tagdef?.[3] ? plain(tagdef[3]) : '',
+    default: tagdef?.[3] ? plain(tagdef[3]) : conditionalDefault(text),
+    category: categoryOf(wikiCategories.get(title) ?? []),
     summary,
     deprecated: deprecation(text, title),
   });
@@ -130,7 +194,7 @@ const aliases = [...(await redirects(titles))]
   .filter(([alias, target]) => /^[A-Z][A-Z0-9_]*$/.test(alias) && !names.has(alias) && names.has(target))
   .sort(([a], [b]) => a.localeCompare(b));
 
-const lines = tags.map((t) => `  ${JSON.stringify(t.name)}: ${JSON.stringify([t.summary, t.type, t.default, ...(t.deprecated ? [t.deprecated] : [])])},`);
+const lines = tags.map((t) => `  ${JSON.stringify(t.name)}: ${JSON.stringify([t.summary, t.type, t.default, t.category, ...(t.deprecated ? [t.deprecated] : [])])},`);
 const aliasLines = aliases.map(([alias, target]) => `  ${JSON.stringify(alias)}: ${JSON.stringify(target)},`);
 writeFileSync(
   OUT,
@@ -138,9 +202,11 @@ writeFileSync(
 // The text is excerpted from the VASP Wiki, copyright VASP Software GmbH and the VASP Wiki authors,
 // and is distributed under the GNU Free Documentation License 1.2 (see LICENSES/GFDL-1.2.txt),
 // unlike the rest of this project (MIT).
-// name: [summary, type, default, deprecation note?]
+// name: [summary, type, default, category ('' if none fits), deprecation note?]
 
-export const WIKI_TAGS: Record<string, [summary: string, type: string, defaultValue: string, deprecated?: string]> = {
+import type { Category } from './schema';
+
+export const WIKI_TAGS: Record<string, [summary: string, type: string, defaultValue: string, category: Category | '', deprecated?: string]> = {
 ${lines.join('\n')}
 };
 

@@ -114,7 +114,7 @@ describe('validation', () => {
       const t = wikiValueType(type);
       // Only literal defaults; many are prose ("set in accordance with PREC").
       if (!t || !/^(-?[\d.]+([eEdD][-+]?\d+)?|\.(TRUE|FALSE)\.)$/i.test(def)) continue;
-      expect(checkValue({ name, type: t, category: 'general', summary: '' }, def), `${name} = ${def}`).toBeUndefined();
+      expect(checkValue({ name, type: t, category: 'electronic', summary: '' }, def), `${name} = ${def}`).toBeUndefined();
     }
   });
 

@@ -14,10 +14,10 @@ const bool = (name: string, category: TagDef['category'], summary: string, def: 
 });
 
 export const TAG_DEFS: TagDef[] = [
-  // ── General ──────────────────────────────────────────────────────────────
-  { name: 'SYSTEM', type: 'string', category: 'general', summary: 'Free-text title of the calculation.', default: 'unknown system' },
+  // ── Flow control and electronic structure ──────────────────────────────
+  { name: 'SYSTEM', type: 'string', category: 'flow', summary: 'Free-text title of the calculation.', default: 'unknown system' },
   {
-    name: 'PREC', type: 'string', open: true, category: 'general',
+    name: 'PREC', type: 'string', open: true, category: 'electronic',
     summary: 'Precision mode: sets defaults for ENCUT and the FFT grids.',
     default: 'Normal',
     options: [
@@ -28,16 +28,16 @@ export const TAG_DEFS: TagDef[] = [
       { value: 'Single', label: 'Single', description: 'Like Accurate, with single-precision grids.' },
     ],
   },
-  { name: 'ENCUT', type: 'real', category: 'general', unit: 'eV', summary: 'Plane-wave kinetic-energy cutoff.', defaultNote: 'largest ENMAX in POTCAR' },
-  { name: 'ENAUG', type: 'real', category: 'general', unit: 'eV', summary: 'Cutoff for the augmentation charges.', defaultNote: 'largest EAUG in POTCAR', advanced: true },
-  { name: 'ISTART', type: 'int', category: 'general', summary: 'Whether to read the WAVECAR.', defaultNote: '1 if a WAVECAR exists, else 0',
+  { name: 'ENCUT', type: 'real', category: 'electronic', unit: 'eV', summary: 'Plane-wave kinetic-energy cutoff.', defaultNote: 'largest ENMAX in POTCAR' },
+  { name: 'ENAUG', type: 'real', category: 'electronic', unit: 'eV', summary: 'Cutoff for the augmentation charges.', defaultNote: 'largest EAUG in POTCAR', advanced: true },
+  { name: 'ISTART', type: 'int', category: 'flow', summary: 'Whether to read the WAVECAR.', defaultNote: '1 if a WAVECAR exists, else 0',
     options: [
       { value: '0', label: 'From scratch' },
       { value: '1', label: 'Restart, constant ENCUT', description: 'Read WAVECAR; basis set adapts to the cell.' },
       { value: '2', label: 'Restart, constant basis set' },
       { value: '3', label: 'Full restart', description: 'Including the wavefunction prediction.' },
     ] },
-  { name: 'ICHARG', type: 'int', open: true, category: 'general', summary: 'Construction of the initial charge density.', defaultNote: '2 if ISTART = 0, else 0',
+  { name: 'ICHARG', type: 'int', open: true, category: 'flow', summary: 'Construction of the initial charge density.', defaultNote: '2 if ISTART = 0, else 0',
     options: [
       { value: '0', label: 'From WAVECAR' },
       { value: '1', label: 'Read CHGCAR' },
@@ -46,12 +46,12 @@ export const TAG_DEFS: TagDef[] = [
       { value: '11', label: 'Non-SCF from CHGCAR', description: 'Fixed charge density: eigenvalues for DOS and band structures.' },
       { value: '12', label: 'Non-SCF from atomic charges', description: 'Non-self-consistent from superposed atomic charges (Harris–Foulkes).' },
     ] },
-  { name: 'NBANDS', type: 'int', category: 'general', summary: 'Number of Kohn–Sham bands.', defaultNote: 'max((NELECT+2)/2 + NIONS/2, 0.6·NELECT), rounded up for parallelization' },
-  { name: 'NELECT', type: 'real', category: 'general', summary: 'Total number of electrons (charged cells).', defaultNote: 'neutral cell (sum of ZVAL)', advanced: true },
-  { name: 'KSPACING', type: 'real', category: 'general', unit: 'Å⁻¹', summary: 'Smallest k-point spacing; used only when there is no KPOINTS file.', default: '0.5' },
-  bool('KGAMMA', 'general', 'KSPACING meshes are Γ-centred (otherwise Monkhorst–Pack).', true),
+  { name: 'NBANDS', type: 'int', category: 'electronic', summary: 'Number of Kohn–Sham bands.', defaultNote: 'max((NELECT+2)/2 + NIONS/2, 0.6·NELECT), rounded up for parallelization' },
+  { name: 'NELECT', type: 'real', category: 'electronic', summary: 'Total number of electrons (charged cells).', defaultNote: 'neutral cell (sum of ZVAL)', advanced: true },
+  { name: 'KSPACING', type: 'real', category: 'electronic', unit: 'Å⁻¹', summary: 'Smallest k-point spacing; used only when there is no KPOINTS file.', default: '0.5' },
+  bool('KGAMMA', 'electronic', 'KSPACING meshes are Γ-centred (otherwise Monkhorst–Pack).', true),
   {
-    name: 'ISYM', type: 'int', category: 'general', summary: 'Symmetry treatment.',
+    name: 'ISYM', type: 'int', category: 'electronic', summary: 'Symmetry treatment.',
     defaultNote: '2 for PAW; 3 with LHFCALC',
     options: [
       { value: '-1', label: 'Off, no symmetrization' },
@@ -61,7 +61,7 @@ export const TAG_DEFS: TagDef[] = [
       { value: '3', label: 'On, symmetrize forces/stress only (hybrids)' },
     ],
   },
-  { name: 'SYMPREC', type: 'real', category: 'general', summary: 'Tolerance for detecting symmetry from POSCAR positions.', default: '1E-5', advanced: true },
+  { name: 'SYMPREC', type: 'real', category: 'electronic', summary: 'Tolerance for detecting symmetry from POSCAR positions.', default: '1E-5', advanced: true },
 
   // ── Electronic minimization ──────────────────────────────────────────────
   {
@@ -269,11 +269,11 @@ export const TAG_DEFS: TagDef[] = [
   { name: 'POMASS', type: 'realArray', category: 'md', perSpecies: true, unit: 'amu', summary: 'Atomic mass per species, overriding the POTCAR masses (e.g. deuterium instead of hydrogen in MD). Give one value per species.', defaultNote: 'masses from POTCAR', advanced: true },
   { name: 'NBLOCK', type: 'int', category: 'md', summary: 'Steps between pair-correlation/DOS updates and XDATCAR writes.', default: '1', advanced: true },
 
-  // ── Output ───────────────────────────────────────────────────────────────
-  bool('LWAVE', 'output', 'Write WAVECAR.', true),
-  bool('LCHARG', 'output', 'Write CHGCAR and CHG.', true),
+  // ── Flow control: output files ─────────────────────────────────────────
+  bool('LWAVE', 'flow', 'Write WAVECAR.', true),
+  bool('LCHARG', 'flow', 'Write CHGCAR and CHG.', true),
   {
-    name: 'LORBIT', type: 'int', category: 'output', summary: 'Projected DOS / PROCAR output.',
+    name: 'LORBIT', type: 'int', category: 'flow', summary: 'Projected DOS / PROCAR output.',
     options: [
       { value: '10', label: 'lm-summed DOS (DOSCAR)' },
       { value: '11', label: 'lm-decomposed DOS + PROCAR', description: 'Most common choice; uses Wigner–Seitz radii from POTCAR.' },
@@ -283,14 +283,34 @@ export const TAG_DEFS: TagDef[] = [
     ],
     open: true,
   },
-  { name: 'NEDOS', type: 'int', category: 'output', summary: 'Number of grid points of the DOS.', default: '301' },
-  { name: 'EMIN', type: 'real', category: 'output', unit: 'eV', summary: 'Lower energy bound of the DOS.', advanced: true },
-  { name: 'EMAX', type: 'real', category: 'output', unit: 'eV', summary: 'Upper energy bound of the DOS.', advanced: true },
-  bool('LVTOT', 'output', 'Write the total local potential (LOCPOT).', false),
-  bool('LVHAR', 'output', 'Write only the electrostatic potential to LOCPOT (work functions).', false),
-  bool('LELF', 'output', 'Write the electron localization function (ELFCAR).', false, { advanced: true }),
-  bool('LAECHG', 'output', 'Write all-electron densities for Bader analysis.', false),
-  { name: 'NWRITE', type: 'int', category: 'output', summary: 'Verbosity of OUTCAR (0–4).', default: '2', advanced: true },
+  { name: 'NEDOS', type: 'int', category: 'flow', summary: 'Number of grid points of the DOS.', default: '301' },
+  { name: 'EMIN', type: 'real', category: 'flow', unit: 'eV', summary: 'Lower energy bound of the DOS.', advanced: true },
+  { name: 'EMAX', type: 'real', category: 'flow', unit: 'eV', summary: 'Upper energy bound of the DOS.', advanced: true },
+  bool('LVTOT', 'flow', 'Write the total local potential (LOCPOT).', false),
+  bool('LVHAR', 'flow', 'Write only the electrostatic potential to LOCPOT (work functions).', false),
+  bool('LELF', 'flow', 'Write the electron localization function (ELFCAR).', false, { advanced: true }),
+  bool('LAECHG', 'flow', 'Write all-electron densities for Bader analysis.', false),
+  { name: 'NWRITE', type: 'int', category: 'flow', summary: 'Verbosity of OUTCAR (0–4).', default: '2', advanced: true },
+  {
+    name: 'INIWAV', type: 'int', category: 'flow', summary: 'Initial orbitals when starting from scratch.', default: '1', advanced: true,
+    options: [
+      { value: '0', label: 'Jellium', description: 'Lowest plane waves.' },
+      { value: '1', label: 'Random', description: 'The safe choice.' },
+    ],
+  },
+  {
+    name: 'IWAVPR', type: 'int', open: true, category: 'flow', summary: 'Extrapolation of orbitals and charge density from one ionic step to the next.',
+    defaultNote: 'depends on IBRION: extrapolation for MD and relaxations, 0 for static runs', advanced: true,
+    options: [
+      { value: '0', label: 'None' },
+      { value: '1', label: 'Charge density (atomic)' },
+      { value: '2', label: 'Second order: orbitals and density' },
+      { value: '3', label: 'Second-order orbitals, atomic density' },
+      { value: '11', label: 'Charge density (atomic), in memory' },
+      { value: '12', label: 'Second order, in memory' },
+      { value: '13', label: 'Mixed, in memory' },
+    ],
+  },
 
   // ── Response & dipoles ───────────────────────────────────────────────────
   bool('LEPSILON', 'response', 'Static dielectric tensor and Born charges via DFPT.', false),

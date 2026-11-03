@@ -46,12 +46,12 @@ describe('formatIncar', () => {
   });
 
   it('groups, upper-cases, splits statements and aligns', () => {
-    expect(formatIncar('sigma = 0.05 ! width\nismear = 0 ! gauss\nencut = 520 ; NCORE = 4\nEDIFF = 1E-6\n')).toBe(
+    expect(formatIncar('sigma = 0.05 ! width\nismear = 0 ! gauss\nencut = 520 ; NCORE = 4\nEDIFF = 1E-6\nsystem = Si bulk\n')).toBe(
       [
-        '# General',
-        'ENCUT = 520',
+        'SYSTEM = Si bulk',
         '',
-        '# Electronic minimization',
+        '# Electronic structure',
+        'ENCUT = 520',
         'EDIFF = 1E-6',
         '',
         '# Occupations & smearing',
@@ -81,11 +81,19 @@ describe('formatIncar', () => {
 
   it('keeps comments at the top and bottom of the file there', () => {
     const out = formatIncar('# my run\n\nENCUT = 400\n\n# end notes\n')!;
-    expect(out).toBe('# my run\n\n# General\nENCUT = 400\n\n# end notes\n');
+    expect(out).toBe('# my run\n\n# Electronic structure\nENCUT = 400\n\n# end notes\n');
   });
 
   it('keeps Windows line endings', () => {
-    expect(formatIncar('encut = 400\r\n')).toBe('# General\r\nENCUT = 400\r\n');
+    expect(formatIncar('encut = 400\r\n')).toBe('# Electronic structure\r\nENCUT = 400\r\n');
+  });
+
+  it('sorts tags without a curated definition by their wiki category', () => {
+    // From testing 0.4.0: ML_OUTPUT_MODE belongs with the MLFF tags, not under "Other tags".
+    const out = formatIncar('ML_OUTPUT_MODE = 0\nML_LMLFF = .TRUE.\nNEW_FLAG = 1\nKERNEL_TRUNCATION {\n  LTRUNCATE = T\n}\n')!;
+    expect(out).toContain('# Machine-learned force fields\nML_LMLFF       = .TRUE.\nML_OUTPUT_MODE = 0\n');
+    expect(out).toContain('# Other tags\nNEW_FLAG = 1\n');
+    expect(out).not.toMatch(/# Other tags[\s\S]*KERNEL_TRUNCATION/);
   });
 
   it('can keep the file order and skip headers', () => {

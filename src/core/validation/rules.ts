@@ -59,7 +59,7 @@ function checkTags(doc: IncarDoc, out: Diagnostic[]) {
     if (!def && known) {
       // Uncurated tags: check the value against the type the wiki states, when it is clear-cut.
       const type = wikiValueType(known.type);
-      const problem = type && checkValue({ name: known.name, type, category: 'general', summary: '' }, e.value);
+      const problem = type && checkValue({ name: known.name, type, category: known.category ?? 'electronic', summary: '' }, e.value);
       if (problem) out.push({ code: 'bad-value', severity: 'error', message: `${e.key}: ${problem}`, span: e.valueSpan.start === e.valueSpan.end ? e.span : e.valueSpan });
       continue;
     }

@@ -1,7 +1,7 @@
 export type TagType = 'int' | 'real' | 'bool' | 'string' | 'intArray' | 'realArray';
 
 export type Category =
-  | 'general'
+  | 'flow'
   | 'electronic'
   | 'smearing'
   | 'xc'
@@ -10,14 +10,15 @@ export type Category =
   | 'ldau'
   | 'ionic'
   | 'md'
-  | 'output'
   | 'response'
-  | 'parallel'
-  | 'mlff';
+  | 'manybody'
+  | 'mlff'
+  | 'parallel';
 
+/** Labels, in the order the builder and the formatter show the categories. */
 export const CATEGORY_LABELS: Record<Category, string> = {
-  general: 'General',
-  electronic: 'Electronic minimization',
+  flow: 'Flow control',
+  electronic: 'Electronic structure',
   smearing: 'Occupations & smearing',
   xc: 'Exchange–correlation',
   vdw: 'van der Waals',
@@ -25,10 +26,10 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   ldau: 'DFT+U',
   ionic: 'Ionic relaxation',
   md: 'Molecular dynamics',
-  output: 'Output files & DOS',
-  response: 'Linear response & dipoles',
-  parallel: 'Parallelization',
+  response: 'Response properties',
+  manybody: 'Many-body (GW, BSE, RPA)',
   mlff: 'Machine-learned force fields',
+  parallel: 'Parallelization',
 };
 
 export interface TagOption {

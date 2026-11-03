@@ -4,7 +4,7 @@
 // one-line description.
 
 import { tagDef } from './definitions';
-import type { TagType } from './schema';
+import type { Category, TagType } from './schema';
 import { WIKI_ALIASES, WIKI_TAGS } from './wikiTags.generated';
 
 export interface KnownTag {
@@ -19,6 +19,8 @@ export interface KnownTag {
   summary: string;
   type?: string;
   default?: string;
+  /** Category derived from the wiki's page categories (VTST: ionic, VASPsol: electronic). */
+  category?: Category;
   /** The wiki's deprecation note, if the tag is deprecated. */
   deprecated?: string;
 }
@@ -74,20 +76,25 @@ const PATTERNS: [RegExp, string][] = [
 
 const WIKI_BY_UPPER = new Map(Object.keys(WIKI_TAGS).map((page) => [page.toUpperCase(), page]));
 
+/** Category of any tag: curated definition first, then the wiki's; undefined when neither fits. */
+export function tagCategory(name: string): Category | undefined {
+  return tagDef(name)?.category ?? knownTag(name)?.category;
+}
+
 /** What is known about a tag outside the curated definitions, or undefined for an unknown name. */
 export function knownTag(name: string): KnownTag | undefined {
   const upper = name.toUpperCase();
   const page = WIKI_BY_UPPER.get(upper) ?? PATTERNS.find(([re]) => re.test(upper))?.[1];
   if (page) {
-    const [summary, type, def, deprecated] = WIKI_TAGS[page];
-    return { name: upper, page, source: 'vasp', summary, type: type || undefined, default: def || undefined, deprecated };
+    const [summary, type, def, category, deprecated] = WIKI_TAGS[page];
+    return { name: upper, page, source: 'vasp', summary, type: type || undefined, default: def || undefined, category: category || undefined, deprecated };
   }
-  if (VTST_TAGS[upper]) return { name: upper, source: 'vtst', summary: VTST_TAGS[upper] };
-  if (VASPSOL_TAGS[upper]) return { name: upper, source: 'vaspsol', summary: VASPSOL_TAGS[upper] };
+  if (VTST_TAGS[upper]) return { name: upper, source: 'vtst', summary: VTST_TAGS[upper], category: 'ionic' };
+  if (VASPSOL_TAGS[upper]) return { name: upper, source: 'vaspsol', summary: VASPSOL_TAGS[upper], category: 'electronic' };
   const target = WIKI_ALIASES[upper];
   if (target) {
-    const [summary] = WIKI_TAGS[target];
-    return { name: upper, page: target, aliasOf: target, source: 'vasp', summary };
+    const [summary, , , category] = WIKI_TAGS[target];
+    return { name: upper, page: target, aliasOf: target, source: 'vasp', summary, category: category || undefined };
   }
   return undefined;
 }

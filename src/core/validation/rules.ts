@@ -1,5 +1,6 @@
 // Checks on an INCAR, shared by the Problems panel and the builder.
 
+import { minimalEdit, setTags, type TagChanges, type TextEdit } from '../incar/edit';
 import type { IncarDoc, Span } from '../incar/parse';
 import { meshSize, type KpointsInfo } from '../kpoints/read';
 import { expandArray, parseBool, parseInt_, parseReal } from '../incar/values';
@@ -20,6 +21,13 @@ export interface Diagnostic {
   /** Tag the diagnostic is about; the span then defaults to that tag's statement. */
   tag?: string;
   span?: Span;
+  /** A quick fix: one text edit that resolves the problem. */
+  fix?: Fix;
+}
+
+export interface Fix {
+  title: string;
+  edit: TextEdit;
 }
 
 export interface ValidationContext {
@@ -37,9 +45,10 @@ export function validate(doc: IncarDoc, ctx: ValidationContext = {}): Diagnostic
   checkTags(doc, out);
   const r = tagReader(doc);
   for (const rule of RULES) rule(r, ctx, out);
-  // Attach spans for tag-level diagnostics.
+  // Attach spans for tag-level diagnostics, and quick fixes.
   for (const d of out) {
     if (!d.span && d.tag) d.span = doc.tags.get(d.tag)?.span;
+    if (!d.fix) d.fix = tagFix(doc.text, d, r, ctx);
   }
   return out;
 }
@@ -58,7 +67,7 @@ function checkTags(doc: IncarDoc, out: Diagnostic[]) {
       out.push({ code: 'deprecated', severity: 'warning', message: `${e.key} is deprecated: ${known.deprecated}`, span: e.keySpan });
     }
     if (known?.aliasOf) {
-      out.push({ code: 'alias', severity: 'info', message: `${e.key} is an older or alternative name for ${known.aliasOf}; check that your VASP version still reads it.`, span: e.keySpan });
+      out.push({ code: 'alias', severity: 'info', message: `${e.key} is an older or alternative name for ${known.aliasOf}; check that your VASP version still reads it.`, span: e.keySpan, fix: rename(e.key, known.aliasOf, e.keySpan) });
     }
     if (!def && known) {
       // Uncurated tags: check the value against the type the wiki states, when it is clear-cut.
@@ -72,7 +81,7 @@ function checkTags(doc: IncarDoc, out: Diagnostic[]) {
       const close = closestTag(e.key);
       out.push(
         close
-          ? { code: 'unknown-tag', severity: 'warning', message: `Unknown tag ${e.key}. Did you mean ${close}?`, span: e.keySpan }
+          ? { code: 'unknown-tag', severity: 'warning', message: `Unknown tag ${e.key}. Did you mean ${close}?`, span: e.keySpan, fix: rename(e.key, close, e.keySpan) }
           : { code: 'unknown-tag', severity: 'info', message: `${e.key} is not a documented VASP tag; VASP ignores tags it does not know.`, span: e.keySpan },
       );
       continue;
@@ -138,6 +147,62 @@ export function sameValue(def: TagDef, a: string, b: string): boolean {
       return norm(a) === norm(b);
     }
   }
+}
+
+/** Quick fix that replaces a tag name, keeping a `GROUP/` prefix as written. */
+function rename(from: string, to: string, span: Span): Fix {
+  const name = to.includes('/') || !from.includes('/') ? to : `${from.slice(0, from.lastIndexOf('/') + 1)}${to}`;
+  return { title: `Change to ${name}`, edit: { start: span.start, end: span.end, text: name } };
+}
+
+/** 1.3 × the largest ENMAX, rounded up to 10 eV. */
+const safeEncut = (enmax: number) => `${Math.ceil((1.3 * enmax) / 10) * 10}`;
+
+/** Tag changes that resolve a diagnostic, by its code. Only remedies that are clearly right. */
+const FIXES: Record<string, (r: TagReader, ctx: ValidationContext, d: Diagnostic) => { title: string; tags: TagChanges } | undefined> = {
+  'nsw-without-ibrion': () => ({ title: 'Set IBRION = 2 (conjugate-gradient relaxation)', tags: { IBRION: '2' } }),
+  'md-isym': () => ({ title: 'Set ISYM = 0', tags: { ISYM: '0' } }),
+  pulay: (_r, ctx) => {
+    const top = maxEnmax(ctx.potcar);
+    return top && { title: `Set ENCUT = ${safeEncut(top.enmax)} (1.3 × ENMAX)`, tags: { ENCUT: safeEncut(top.enmax) } };
+  },
+  'encut-below-enmax': (_r, ctx) => {
+    const top = maxEnmax(ctx.potcar);
+    return top && { title: `Set ENCUT = ${safeEncut(top.enmax)} (1.3 × ENMAX)`, tags: { ENCUT: safeEncut(top.enmax) } };
+  },
+  'tetra-forces': (r) => gaussian(r),
+  'default-mp': (r) => gaussian(r),
+  'tetra-few-k': (r) => gaussian(r),
+  'metagga-lasph': () => ({ title: 'Set LASPH = .TRUE.', tags: { LASPH: '.TRUE.' } }),
+  'gga-and-metagga': () => ({ title: 'Remove GGA (keep METAGGA)', tags: { GGA: null } }),
+  'hybrid-off': () => ({ title: 'Set LHFCALC = .TRUE.', tags: { LHFCALC: '.TRUE.' } }),
+  'hybrid-algo': () => ({ title: 'Set ALGO = Normal', tags: { ALGO: 'Normal' } }),
+  'magmom-unused': () => ({ title: 'Set ISPIN = 2 (spin-polarized)', tags: { ISPIN: '2' } }),
+  'soc-ispin': () => ({ title: 'Remove ISPIN', tags: { ISPIN: null } }),
+  'ldau-lmaxmix': (_r, _ctx, d) => {
+    const n = d.message.match(/LMAXMIX = (\d)/)?.[1];
+    return n ? { title: `Set LMAXMIX = ${n}`, tags: { LMAXMIX: n } } : undefined;
+  },
+  'ncore-npar': () => ({ title: 'Remove NPAR (keep NCORE)', tags: { NPAR: null } }),
+  'lreal-large': () => ({ title: 'Set LREAL = Auto', tags: { LREAL: 'Auto' } }),
+  'phonon-ediff': () => ({ title: 'Set EDIFF = 1E-6', tags: { EDIFF: '1E-6' } }),
+  'phonon-symmetry': (r) => {
+    const ibrion = effective.ibrion(r);
+    return { title: `Set IBRION = ${ibrion + 1}`, tags: { IBRION: String(ibrion + 1) } };
+  },
+  'kspacing-ignored': () => ({ title: 'Remove KSPACING', tags: { KSPACING: null } }),
+  'tetra-mesh': (r) => (r.bool('KGAMMA') === false ? { title: 'Remove KGAMMA', tags: { KGAMMA: null } } : undefined),
+};
+
+function gaussian(r: TagReader) {
+  return { title: 'Use Gaussian smearing (ISMEAR = 0)', tags: { ISMEAR: '0', ...(r.has('SIGMA') ? {} : { SIGMA: '0.05' }) } };
+}
+
+function tagFix(text: string, d: Diagnostic, r: TagReader, ctx: ValidationContext): Fix | undefined {
+  const fix = FIXES[d.code]?.(r, ctx, d);
+  if (!fix) return undefined;
+  const edit = minimalEdit(text, setTags(text, fix.tags));
+  return edit && { title: fix.title, edit };
 }
 
 /** The POTCAR dataset with the largest ENMAX. */
@@ -211,7 +276,7 @@ const RULES: Rule[] = [
     const isif = effective.isif(r);
     if (!(effective.isRelaxation(r) || effective.isMD(r)) || ![3, 6, 7, 8].includes(isif)) return;
     const top = maxEnmax(ctx.potcar);
-    const target = top && `${Math.ceil((1.3 * top.enmax) / 10) * 10}`;
+    const target = top && safeEncut(top.enmax);
     if (!r.has('ENCUT')) {
       out.push({
         code: 'pulay',

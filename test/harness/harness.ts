@@ -49,6 +49,11 @@ async function main() {
         console.log('setTags', JSON.stringify(msg.changes));
         send();
       }
+      if (msg.type === 'applyEdit' && msg.text === text) {
+        text = text.slice(0, msg.edit.start) + msg.edit.text + text.slice(msg.edit.end);
+        console.log('applyEdit', JSON.stringify(msg.edit));
+        send();
+      }
       if (msg.type === 'reveal') console.log('reveal', msg.offset, msg.end);
     },
     getState: () => state,

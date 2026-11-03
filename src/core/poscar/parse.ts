@@ -252,10 +252,13 @@ export function parsePoscar(text: string): PoscarDoc {
   const coords = atomLines.map((l) => l.tokens.slice(0, 3).map((t) => toNumber(t.text)));
   const maxAbs = Math.max(...coords.flat().map(Math.abs));
   const shortest = Math.min(...lattice.map(norm));
+  const switchTo = (word: string) => ({ title: `Change to ${word}`, edit: { start: modeLine!.start, end: modeLine!.end, text: word } });
   if (!cartesian && maxAbs > 2.5) {
     report('warning', 'poscar-mode-mismatch', `Direct (fractional) coordinates up to ${maxAbs}: are these Cartesian coordinates in Å? Then write Cartesian here.`, lineSpan(modeLine));
+    diagnostics[diagnostics.length - 1].fix = switchTo('Cartesian');
   } else if (cartesian && nions >= 4 && maxAbs < 1 && shortest > 3 && coords.flat().every((x) => x >= 0)) {
     report('info', 'poscar-mode-mismatch', 'All Cartesian coordinates are within ±1 Å in a large cell: are these fractional coordinates? Then write Direct here.', lineSpan(modeLine));
+    diagnostics[diagnostics.length - 1].fix = switchTo('Direct');
   }
 
   if (selective && atomLines.every((l) => l.tokens.slice(3, 6).every((t) => /^\.?F/i.test(t.text)))) {

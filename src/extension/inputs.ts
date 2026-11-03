@@ -24,6 +24,11 @@ function candidates(source: vscode.Uri, base: string): { uri: vscode.Uri; fileNa
   return [...new Set([`${base}${suffix}`, base])].map((fileName) => ({ uri: vscode.Uri.joinPath(dir, fileName), fileName }));
 }
 
+/** The name of the `base` file belonging to `source`: KPOINTS.relax for INCAR.relax or POSCAR.relax. */
+export function siblingName(source: vscode.Uri, base: string): string {
+  return candidates(source, base)[0].fileName;
+}
+
 async function findSibling<T>(source: vscode.Uri, base: string, read: (text: string) => T | undefined): Promise<InputFile<T> | undefined> {
   for (const { uri, fileName } of candidates(source, base)) {
     let text: string;

@@ -49,3 +49,4 @@ export * from './potcar/read';
 export * from './kpoints/context';
 export * from './potcar/check';
 export * from './poscar/lint';
+export * from './kpoints/generate';

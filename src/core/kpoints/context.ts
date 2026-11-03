@@ -34,8 +34,14 @@ export function autoMesh(cell: Cell, length: number): Vec3 {
  */
 export function lintKpoints(text: string, cell?: Cell): Diagnostic[] {
   const doc = parseKpoints(text);
-  if (!cell) return doc.diagnostics;
+  if (!cell) {
+    // Without the cell, the even Monkhorst–Pack note still gets its fix.
+    const mode = doc.lines.find((l) => l.role === 'mode');
+    for (const d of doc.diagnostics) if (d.code === 'kpoints-even-mp' && mode) d.fix = { title: 'Use a Γ-centred mesh (Gamma)', edit: { start: mode.start, end: mode.end, text: 'Gamma' } };
+    return doc.diagnostics;
+  }
   const out = doc.diagnostics.filter((d) => d.code !== 'kpoints-even-mp');
+  const toGamma = (l: { start: number; end: number }) => ({ title: 'Use a Γ-centred mesh (Gamma)', edit: { start: l.start, end: l.end, text: 'Gamma' } });
   const m = meshOf(doc);
   if (!m) return out;
   const modeLine = doc.lines.find((l) => l.role === 'mode')!;
@@ -48,6 +54,7 @@ export function lintKpoints(text: string, cell?: Cell): Diagnostic[] {
       severity: 'warning',
       message: 'Hexagonal cell: an even Monkhorst–Pack mesh in the hexagonal plane breaks the symmetry and converges slowly. Use a Γ-centred mesh (Gamma).',
       span: modeLine.tokens[0] ?? lineSpan(modeLine),
+      fix: toGamma(modeLine),
     });
   }
 
@@ -65,6 +72,7 @@ export function lintKpoints(text: string, cell?: Cell): Diagnostic[] {
         `The mesh is much finer along ${fine.map((i) => `b${i + 1}`).join(' and ')} than along the coarsest direction; ` +
         `${suggested.join(' × ')} would have about the same accuracy at lower cost (or refine the other directions).`,
       span: lineSpan(meshLine),
+      fix: { title: `Use a ${suggested.join(' × ')} mesh`, edit: { start: meshLine.tokens[0].start, end: meshLine.tokens[2].end, text: suggested.join(' ') } },
     });
   }
   return out;

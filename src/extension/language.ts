@@ -23,6 +23,7 @@ import {
   type TagDef,
 } from '../core';
 import { FolderWatch, findInputs, findPoscar } from './inputs';
+import { registerQuickFixes } from './quickFixes';
 
 const SEVERITY: Record<Diagnostic['severity'], vscode.DiagnosticSeverity> = {
   error: vscode.DiagnosticSeverity.Error,
@@ -41,9 +42,8 @@ export function registerLanguageFeatures(context: vscode.ExtensionContext) {
     clearTimeout(timers.get(key));
     timers.set(key, setTimeout(async () => {
       timers.delete(key);
-      const { poscar, kpoints, potcar } = await findInputs(doc.uri);
+      const diagnostics = await lintIncar(doc);
       if (doc.isClosed) return;
-      const diagnostics = validate(parseIncar(doc.getText()), { poscar: poscar?.info, kpoints: kpoints?.info ?? null, potcar: potcar?.info });
       collection.set(doc.uri, toVscodeDiagnostics(doc, diagnostics));
     }, 250));
   };
@@ -74,9 +74,16 @@ export function registerLanguageFeatures(context: vscode.ExtensionContext) {
       collection.delete(doc.uri);
     }),
     vscode.languages.registerHoverProvider('incar', { provideHover }),
+    registerQuickFixes('incar', lintIncar),
     vscode.languages.registerDocumentFormattingEditProvider('incar', { provideDocumentFormattingEdits }),
     vscode.languages.registerCompletionItemProvider('incar', { provideCompletionItems }, '=', ' '),
   );
+}
+
+/** INCAR diagnostics, with the POSCAR, KPOINTS and POTCAR next to it as context. */
+async function lintIncar(doc: vscode.TextDocument): Promise<Diagnostic[]> {
+  const { poscar, kpoints, potcar } = await findInputs(doc.uri);
+  return validate(parseIncar(doc.getText()), { poscar: poscar?.info, kpoints: kpoints?.info ?? null, potcar: potcar?.info });
 }
 
 export function toVscodeDiagnostics(doc: vscode.TextDocument, diagnostics: Diagnostic[], source = 'INCAR'): vscode.Diagnostic[] {

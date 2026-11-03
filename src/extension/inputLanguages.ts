@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 import { formatKpoints, formatPoscar, kpointsHover, lintKpoints, lintPoscar, minimalEdit, parsePoscar, poscarHover, type Diagnostic } from '../core';
 import { FolderWatch, findPoscar, findPotcar } from './inputs';
 import { toVscodeDiagnostics } from './language';
+import { registerQuickFixes } from './quickFixes';
 
 type HoverResult = { markdown: string; start: number; end: number } | undefined;
 
@@ -96,6 +97,7 @@ function register(context: vscode.ExtensionContext, lang: InputLanguage) {
         return edit ? [vscode.TextEdit.replace(new vscode.Range(doc.positionAt(edit.start), doc.positionAt(edit.end)), edit.text)] : [];
       },
     }),
+    registerQuickFixes(lang.id, (doc) => lang.lint(doc.getText(), doc.uri)),
     vscode.languages.registerHoverProvider(lang.id, {
       async provideHover(doc, position) {
         const h = await lang.hover(doc.getText(), doc.offsetAt(position), doc.uri);

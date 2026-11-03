@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.0 (2026-11-03)
+
+### Added
+- Quick fixes (lightbulb, Ctrl+.) in INCAR, KPOINTS and POSCAR files for problems with an obvious remedy: misspelled and renamed tags, `LASPH`, `LMAXMIX`, `ENCUT` from the POTCAR (1.3 × `ENMAX`), Gaussian smearing, `IBRION`, `ISYM` for MD, `LREAL = Auto`, `EDIFF` for phonons, `IBRION = 6/8` instead of 5/7, removing `NPAR`, `KSPACING`, `KGAMMA`, `GGA` or `ISPIN` where they conflict, Gamma instead of Monkhorst–Pack, a balanced mesh, Direct/Cartesian. In the builder, each fixable problem has a button.
+- *Generate KPOINTS Mesh…*: a Γ-centred KPOINTS for the POSCAR at a chosen k-point spacing (coarse 0.5 to very fine 0.12 Å⁻¹, each showing its mesh). From the Explorer or editor context menu of a folder, POSCAR, INCAR or KPOINTS file.
+- *New VASP Calculation…* ends with a k-points step: a KPOINTS file for the POSCAR in the folder, or `KSPACING` in the INCAR, at a chosen density.
+
 ## 0.8.0 (2026-11-03)
 
 ### Added

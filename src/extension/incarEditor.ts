@@ -60,6 +60,14 @@ export class IncarEditorProvider implements vscode.CustomTextEditorProvider {
         await vscode.workspace.applyEdit(workspaceEdit);
         break;
       }
+      case 'applyEdit': {
+        // Only if the text is still the one the fix was computed for.
+        if (document.getText() !== msg.text) return post();
+        const workspaceEdit = new vscode.WorkspaceEdit();
+        workspaceEdit.replace(document.uri, new vscode.Range(document.positionAt(msg.edit.start), document.positionAt(msg.edit.end)), msg.edit.text);
+        await vscode.workspace.applyEdit(workspaceEdit);
+        break;
+      }
       case 'reveal': {
         const editor = await vscode.window.showTextDocument(document, { viewColumn: textColumn(document.uri), preserveFocus: false });
         const range = new vscode.Range(document.positionAt(msg.offset), document.positionAt(msg.end ?? msg.offset));

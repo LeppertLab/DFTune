@@ -3,13 +3,20 @@
 // (wrong language id, provider not registered, crash on activation) that unit tests can't see.
 // Run with `npm run smoke` after `npm run build`.
 const Module = require('node:module');
-const { readFileSync, statSync } = require('node:fs');
+const { copyFileSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } = require('node:fs');
+const { tmpdir } = require('node:os');
 const { join, posix } = require('node:path');
 
-const providers = { hover: {}, format: {}, completion: {} };
+const providers = { hover: {}, format: {}, completion: {}, actions: {} };
+const commands = {};
 const collections = {};
 class Position { constructor(line, character) { Object.assign(this, { line, character }); } }
-class Range { constructor(start, end) { Object.assign(this, { start, end }); } }
+const before = (a, b) => a.line < b.line || (a.line === b.line && a.character <= b.character);
+class Range {
+  constructor(start, end) { Object.assign(this, { start, end }); }
+  intersection(o) { return before(o.start, this.end) && before(this.start, o.end) ? this : undefined; }
+  contains(o) { return before(this.start, o.start) && before(o.end, this.end); }
+}
 const disposable = { dispose() {} };
 const event = () => disposable;
 const uri = (path) => ({ path, toString: () => `file://${path}` });
@@ -22,6 +29,10 @@ const vscode = {
   Hover: class { constructor(contents, range) { Object.assign(this, { contents, range }); } },
   MarkdownString: class { constructor(v = '') { this.value = v; } appendMarkdown(s) { this.value += s; return this; } },
   TextEdit: { replace: (range, newText) => ({ range, newText }) },
+  CodeAction: class { constructor(title, kind) { Object.assign(this, { title, kind }); } },
+  CodeActionKind: { QuickFix: 'quickfix' },
+  WorkspaceEdit: class { constructor() { this.edits = []; } replace(uri, range, newText) { this.edits.push({ uri, range, newText }); } },
+  FileType: { File: 1, Directory: 2 },
   CompletionItem: class { constructor(label) { this.label = label; } },
   CompletionItemKind: {}, CompletionItemTag: {},
   SnippetString: class { constructor(v) { this.value = v; } },
@@ -33,6 +44,7 @@ const vscode = {
     registerHoverProvider: (id, p) => ((providers.hover[id] = p), disposable),
     registerDocumentFormattingEditProvider: (id, p) => ((providers.format[id] = p), disposable),
     registerCompletionItemProvider: (id, p) => ((providers.completion[id] = p), disposable),
+    registerCodeActionsProvider: (id, p) => ((providers.actions[id] = p), disposable),
   },
   workspace: {
     textDocuments: [],
@@ -40,11 +52,21 @@ const vscode = {
     getConfiguration: () => ({ get: (_k, d) => d }),
     createFileSystemWatcher: () => ({ onDidChange() {}, onDidCreate() {}, onDidDelete() {}, dispose() {} }),
     // The real file system, so sibling lookup (POSCAR next to KPOINTS, POTCAR next to POSCAR) runs for real.
-    fs: { readFile: async (u) => readFileSync(u.path), stat: async (u) => ({ mtime: statSync(u.path).mtimeMs }) },
+    fs: {
+      readFile: async (u) => readFileSync(u.path),
+      writeFile: async (u, data) => writeFileSync(u.path, data),
+      stat: async (u) => { const st = statSync(u.path); return { mtime: st.mtimeMs, type: st.isDirectory() ? 2 : 1 }; },
+    },
     asRelativePath: (u) => u.path,
   },
-  window: { showWarningMessage: (m) => console.log('  warning shown:', m), showInformationMessage() {} },
-  commands: { registerCommand: () => disposable, executeCommand() {} },
+  window: {
+    showWarningMessage: async (m) => console.log('  warning shown:', m),
+    showInformationMessage() {},
+    // Picks the second item when there is one (the "Standard" density), else the first.
+    showQuickPick: async (items) => items[1] ?? items[0],
+    showTextDocument: async () => {},
+  },
+  commands: { registerCommand: (id, fn) => ((commands[id] = fn), disposable), executeCommand() {} },
 };
 vscode.window.registerCustomEditorProvider = () => disposable;
 const load = Module._load;
@@ -60,6 +82,7 @@ function doc(languageId, text, name) {
     getText: () => text,
     offsetAt: (p) => starts[p.line] + p.character,
     positionAt: (o) => { let l = 0; while (l + 1 < starts.length && starts[l + 1] <= o) l++; return new Position(l, o - starts[l]); },
+    version: 1,
     lineAt: (l) => ({ text: text.slice(starts[l], (starts[l + 1] ?? text.length + 1) - 1) }),
   };
 }
@@ -108,6 +131,28 @@ function format(lang, text, name) {
   const id = doc('incar', 'KSPACING = 0.3\n', 'INCAR.smoke');
   const ih = await providers.hover.incar.provideHover(id, new Position(0, 2));
   check(ih && /For POSCAR: a \d+ × \d+ × \d+ mesh/.test(ih.contents.value), 'KSPACING hover shows the mesh for the POSCAR');
+
+  // Quick fixes, through the code-action provider.
+  for (const id of ['incar', 'kpoints', 'poscar']) check(!!providers.actions[id], `quick fixes registered for ${id}`);
+  const typo = doc('incar', 'ENCTU = 400\nISMEAR = 0\n', 'INCAR.typo');
+  const acts = await providers.actions.incar.provideCodeActions(typo, new Range(new Position(0, 1), new Position(0, 1)), { diagnostics: [] });
+  check(acts.length === 1 && acts[0].title === 'Change to ENCUT' && acts[0].edit.edits[0].newText === 'ENCUT', `INCAR quick fix: ${acts.map((a) => a.title)}`);
+  // In a folder without a POSCAR the even Monkhorst–Pack note (and its fix) applies.
+  const mp = doc('kpoints', 'k\n0\nMonkhorst-Pack\n4 4 4\n', '../no-such-folder/KPOINTS');
+  const kacts = await providers.actions.kpoints.provideCodeActions(mp, new Range(new Position(2, 0), new Position(2, 0)), { diagnostics: [] });
+  check(kacts.length === 1 && kacts[0].edit.edits[0].newText === 'Gamma', `KPOINTS quick fix: ${kacts.map((a) => a.title)}`);
+
+  // Generate KPOINTS in a scratch folder with a copy of the POSCAR.
+  check(!!commands['dftune.generateKpoints'], 'generate-KPOINTS command registered');
+  const dir = mkdtempSync(join(tmpdir(), 'dftune-smoke-'));
+  try {
+    copyFileSync(join(fixtures, 'POSCAR'), join(dir, 'POSCAR'));
+    await commands['dftune.generateKpoints'](uri(dir));
+    const written = readFileSync(join(dir, 'KPOINTS'), 'utf8');
+    check(/^0\nGamma\n\d+ \d+ \d+\n0 0 0\n$/.test(written.split('\n').slice(1).join('\n')), `KPOINTS generated: ${written.split('\n')[3]}`);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 
   await new Promise((r) => setTimeout(r, 600)); // diagnostics are debounced
   const get = (lang, name) => collections[lang].map.get(`file://${join(fixtures, name)}`) ?? [];

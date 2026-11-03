@@ -2,7 +2,7 @@
   "name": "dftune",
   "displayName": "DFTune: DFT Input Builder",
   "description": "Set up DFT calculations by physical intent instead of raw input tags. VASP INCAR builder, plus checks, hovers and formatting for INCAR, KPOINTS and POSCAR files; works on remote HPC files over Remote-SSH.",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "publisher": "DaanHolleman",
   "icon": "images/icon.png",
   "license": "MIT",
@@ -143,6 +143,11 @@
         "command": "dftune.newCalculation",
         "title": "New VASP Calculation…",
         "category": "VASP"
+      },
+      {
+        "command": "dftune.generateKpoints",
+        "title": "Generate KPOINTS Mesh…",
+        "category": "VASP"
       }
     ],
     "configuration": {
@@ -198,6 +203,18 @@
           "command": "dftune.newCalculation",
           "when": "explorerResourceIsFolder",
           "group": "navigation@90"
+        },
+        {
+          "command": "dftune.generateKpoints",
+          "when": "explorerResourceIsFolder || resourceLangId =~ /^(incar|poscar|kpoints)$/",
+          "group": "navigation@91"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "dftune.generateKpoints",
+          "when": "editorLangId =~ /^(incar|poscar|kpoints)$/",
+          "group": "1_modification@90"
         }
       ]
     }

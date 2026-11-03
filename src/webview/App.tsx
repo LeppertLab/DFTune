@@ -59,7 +59,7 @@ export function App() {
         </button>
       </header>
 
-      <Diagnostics diagnostics={diagnostics} onReveal={reveal} />
+      <Diagnostics diagnostics={diagnostics} onReveal={reveal} onFix={(edit) => vscode.postMessage({ type: 'applyEdit', edit, text: state.text })} />
 
       <div className="columns">
         <section className="setup">

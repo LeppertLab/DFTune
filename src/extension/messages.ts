@@ -2,7 +2,7 @@
 // The INCAR text is the single source of truth: the webview never edits it directly,
 // it asks the extension to apply tag changes, and then receives the new text.
 
-import type { KpointsInfo, PoscarInfo, PotcarEntry, TagChanges } from '../core';
+import type { KpointsInfo, PoscarInfo, PotcarEntry, TagChanges, TextEdit } from '../core';
 
 export type ToWebview = {
   type: 'update';
@@ -18,4 +18,6 @@ export type ToWebview = {
 export type FromWebview =
   | { type: 'ready' }
   | { type: 'setTags'; changes: TagChanges; label?: string }
-  | { type: 'reveal'; offset: number; end?: number };
+  | { type: 'reveal'; offset: number; end?: number }
+  /** A quick fix, computed by the webview on the text it last received. */
+  | { type: 'applyEdit'; edit: TextEdit; text: string };

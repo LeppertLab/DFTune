@@ -186,9 +186,15 @@ button.icon-button:hover {
   padding: 2px 0;
 }
 
-.diagnostics li button:hover {
+.diagnostics li button.link:hover {
   background: none;
   text-decoration: underline;
+}
+
+.diagnostics li button.fix {
+  margin-left: 8px;
+  padding: 1px 8px;
+  font-size: 0.9em;
 }
 
 .diagnostics .error .icon {

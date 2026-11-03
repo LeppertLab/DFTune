@@ -3,7 +3,7 @@
 ## 0.5.0 (2026-11-03)
 
 ### Changed
-- Renamed from *Project Electrons* to **DFTune**, now at [LeppertLab/DFTune](https://github.com/LeppertLab/DFTune). The extension ID changed to `leppertlab.dftune`: uninstall the old *Project Electrons* extension after installing this one.
+- Renamed from *Project Electrons* to **DFTune**, now at [LeppertLab/DFTune](https://github.com/LeppertLab/DFTune). The extension ID changed to `DaanHolleman.dftune`: uninstall the old *Project Electrons* extension after installing this one.
 - Commands, the builder and settings use the `dftune.` prefix; `projectElectrons.format.*` settings become `dftune.format.*`.
 - Tag groups reorganized: *General* is gone; PREC, ENCUT, NBANDS, KSPACING, ISYM and similar are in **Electronic structure** (formerly *Electronic minimization*), ISTART, ICHARG and the output switches in **Flow control** (formerly *Output files & DOS*), which comes last. New **Many-body (GW, BSE, RPA)** group; *Linear response & dipoles* is now *Response properties*.
 - Licensed under MIT; the tag descriptions from the VASP Wiki are under the GNU FDL 1.2.

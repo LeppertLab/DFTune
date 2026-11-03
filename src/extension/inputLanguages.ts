@@ -1,27 +1,43 @@
 // Plain-text support for the positional input files (KPOINTS, POSCAR/CONTCAR): diagnostics in
-// the Problems panel, Format Document and hovers.
+// the Problems panel, Format Document and hovers. Both are checked against their neighbours:
+// KPOINTS against the POSCAR (cell), POSCAR against the POTCAR (elements).
 
 import * as vscode from 'vscode';
-import { formatKpoints, formatPoscar, minimalEdit, parseKpoints, parsePoscar, poscarHover, type Diagnostic } from '../core';
+import { formatKpoints, formatPoscar, kpointsHover, lintKpoints, lintPoscar, minimalEdit, parsePoscar, poscarHover, type Diagnostic } from '../core';
+import { FolderWatch, findPoscar, findPotcar } from './inputs';
 import { toVscodeDiagnostics } from './language';
+
+type HoverResult = { markdown: string; start: number; end: number } | undefined;
 
 interface InputLanguage {
   id: string;
   /** Shown as the diagnostics' source and in messages. */
   label: string;
-  lint: (text: string) => Diagnostic[];
+  lint: (text: string, uri: vscode.Uri) => Promise<Diagnostic[]>;
   format: (text: string) => string | undefined;
-  hover?: (text: string, offset: number) => { markdown: string; start: number; end: number } | undefined;
+  hover: (text: string, offset: number, uri: vscode.Uri) => Promise<HoverResult>;
+}
+
+/** The cell of the POSCAR next to `uri`, when it could be read completely. */
+async function cellNear(uri: vscode.Uri) {
+  const info = (await findPoscar(uri))?.info;
+  return info?.lattice && info.volume ? { lattice: info.lattice, volume: info.volume } : undefined;
 }
 
 const LANGUAGES: InputLanguage[] = [
-  { id: 'kpoints', label: 'KPOINTS', lint: (t) => parseKpoints(t).diagnostics, format: formatKpoints },
+  {
+    id: 'kpoints',
+    label: 'KPOINTS',
+    lint: async (text, uri) => lintKpoints(text, await cellNear(uri)),
+    format: formatKpoints,
+    hover: async (text, offset, uri) => kpointsHover(text, offset, await cellNear(uri)),
+  },
   {
     id: 'poscar',
     label: 'POSCAR',
-    lint: (t) => parsePoscar(t).diagnostics,
+    lint: async (text, uri) => lintPoscar(text, (await findPotcar(uri))?.info),
     format: formatPoscar,
-    hover: (t, offset) => poscarHover(parsePoscar(t), offset),
+    hover: async (text, offset) => poscarHover(parsePoscar(text), offset),
   },
 ];
 
@@ -37,20 +53,33 @@ function register(context: vscode.ExtensionContext, lang: InputLanguage) {
     if (doc.languageId !== lang.id) return;
     const key = doc.uri.toString();
     clearTimeout(timers.get(key));
-    timers.set(key, setTimeout(() => {
+    timers.set(key, setTimeout(async () => {
       timers.delete(key);
+      const diagnostics = await lang.lint(doc.getText(), doc.uri);
       if (doc.isClosed) return;
-      collection.set(doc.uri, toVscodeDiagnostics(doc, lang.lint(doc.getText()), lang.label));
+      collection.set(doc.uri, toVscodeDiagnostics(doc, diagnostics, lang.label));
     }, 250));
   };
+  // A neighbouring input file changed on disk: recheck the open files of this language there.
+  const folders = new FolderWatch((dir) => {
+    for (const d of vscode.workspace.textDocuments) if (FolderWatch.dirOf(d.uri) === dir) refresh(d);
+  });
+  const open = (doc: vscode.TextDocument) => {
+    if (doc.languageId !== lang.id) return;
+    folders.track(doc.uri);
+    refresh(doc);
+  };
 
-  for (const doc of vscode.workspace.textDocuments) refresh(doc);
+  vscode.workspace.textDocuments.forEach(open);
 
   context.subscriptions.push(
     collection,
-    vscode.workspace.onDidOpenTextDocument(refresh),
+    folders,
+    vscode.workspace.onDidOpenTextDocument(open),
     vscode.workspace.onDidChangeTextDocument((e) => refresh(e.document)),
     vscode.workspace.onDidCloseTextDocument((doc) => {
+      if (doc.languageId !== lang.id) return;
+      folders.untrack(doc.uri);
       clearTimeout(timers.get(doc.uri.toString()));
       timers.delete(doc.uri.toString());
       collection.delete(doc.uri);
@@ -67,16 +96,11 @@ function register(context: vscode.ExtensionContext, lang: InputLanguage) {
         return edit ? [vscode.TextEdit.replace(new vscode.Range(doc.positionAt(edit.start), doc.positionAt(edit.end)), edit.text)] : [];
       },
     }),
+    vscode.languages.registerHoverProvider(lang.id, {
+      async provideHover(doc, position) {
+        const h = await lang.hover(doc.getText(), doc.offsetAt(position), doc.uri);
+        return h && new vscode.Hover(new vscode.MarkdownString(h.markdown), new vscode.Range(doc.positionAt(h.start), doc.positionAt(h.end)));
+      },
+    }),
   );
-  if (lang.hover) {
-    const hover = lang.hover;
-    context.subscriptions.push(
-      vscode.languages.registerHoverProvider(lang.id, {
-        provideHover(doc, position) {
-          const h = hover(doc.getText(), doc.offsetAt(position));
-          return h && new vscode.Hover(new vscode.MarkdownString(h.markdown), new vscode.Range(doc.positionAt(h.start), doc.positionAt(h.end)));
-        },
-      }),
-    );
-  }
 }

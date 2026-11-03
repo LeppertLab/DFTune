@@ -11,6 +11,7 @@ import {
   entryAt,
   formatIncar,
   knownTag,
+  kspacingMesh,
   minimalEdit,
   parseIncar,
   tagDef,
@@ -21,7 +22,7 @@ import {
   type KnownTag,
   type TagDef,
 } from '../core';
-import { findInputs, watchInputs } from './inputs';
+import { FolderWatch, findInputs, findPoscar } from './inputs';
 
 const SEVERITY: Record<Diagnostic['severity'], vscode.DiagnosticSeverity> = {
   error: vscode.DiagnosticSeverity.Error,
@@ -40,37 +41,18 @@ export function registerLanguageFeatures(context: vscode.ExtensionContext) {
     clearTimeout(timers.get(key));
     timers.set(key, setTimeout(async () => {
       timers.delete(key);
-      const { poscar, kpoints } = await findInputs(doc.uri);
-      const diagnostics = validate(parseIncar(doc.getText()), { poscar: poscar?.info, kpoints: kpoints?.info ?? null });
+      const { poscar, kpoints, potcar } = await findInputs(doc.uri);
+      if (doc.isClosed) return;
+      const diagnostics = validate(parseIncar(doc.getText()), { poscar: poscar?.info, kpoints: kpoints?.info ?? null, potcar: potcar?.info });
       collection.set(doc.uri, toVscodeDiagnostics(doc, diagnostics));
     }, 250));
   };
 
-  // Watch POSCAR/KPOINTS only in folders with an open INCAR: a workspace-wide watcher can be
-  // expensive on large cluster file systems (GPFS, Lustre).
-  const watchers = new Map<string, { watcher: vscode.Disposable; docs: Set<string> }>();
-  const dirOf = (uri: vscode.Uri) => vscode.Uri.joinPath(uri, '..');
-  const track = (doc: vscode.TextDocument) => {
-    if (doc.languageId !== 'incar') return;
-    const dir = dirOf(doc.uri);
-    let entry = watchers.get(dir.toString());
-    if (!entry) {
-      // A POSCAR or KPOINTS changed: recheck the INCARs open in that folder.
-      const watcher = watchInputs(() => {
-        for (const d of vscode.workspace.textDocuments) if (dirOf(d.uri).toString() === dir.toString()) refresh(d);
-      }, dir);
-      entry = { watcher, docs: new Set() };
-      watchers.set(dir.toString(), entry);
-    }
-    entry.docs.add(doc.uri.toString());
-  };
-  const untrack = (doc: vscode.TextDocument) => {
-    const key = dirOf(doc.uri).toString();
-    const entry = watchers.get(key);
-    if (!entry?.docs.delete(doc.uri.toString()) || entry.docs.size) return;
-    entry.watcher.dispose();
-    watchers.delete(key);
-  };
+  // A POSCAR, KPOINTS or POTCAR changed on disk: recheck the INCARs open in that folder.
+  const folders = new FolderWatch((dir) => {
+    for (const d of vscode.workspace.textDocuments) if (FolderWatch.dirOf(d.uri) === dir) refresh(d);
+  });
+  const track = (doc: vscode.TextDocument) => doc.languageId === 'incar' && folders.track(doc.uri);
 
   for (const doc of vscode.workspace.textDocuments) {
     track(doc);
@@ -79,14 +61,16 @@ export function registerLanguageFeatures(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     collection,
-    { dispose: () => watchers.forEach((e) => e.watcher.dispose()) },
+    folders,
     vscode.workspace.onDidOpenTextDocument((doc) => {
       track(doc);
       refresh(doc);
     }),
     vscode.workspace.onDidChangeTextDocument((e) => refresh(e.document)),
     vscode.workspace.onDidCloseTextDocument((doc) => {
-      untrack(doc);
+      if (doc.languageId === 'incar') folders.untrack(doc.uri);
+      clearTimeout(timers.get(doc.uri.toString()));
+      timers.delete(doc.uri.toString());
       collection.delete(doc.uri);
     }),
     vscode.languages.registerHoverProvider('incar', { provideHover }),
@@ -166,15 +150,29 @@ function provideDocumentFormattingEdits(doc: vscode.TextDocument): vscode.TextEd
   return edit ? [vscode.TextEdit.replace(new vscode.Range(doc.positionAt(edit.start), doc.positionAt(edit.end)), edit.text)] : [];
 }
 
-function provideHover(doc: vscode.TextDocument, position: vscode.Position): vscode.Hover | undefined {
+async function provideHover(doc: vscode.TextDocument, position: vscode.Position): Promise<vscode.Hover | undefined> {
   const parsed = parseIncar(doc.getText());
   const entry = entryAt(parsed, doc.offsetAt(position));
   if (!entry) return undefined;
   const range = new vscode.Range(doc.positionAt(entry.keySpan.start), doc.positionAt(entry.keySpan.end));
   const def = tagDef(entry.key);
-  if (def) return new vscode.Hover(tagMarkdown(def, entry.value), range);
+  if (def) {
+    const md = tagMarkdown(def, entry.value);
+    if (entry.key === 'KSPACING') await appendKspacingMesh(md, doc.uri, entry.value);
+    return new vscode.Hover(md, range);
+  }
   const known = knownTag(entry.key);
   return known ? new vscode.Hover(knownTagMarkdown(known), range) : undefined;
+}
+
+/** The mesh KSPACING gives for the POSCAR next to the INCAR. */
+async function appendKspacingMesh(md: vscode.MarkdownString, incar: vscode.Uri, value: string) {
+  const kspacing = Number(value);
+  const poscar = await findPoscar(incar);
+  const cell = poscar?.info;
+  if (!(kspacing > 0) || !poscar || !cell?.lattice || !cell.volume) return;
+  const mesh = kspacingMesh({ lattice: cell.lattice, volume: cell.volume }, kspacing);
+  md.appendMarkdown(`\n\n---\n\nFor ${poscar.fileName}: a ${mesh.join(' × ')} mesh (${mesh[0] * mesh[1] * mesh[2]} k points before symmetry), unless a KPOINTS file is present.`);
 }
 
 function provideCompletionItems(doc: vscode.TextDocument, position: vscode.Position): vscode.CompletionItem[] {

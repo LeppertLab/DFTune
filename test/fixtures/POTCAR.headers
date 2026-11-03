@@ -1,0 +1,17 @@
+  PAW_PBE Fe_pv 02Aug2007
+ 14.0000000000000000
+ parameters from PSCTR are:
+   VRHFIN =Fe: 3p4s3d
+   TITEL  = PAW_PBE Fe_pv 02Aug2007
+   POMASS =   55.847; ZVAL   =   14.000    mass and valenz
+   ENMAX  =  293.238; ENMIN  =  219.929 eV
+ (synthetic test file: header lines only, no potential data)
+ End of Dataset
+  PAW_PBE O 08Apr2002
+ 6.00000000000000000
+ parameters from PSCTR are:
+   VRHFIN =O: s2p4
+   TITEL  = PAW_PBE O 08Apr2002
+   POMASS =   16.000; ZVAL   =    6.000    mass and valenz
+   ENMAX  =  400.000; ENMIN  =  300.000 eV
+ End of Dataset

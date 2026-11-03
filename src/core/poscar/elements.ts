@@ -9,7 +9,13 @@ export const ELEMENTS = (
 
 const BY_LOWER = new Map(ELEMENTS.map((e) => [e.toLowerCase(), e]));
 
-/** The element a POSCAR or POTCAR species name stands for: "Fe_pv" or "Fe/3a4b…" → "Fe"; undefined if none. */
+/**
+ * The element a POSCAR or POTCAR species name stands for: "Fe_pv", "Fe/3a4b…", "Fe1" (a sublattice
+ * label) or "H1.25" (a fractional-charge hydrogen) → "Fe"/"H"; undefined if none. Two-letter
+ * symbols are tried first, as VASP reads at most two characters.
+ */
 export function elementOf(name: string): string | undefined {
-  return BY_LOWER.get(name.split(/[/_.]/)[0].toLowerCase());
+  const letters = name.match(/^[A-Za-z]{1,2}/)?.[0].toLowerCase();
+  if (!letters) return undefined;
+  return BY_LOWER.get(letters) ?? (letters.length === 2 ? BY_LOWER.get(letters[0]) : undefined);
 }

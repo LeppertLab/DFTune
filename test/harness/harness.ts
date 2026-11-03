@@ -1,7 +1,7 @@
 // Runs the builder webview in a plain browser by standing in for the extension host:
 // it serves a fixture INCAR/POSCAR and applies `setTags` messages with the same core code.
 
-import { readKpoints, readPoscar, setTags } from '../../src/core';
+import { readKpoints, readPoscar, readPotcar, setTags } from '../../src/core';
 import type { FromWebview, ToWebview } from '../../src/extension/messages';
 
 declare global {
@@ -23,6 +23,9 @@ async function main() {
   const kpointsName = params.get('kpoints') ?? 'KPOINTS';
   const kpointsResponse = kpointsName === 'none' ? undefined : await fetch(`/test/fixtures/${kpointsName}`);
   const kpointsInfo = kpointsResponse?.ok ? readKpoints(await kpointsResponse.text()) : undefined;
+  // ?potcar=none simulates a directory without a POTCAR.
+  const potcarResponse = params.get('potcar') === 'none' ? undefined : await fetch('/test/fixtures/POTCAR.headers');
+  const potcarEntries = potcarResponse?.ok ? readPotcar(await potcarResponse.text()) : undefined;
   let state: unknown;
 
   const send = () => {
@@ -32,6 +35,7 @@ async function main() {
       fileName: `test/fixtures/${incarName}`,
       poscar: poscarInfo && { ...poscarInfo, fileName: 'POSCAR' },
       kpoints: kpointsInfo ? { ...kpointsInfo, fileName: kpointsName } : null,
+      potcar: potcarEntries && { fileName: 'POTCAR', entries: potcarEntries },
     };
     window.postMessage(message, '*');
   };

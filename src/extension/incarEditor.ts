@@ -24,13 +24,14 @@ export class IncarEditorProvider implements vscode.CustomTextEditorProvider {
     panel.webview.html = this.html(panel.webview, dist);
 
     const post = async () => {
-      const { poscar, kpoints } = await findInputs(document.uri);
+      const { poscar, kpoints, potcar } = await findInputs(document.uri);
       const message: ToWebview = {
         type: 'update',
         text: document.getText(),
         fileName: vscode.workspace.asRelativePath(document.uri),
         poscar: poscar && { ...poscar.info, fileName: poscar.fileName },
         kpoints: kpoints ? { ...kpoints.info, fileName: kpoints.fileName } : null,
+        potcar: potcar && { fileName: potcar.fileName, entries: potcar.info },
       };
       panel.webview.postMessage(message);
     };

@@ -1,4 +1,7 @@
-// Reads just enough of a POSCAR/CONTCAR to size per-atom and per-species INCAR arrays.
+// Reads just enough of a POSCAR/CONTCAR to size per-atom and per-species INCAR arrays, plus the
+// cell when the file is complete. Tolerant: the header alone is enough.
+
+import { parsePoscar } from './parse';
 
 export interface PoscarInfo {
   comment: string;
@@ -6,9 +9,19 @@ export interface PoscarInfo {
   species?: string[];
   counts: number[];
   nions: number;
+  /** Scaled lattice vectors (Å) and cell volume, when the whole file could be read. */
+  lattice?: [[number, number, number], [number, number, number], [number, number, number]];
+  volume?: number;
 }
 
 export function readPoscar(text: string): PoscarInfo | undefined {
+  const info = readHeader(text);
+  if (!info) return undefined;
+  const s = parsePoscar(text).structure;
+  return s ? { ...info, lattice: s.lattice, volume: s.volume } : info;
+}
+
+function readHeader(text: string): PoscarInfo | undefined {
   const lines = text.split(/\r?\n/);
   if (lines.length < 7) return undefined;
   const words = (i: number) => (lines[i] ?? '').trim().split(/\s+/).filter(Boolean);

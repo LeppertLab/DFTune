@@ -5,6 +5,8 @@ import { meshSize, type KpointsInfo } from '../kpoints/read';
 import { expandArray, parseBool, parseInt_, parseReal } from '../incar/values';
 import { effective, tagReader, type TagReader } from '../intents/reader';
 import type { PoscarInfo } from '../poscar/read';
+import { potcarMismatch } from '../potcar/check';
+import type { PotcarEntry } from '../potcar/read';
 import { TAGS, tagDef } from '../tags/definitions';
 import { KNOWN_TAG_NAMES, knownTag, wikiValueType } from '../tags/known';
 import type { TagDef } from '../tags/schema';
@@ -24,6 +26,8 @@ export interface ValidationContext {
   poscar?: PoscarInfo;
   /** The KPOINTS file next to the INCAR; null when there is none, undefined when not looked up. */
   kpoints?: KpointsInfo | null;
+  /** Datasets of the POTCAR next to the INCAR (headers only); undefined when there is none. */
+  potcar?: PotcarEntry[];
 }
 
 export function validate(doc: IncarDoc, ctx: ValidationContext = {}): Diagnostic[] {
@@ -136,6 +140,13 @@ export function sameValue(def: TagDef, a: string, b: string): boolean {
   }
 }
 
+/** The POTCAR dataset with the largest ENMAX. */
+function maxEnmax(potcar: PotcarEntry[] | undefined): { enmax: number; symbol: string } | undefined {
+  let best: { enmax: number; symbol: string } | undefined;
+  for (const p of potcar ?? []) if (p.enmax !== undefined && (!best || p.enmax > best.enmax)) best = { enmax: p.enmax, symbol: p.symbol };
+  return best;
+}
+
 /** Too few values stop VASP while reading the INCAR; extra values are silently ignored. */
 function lengthSeverity(actual: number, expected: number): { severity: Severity } {
   return { severity: actual < expected ? 'error' : 'warning' };
@@ -196,10 +207,45 @@ const RULES: Rule[] = [
     }
   },
   // Pulay stress in cell relaxations.
-  (r, _ctx, out) => {
+  (r, ctx, out) => {
     const isif = effective.isif(r);
-    if ((effective.isRelaxation(r) || effective.isMD(r)) && [3, 6, 7, 8].includes(isif) && !r.has('ENCUT')) {
-      out.push({ code: 'pulay', severity: 'warning', tag: 'ISIF', message: 'Volume changes with the default ENCUT suffer from Pulay stress: set ENCUT ≈ 1.3 × ENMAX of the POTCAR.' });
+    if (!(effective.isRelaxation(r) || effective.isMD(r)) || ![3, 6, 7, 8].includes(isif)) return;
+    const top = maxEnmax(ctx.potcar);
+    const target = top && `${Math.ceil((1.3 * top.enmax) / 10) * 10}`;
+    if (!r.has('ENCUT')) {
+      out.push({
+        code: 'pulay',
+        severity: 'warning',
+        tag: 'ISIF',
+        message: top
+          ? `Volume changes with the default ENCUT (${top.enmax} eV, ${top.symbol}) suffer from Pulay stress: set ENCUT ≈ ${target} (1.3 × ENMAX).`
+          : 'Volume changes with the default ENCUT suffer from Pulay stress: set ENCUT ≈ 1.3 × ENMAX of the POTCAR.',
+      });
+    } else if (top && (r.num('ENCUT') ?? Infinity) < 1.2 * top.enmax) {
+      out.push({ code: 'pulay', severity: 'info', tag: 'ENCUT', message: `Cell relaxation with ENCUT = ${r.raw('ENCUT')} < 1.2 × ENMAX (${top.enmax} eV, ${top.symbol}): the stress has a Pulay error. About ${target} eV is safer.` });
+    }
+  },
+  // ENCUT vs. the POTCAR.
+  (r, ctx, out) => {
+    const top = maxEnmax(ctx.potcar);
+    const encut = r.num('ENCUT');
+    if (top && encut !== undefined && encut < top.enmax) {
+      out.push({ code: 'encut-below-enmax', severity: 'warning', tag: 'ENCUT', message: `ENCUT = ${r.raw('ENCUT')} eV is below the largest ENMAX in the POTCAR (${top.enmax} eV, ${top.symbol}): the basis set is not converged for that element.` });
+    }
+  },
+  // POTCAR vs. POSCAR.
+  (_r, ctx, out) => {
+    if (!ctx.potcar || !ctx.poscar) return;
+    const problem = potcarMismatch(ctx.potcar, ctx.poscar.species, ctx.poscar.counts.length);
+    if (problem) out.push({ code: 'potcar-mismatch', severity: 'error', span: { start: 0, end: 0 }, message: problem });
+  },
+  // Machine-learned force fields tell species apart by their POSCAR names.
+  (r, ctx, out) => {
+    const species = ctx.poscar?.species;
+    if (r.bool('ML_LMLFF') !== true || !species) return;
+    const dup = species.filter((s, i) => species.indexOf(s) !== i);
+    if (dup.length) {
+      out.push({ code: 'mlff-duplicate-species', severity: 'error', tag: 'ML_LMLFF', message: `Machine-learned force fields need a distinct name for every species in the POSCAR; ${[...new Set(dup)].join(', ')} appears more than once. Merge those groups or rename them.` });
     }
   },
   // Smearing choices.

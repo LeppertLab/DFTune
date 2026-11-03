@@ -27,7 +27,11 @@ Typos (`ENCTU` → did you mean `ENCUT`?), tags VASP doesn't know (it silently i
 
 With a KPOINTS file it also checks: `KSPACING` ignored because KPOINTS exists, no KPOINTS and no `KSPACING` (default mesh), line-mode KPOINTS without `ICHARG = 11`, and tetrahedron smearing with a Monkhorst–Pack mesh or fewer than 4 k points.
 
-POSCAR and KPOINTS are found next to the INCAR (`POSCAR.relax` for `INCAR.relax`, otherwise `POSCAR`; likewise for KPOINTS).
+With a POTCAR (only its header lines are read): the elements and their order against the POSCAR (a POTCAR in the wrong order runs without complaint and silently uses the wrong potentials), `ENCUT` below the largest `ENMAX`, and a concrete cutoff (1.3 × `ENMAX`) for cell relaxations. With a POSCAR: machine-learned force fields (`ML_LMLFF`) with the same element name used for two species groups. Hovering `KSPACING` shows the mesh it gives for the POSCAR, and the builder header lists the POTCARs and that mesh.
+
+KPOINTS is also checked against the POSCAR: an even Monkhorst–Pack mesh on a hexagonal cell, and a mesh that is much finer in one direction than in the others (e.g. 8 × 8 × 8 for a slab). Hovering a KPOINTS line explains it; on the mesh line you also get the number of k points, the spacing in Å⁻¹ and the equivalent `KSPACING`; on a fully automatic length, the mesh it gives.
+
+The files of one calculation are found in the same folder: `POSCAR.relax` for `INCAR.relax` (or `KPOINTS.relax`), otherwise `POSCAR`; likewise for KPOINTS and POTCAR. They are rechecked when one of them changes on disk.
 
 Known tags are the ~600 INCAR tags on the VASP wiki (including numbered families such as `LIBXC1_Pn` and grouped tags such as `KERNEL_TRUNCATION/LTRUNCATE`), their wiki redirects (older names such as `ML_FF_*`), and the tags of the VTST and VASPsol patches.
 

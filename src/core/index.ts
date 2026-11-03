@@ -44,3 +44,8 @@ export * from './poscar/elements';
 export * from './poscar/parse';
 export * from './poscar/format';
 export * from './poscar/hover';
+export * from './poscar/geometry';
+export * from './potcar/read';
+export * from './kpoints/context';
+export * from './potcar/check';
+export * from './poscar/lint';

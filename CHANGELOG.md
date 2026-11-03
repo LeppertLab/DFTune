@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.8.0 (2026-11-03)
+
+### Added
+- POTCAR checks (only the header lines are read): elements and their order against the POSCAR, in both the INCAR and the POSCAR; `ENCUT` below the largest `ENMAX`; the Pulay-stress note for cell relaxations now names a cutoff (1.3 × `ENMAX`), and also flags a set `ENCUT` below 1.2 × `ENMAX`. The builder header lists the POTCARs.
+- KPOINTS vs. POSCAR: an even Monkhorst–Pack mesh on a hexagonal cell is a warning (the generic note is dropped for other cells), and a mesh much finer in one direction than the others is noted with a balanced alternative.
+- Hovers in KPOINTS: what each line means; on the mesh, the number of k points, the spacing in Å⁻¹ and the equivalent `KSPACING`; on a fully automatic length, the resulting mesh.
+- `KSPACING` hover in the INCAR, and the builder header, show the mesh it gives for the POSCAR.
+- `ML_LMLFF = .TRUE.` with the same element name for two species groups in the POSCAR is an error (VASP requires distinct names).
+
+### Changed
+- KPOINTS and POSCAR files find their neighbours like the INCAR does (`POSCAR.relax` for `KPOINTS.relax`, …) and are rechecked when those change on disk.
+- Element names such as `Fe1` (sublattice labels) and `H1.25` (fractional hydrogen) are recognized.
+
 ## 0.7.0 (2026-11-03)
 
 ### Added

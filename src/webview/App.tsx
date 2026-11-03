@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { INTENTS, describeKpoints, parseIncar, tagGroup, tagReader, validate, type TagChanges } from '../core';
+import { INTENTS, describeKpoints, kspacingMesh, parseIncar, potcarSymbols, tagGroup, tagReader, validate, type TagChanges } from '../core';
 import type { ToWebview } from '../extension/messages';
 import { Diagnostics } from './components/Diagnostics';
 import { GroupCard } from './components/GroupCard';
@@ -25,7 +25,7 @@ export function App() {
   const derived = useMemo(() => {
     if (!state) return undefined;
     const doc = parseIncar(state.text);
-    return { doc, reader: tagReader(doc), diagnostics: validate(doc, { poscar: state.poscar, kpoints: state.kpoints }) };
+    return { doc, reader: tagReader(doc), diagnostics: validate(doc, { poscar: state.poscar, kpoints: state.kpoints, potcar: state.potcar?.entries }) };
   }, [state]);
 
   if (!state || !derived) return <div className="loading">Loading INCAR…</div>;
@@ -50,8 +50,9 @@ export function App() {
           <div className="muted">
             {state.kpoints
               ? `${state.kpoints.fileName}: ${describeKpoints(state.kpoints)}`
-              : `No KPOINTS: mesh from KSPACING = ${reader.raw('KSPACING') ? `${reader.raw('KSPACING')} Å⁻¹` : '0.5 Å⁻¹ (default)'}`}
+              : `No KPOINTS: mesh from KSPACING = ${reader.raw('KSPACING') ? `${reader.raw('KSPACING')} Å⁻¹` : '0.5 Å⁻¹ (default)'}${kspacingText(state.poscar, reader.num('KSPACING') ?? 0.5)}`}
           </div>
+          <div className="muted">{potcarText(state.potcar)}</div>
         </div>
         <button className="secondary" onClick={() => reveal(0)} title="Show the INCAR text beside the builder">
           Show text
@@ -78,4 +79,17 @@ export function App() {
       </div>
     </div>
   );
+}
+
+/** " → 6 × 6 × 6 for this POSCAR", when the cell is known. */
+function kspacingText(poscar: State['poscar'], kspacing: number): string {
+  if (!poscar?.lattice || !poscar.volume || !(kspacing > 0)) return '';
+  return ` → ${kspacingMesh({ lattice: poscar.lattice, volume: poscar.volume }, kspacing).join(' × ')} for this POSCAR`;
+}
+
+function potcarText(potcar: State['potcar']): string {
+  if (!potcar) return 'No POTCAR next to this INCAR: element order and ENCUT are not checked against it.';
+  const enmax = potcar.entries.map((e) => e.enmax).filter((x): x is number => x !== undefined);
+  const kinds = [...new Set(potcar.entries.map((e) => e.kind))].join(', ');
+  return `${potcar.fileName}: ${potcarSymbols(potcar.entries)} (${kinds})${enmax.length ? ` · ENMAX up to ${Math.max(...enmax)} eV` : ''}`;
 }

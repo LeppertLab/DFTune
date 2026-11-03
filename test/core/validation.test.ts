@@ -15,7 +15,8 @@ const codes = (text: string, p?: PoscarInfo) => validate(parseIncar(text), { pos
 
 describe('POSCAR', () => {
   it('reads species and counts', () => {
-    expect(poscar).toEqual({ comment: 'Fe3O4 primitive', species: ['Fe', 'O'], counts: [6, 8], nions: 14 });
+    expect(poscar).toMatchObject({ comment: 'Fe3O4 primitive', species: ['Fe', 'O'], counts: [6, 8], nions: 14 });
+    expect(poscar.volume).toBeCloseTo(5.937 * 5.14155 * 4.84755, 3);
   });
 
   it('reads VASP 4 files and hashed species names', () => {

@@ -1,3 +1,5 @@
+<p align="center"><img src="images/icon.png" alt="DFTune logo" width="128"></p>
+
 # DFTune
 
 A VS Code extension for setting up DFT calculations by **physical intent** (calculation type, functional, magnetism, smearing, accuracy, DFT+U) instead of remembering tags and magic numbers. It currently supports VASP INCAR files; Quantum ESPRESSO is planned.

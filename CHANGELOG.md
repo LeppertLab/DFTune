@@ -1,9 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.5.2 (2026-11-03)
 
 ### Added
-- Extension icon.
+- Extension icon, also shown at the top of the README.
 
 ## 0.5.1 (2026-11-04)
 

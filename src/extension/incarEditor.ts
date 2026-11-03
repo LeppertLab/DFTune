@@ -3,7 +3,7 @@ import { minimalEdit, setTags } from '../core';
 import type { FromWebview, ToWebview } from './messages';
 import { findInputs, watchInputs } from './inputs';
 
-export const VIEW_TYPE = 'projectElectrons.incarBuilder';
+export const VIEW_TYPE = 'dftune.incarBuilder';
 
 /**
  * The INCAR builder: a webview bound to the INCAR text document. All edits go through

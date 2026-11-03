@@ -5,8 +5,8 @@ import { findPoscar } from './inputs';
 
 export function registerCommands(context: vscode.ExtensionContext) {
   context.subscriptions.push(
-    vscode.commands.registerCommand('projectElectrons.openBuilder', openBuilder),
-    vscode.commands.registerCommand('projectElectrons.newCalculation', newCalculation),
+    vscode.commands.registerCommand('dftune.openBuilder', openBuilder),
+    vscode.commands.registerCommand('dftune.newCalculation', newCalculation),
   );
 }
 

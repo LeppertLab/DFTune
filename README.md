@@ -1,6 +1,6 @@
-# Project Electrons: VASP INCAR Builder
+# DFTune
 
-A VS Code extension for setting up VASP calculations by **physical intent** (calculation type, functional, magnetism, smearing, accuracy, DFT+U) instead of remembering tags and magic numbers.
+A VS Code extension for setting up DFT calculations by **physical intent** (calculation type, functional, magnetism, smearing, accuracy, DFT+U) instead of remembering tags and magic numbers. It currently supports VASP INCAR files; Quantum ESPRESSO is planned.
 
 It is built for the usual HPC workflow: VS Code connected to a cluster with **Remote-SSH**. The extension runs on the cluster (`extensionKind: workspace`) and edits the INCAR in place, so no files are copied back and forth. The builder UI is bundled locally and needs no internet access.
 
@@ -13,7 +13,7 @@ It is built for the usual HPC workflow: VS Code connected to a cluster with **Re
   - Live checks (see below).
 - **The INCAR text stays the source of truth.** The builder applies minimal text edits, so comments, alignment, tag order and unknown tags survive. Undo/redo, git diffs and the plain text editor all stay in sync, and typing in the text updates the builder.
 - **Plain-text support** for people who prefer the editor: syntax highlighting, hover docs, completion of tags and values, and diagnostics in the Problems panel.
-- **Format Document** (Alt+Shift+F) tidies an INCAR, e.g. one written by pymatgen: one statement per line, tag names in upper case, tags grouped by category under `# Category` headers, `=` signs and trailing comments aligned. Values and comments are kept exactly; hand-written section headings on the same topic replace the default headers. It refuses to run while the file has syntax problems. Each step can be switched off in the settings (`projectElectrons.format.*`).
+- **Format Document** (Alt+Shift+F) tidies an INCAR, e.g. one written by pymatgen: one statement per line, tag names in upper case, tags grouped by category under `# Category` headers, `=` signs and trailing comments aligned. Values and comments are kept exactly; hand-written section headings on the same topic replace the default headers. It refuses to run while the file has syntax problems. Each step can be switched off in the settings (`dftune.format.*`).
 - **New VASP Calculation…** (right-click a folder): answer a few quick picks and get a commented INCAR.
 
 ### Checks
@@ -52,7 +52,7 @@ Tag defaults follow the [VASP wiki](https://vasp.at/wiki) for VASP 6. To add a t
 
 ## Installing on a cluster
 
-Download the `.vsix` from the [latest release](https://github.com/LeppertLab/project-electrons/releases/latest), or build it yourself (`npm run package`). Then, in a VS Code window connected over Remote-SSH, run *Extensions: Install from VSIX…*. VS Code installs it on the remote host.
+Download the `.vsix` from the [latest release](https://github.com/LeppertLab/dftune/releases/latest), or build it yourself (`npm run package`). Then, in a VS Code window connected over Remote-SSH, run *Extensions: Install from VSIX…*. VS Code installs it on the remote host.
 
 ## License
 

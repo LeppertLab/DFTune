@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+- Renamed from *Project Electrons* to **DFTune**, now at [LeppertLab/dftune](https://github.com/LeppertLab/dftune). The extension ID changed to `leppertlab.dftune`: uninstall the old *Project Electrons* extension after installing this one.
+- Commands, the builder and settings use the `dftune.` prefix; `projectElectrons.format.*` settings become `dftune.format.*`.
+- Licensed under MIT; the tag descriptions from the VASP Wiki are under the GNU FDL 1.2.
+
 ## 0.4.0 (2026-11-02)
 
 ### Added

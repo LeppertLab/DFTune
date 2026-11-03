@@ -1,17 +1,17 @@
 {
-  "name": "project-electrons",
-  "displayName": "Project Electrons: VASP INCAR Builder",
-  "description": "Set up VASP calculations by physical intent instead of raw INCAR tags. Works on remote HPC files over Remote-SSH.",
+  "name": "dftune",
+  "displayName": "DFTune: DFT Input Builder",
+  "description": "Set up DFT calculations by physical intent instead of raw input tags. Supports VASP INCAR files; works on remote HPC files over Remote-SSH.",
   "version": "0.4.0",
-  "publisher": "project-electrons",
+  "publisher": "leppertlab",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/LeppertLab/project-electrons"
+    "url": "https://github.com/LeppertLab/dftune"
   },
-  "homepage": "https://github.com/LeppertLab/project-electrons#readme",
+  "homepage": "https://github.com/LeppertLab/dftune#readme",
   "bugs": {
-    "url": "https://github.com/LeppertLab/project-electrons/issues"
+    "url": "https://github.com/LeppertLab/dftune/issues"
   },
   "private": true,
   "engines": {
@@ -27,7 +27,9 @@
     "DFT",
     "INCAR",
     "HPC",
-    "materials"
+    "materials",
+    "Quantum ESPRESSO",
+    "DFTune"
   ],
   "extensionKind": [
     "workspace"
@@ -61,7 +63,7 @@
     ],
     "customEditors": [
       {
-        "viewType": "projectElectrons.incarBuilder",
+        "viewType": "dftune.incarBuilder",
         "displayName": "INCAR Builder",
         "selector": [
           {
@@ -82,36 +84,36 @@
     ],
     "commands": [
       {
-        "command": "projectElectrons.openBuilder",
+        "command": "dftune.openBuilder",
         "title": "Open INCAR Builder",
         "category": "VASP",
         "icon": "$(settings)"
       },
       {
-        "command": "projectElectrons.newCalculation",
+        "command": "dftune.newCalculation",
         "title": "New VASP Calculation…",
         "category": "VASP"
       }
     ],
     "configuration": {
-      "title": "VASP INCAR",
+      "title": "DFTune",
       "properties": {
-        "projectElectrons.format.groupByCategory": {
+        "dftune.format.groupByCategory": {
           "type": "boolean",
           "default": true,
           "description": "Format Document: sort tags into categories (General, Electronic minimization, …). Off keeps the file order."
         },
-        "projectElectrons.format.categoryHeaders": {
+        "dftune.format.categoryHeaders": {
           "type": "boolean",
           "default": true,
           "description": "Format Document: write a `# Category` comment above each group. A hand-written heading on the same topic is kept instead."
         },
-        "projectElectrons.format.alignEquals": {
+        "dftune.format.alignEquals": {
           "type": "boolean",
           "default": true,
           "description": "Format Document: line up the `=` signs within a group."
         },
-        "projectElectrons.format.alignComments": {
+        "dftune.format.alignComments": {
           "type": "boolean",
           "default": true,
           "description": "Format Document: line up trailing comments within a group."
@@ -121,14 +123,14 @@
     "menus": {
       "editor/title": [
         {
-          "command": "projectElectrons.openBuilder",
+          "command": "dftune.openBuilder",
           "when": "editorLangId == incar",
           "group": "navigation"
         }
       ],
       "explorer/context": [
         {
-          "command": "projectElectrons.newCalculation",
+          "command": "dftune.newCalculation",
           "when": "explorerResourceIsFolder",
           "group": "navigation@90"
         }

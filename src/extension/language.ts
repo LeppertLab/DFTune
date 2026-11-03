@@ -148,7 +148,7 @@ export function knownTagMarkdown(tag: KnownTag): vscode.MarkdownString {
 const PATCH_LABELS: Partial<Record<KnownTag['source'], string>> = { vtst: 'VTST Tools', vaspsol: 'VASPsol' };
 
 function provideDocumentFormattingEdits(doc: vscode.TextDocument): vscode.TextEdit[] {
-  const config = vscode.workspace.getConfiguration('projectElectrons.format', doc.uri);
+  const config = vscode.workspace.getConfiguration('dftune.format', doc.uri);
   const options: FormatOptions = {
     groupByCategory: config.get('groupByCategory', DEFAULT_FORMAT_OPTIONS.groupByCategory),
     categoryHeaders: config.get('categoryHeaders', DEFAULT_FORMAT_OPTIONS.categoryHeaders),

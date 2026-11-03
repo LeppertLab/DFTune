@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.0 (2026-11-03)
+
+### Added
+- KPOINTS files: syntax highlighting, checks in the Problems panel (unreadable numbers, truncated k-point lists, unpaired line-mode points, bad tetrahedra, and a few hints) and Format Document (aligned columns, one spelling of the mode words).
+
 ## 0.5.2 (2026-11-03)
 
 ### Added

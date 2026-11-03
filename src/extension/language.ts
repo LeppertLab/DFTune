@@ -95,12 +95,12 @@ export function registerLanguageFeatures(context: vscode.ExtensionContext) {
   );
 }
 
-export function toVscodeDiagnostics(doc: vscode.TextDocument, diagnostics: Diagnostic[]): vscode.Diagnostic[] {
+export function toVscodeDiagnostics(doc: vscode.TextDocument, diagnostics: Diagnostic[], source = 'INCAR'): vscode.Diagnostic[] {
   return diagnostics.map((d) => {
     const span = d.span ?? { start: 0, end: 0 };
     const range = new vscode.Range(doc.positionAt(span.start), doc.positionAt(span.end));
     const diag = new vscode.Diagnostic(range, d.message, SEVERITY[d.severity]);
-    diag.source = 'INCAR';
+    diag.source = source;
     diag.code = d.tag ? { value: d.code, target: vscode.Uri.parse(wikiUrl(d.tag)) } : d.code;
     return diag;
   });

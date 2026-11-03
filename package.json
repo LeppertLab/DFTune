@@ -1,8 +1,8 @@
 {
   "name": "dftune",
   "displayName": "DFTune: DFT Input Builder",
-  "description": "Set up DFT calculations by physical intent instead of raw input tags. Supports VASP INCAR files; works on remote HPC files over Remote-SSH.",
-  "version": "0.5.2",
+  "description": "Set up DFT calculations by physical intent instead of raw input tags. Supports VASP INCAR files (builder, linting, formatting) and KPOINTS files (linting, formatting); works on remote HPC files over Remote-SSH.",
+  "version": "0.6.0",
   "publisher": "DaanHolleman",
   "icon": "images/icon.png",
   "license": "MIT",
@@ -27,6 +27,7 @@
     "VASP",
     "DFT",
     "INCAR",
+    "KPOINTS",
     "HPC",
     "materials",
     "Quantum ESPRESSO",
@@ -53,6 +54,22 @@
           "*.incar"
         ],
         "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "kpoints",
+        "aliases": [
+          "KPOINTS",
+          "VASP KPOINTS"
+        ],
+        "filenames": [
+          "KPOINTS"
+        ],
+        "filenamePatterns": [
+          "KPOINTS.*",
+          "KPOINTS_*",
+          "*.kpoints"
+        ],
+        "configuration": "./kpoints-language-configuration.json"
       }
     ],
     "grammars": [
@@ -60,6 +77,11 @@
         "language": "incar",
         "scopeName": "source.incar",
         "path": "./syntaxes/incar.tmLanguage.json"
+      },
+      {
+        "language": "kpoints",
+        "scopeName": "source.kpoints",
+        "path": "./syntaxes/kpoints.tmLanguage.json"
       }
     ],
     "customEditors": [

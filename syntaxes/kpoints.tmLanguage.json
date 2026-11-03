@@ -1,0 +1,16 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "KPOINTS",
+  "scopeName": "source.kpoints",
+  "patterns": [
+    { "name": "comment.line.kpoints", "match": "!.*$" },
+    {
+      "name": "constant.numeric.kpoints",
+      "match": "(?<![\\w.])[+-]?(?:\\d+\\.?\\d*|\\.\\d+)(?:[eEdD][+-]?\\d+)?(?![\\w.])"
+    },
+    {
+      "name": "keyword.other.kpoints",
+      "match": "(?i)\\b(?:gamma|monkhorst(?:-pack)?|auto(?:matic)?|line-?mode|reciprocal|cartesian|tetrahedra)\\b"
+    }
+  ]
+}

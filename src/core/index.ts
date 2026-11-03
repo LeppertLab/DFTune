@@ -12,6 +12,8 @@ export * from './intents/definitions';
 export * from './intents/hubbard';
 export * from './poscar/read';
 export * from './kpoints/read';
+export * from './kpoints/parse';
+export * from './kpoints/format';
 export * from './validation/rules';
 
 import { setTags } from './incar/edit';

@@ -50,9 +50,13 @@ npm run package     # build a .vsix
 
 Tag defaults follow the [VASP wiki](https://vasp.at/wiki) for VASP 6. To add a tag, add a `TagDef` to `src/core/tags/definitions.ts`. The full tag list in `src/core/tags/wikiTags.generated.ts` is refreshed with `node scripts/fetch-wiki-tags.mjs`. Patch tags (VTST, VASPsol) live in `src/core/tags/known.ts`. To add a preset, add a choice to `src/core/intents/definitions.ts`; the tests check automatically that every choice is detected again after it is applied.
 
-## Installing on a cluster
+## Installing
 
-Download the `.vsix` from the [latest release](https://github.com/LeppertLab/DFTune/releases/latest), or build it yourself (`npm run package`). Then, in a VS Code window connected over Remote-SSH, run *Extensions: Install from VSIX…*. VS Code installs it on the remote host.
+In a VS Code window connected to the cluster over Remote-SSH, search for **DFTune** in the Extensions view and click *Install in SSH: …*, or install it from the [Marketplace](https://marketplace.visualstudio.com/items?itemName=DaanHolleman.dftune). VS Code installs it on the remote host and keeps it up to date.
+
+Without Marketplace access, download the `.vsix` from the [latest release](https://github.com/LeppertLab/DFTune/releases/latest) (or build it with `npm run package`) and run *Extensions: Install from VSIX…* in the remote window.
+
+Releases are published by pushing a `vX.Y.Z` tag that matches `package.json`: CI attaches the `.vsix` to a GitHub Release and publishes it to the Marketplace with Trusted Publishing.
 
 ## License
 

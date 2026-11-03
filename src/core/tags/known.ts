@@ -4,7 +4,7 @@
 // one-line description.
 
 import { tagDef } from './definitions';
-import type { Category, TagType } from './schema';
+import type { Category, TagDef, TagType } from './schema';
 import { WIKI_ALIASES, WIKI_TAGS } from './wikiTags.generated';
 
 export interface KnownTag {
@@ -113,6 +113,35 @@ export function wikiValueType(type: string | undefined): TagType | undefined {
   if (t === 'real array' || t === 'real (array)') return 'realArray';
   if (t === 'integer array' || t === 'array of three integers') return 'intArray';
   return undefined;
+}
+
+/**
+ * A definition built from the wiki data, for tags without a curated one: enough for a typed field,
+ * a placeholder and a category. Undefined for unknown tags.
+ */
+export function fallbackDef(name: string): TagDef | undefined {
+  const known = knownTag(name);
+  if (!known) return undefined;
+  const literal = known.default && /^(-?[\d.]+([eEdD][-+]?\d+)?|\.(TRUE|FALSE)\.)$/i.test(known.default);
+  return {
+    name: known.name,
+    type: wikiValueType(known.type) ?? 'string',
+    category: known.category ?? 'electronic',
+    summary: known.summary,
+    ...(literal ? { default: known.default } : { defaultNote: known.default }),
+  };
+}
+
+/** Group prefixes of nested tags (KERNEL_TRUNCATION for KERNEL_TRUNCATION/LTRUNCATE). */
+export function tagGroup(name: string): string | undefined {
+  const slash = name.lastIndexOf('/');
+  return slash > 0 ? name.slice(0, slash).toUpperCase() : undefined;
+}
+
+/** Documented tags of a group, e.g. all KERNEL_TRUNCATION/… tags on the wiki. */
+export function groupTags(group: string): string[] {
+  const prefix = `${group.toUpperCase()}/`;
+  return KNOWN_TAG_NAMES.filter((n) => n.startsWith(prefix));
 }
 
 export function isKnownTag(name: string): boolean {

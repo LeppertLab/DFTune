@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { INTENTS, describeKpoints, parseIncar, tagReader, validate, type TagChanges } from '../core';
+import { INTENTS, describeKpoints, parseIncar, tagGroup, tagReader, validate, type TagChanges } from '../core';
 import type { ToWebview } from '../extension/messages';
 import { Diagnostics } from './components/Diagnostics';
+import { GroupCard } from './components/GroupCard';
 import { HubbardCard } from './components/HubbardCard';
 import { IntentCard } from './components/IntentCard';
 import { TagTable } from './components/TagTable';
@@ -32,6 +33,8 @@ export function App() {
   const apply = (changes: TagChanges) => vscode.postMessage({ type: 'setTags', changes });
   const reveal = (offset: number, end?: number) => vscode.postMessage({ type: 'reveal', offset, end });
   const species = state.poscar?.species;
+  // Nested-tag groups used in this file (KERNEL_TRUNCATION, PLUGINS, …) each get a card.
+  const groups = [...new Set([...doc.tags.keys()].map(tagGroup).filter((g): g is string => !!g))];
 
   return (
     <div className="app">
@@ -63,6 +66,9 @@ export function App() {
             <IntentCard key={kind.id} kind={kind} doc={doc} reader={reader} onApply={apply} />
           ))}
           <HubbardCard reader={reader} species={species} onApply={apply} />
+          {groups.map((group) => (
+            <GroupCard key={group} group={group} doc={doc} onApply={apply} onReveal={reveal} />
+          ))}
         </section>
         <section className="tags">
           <h2>All tags</h2>

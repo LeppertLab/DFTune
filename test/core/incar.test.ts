@@ -54,6 +54,13 @@ describe('parseIncar', () => {
     expect(setTag(text, 'KERNEL_TRUNCATION/ISURFACE', '2')).toBe(text.replace('ISURFACE  = 3', 'ISURFACE  = 2'));
   });
 
+  it('adds a missing GROUP/TAG inside the existing block', () => {
+    const text = 'ENCUT = 400\nKERNEL_TRUNCATION {\n    LTRUNCATE = T\n}\nNSW = 0\n';
+    expect(setTag(text, 'KERNEL_TRUNCATION/IPAD', '1')).toBe('ENCUT = 400\nKERNEL_TRUNCATION {\n    LTRUNCATE = T\n    IPAD = 1\n}\nNSW = 0\n');
+    // Without a block it is written out in full at the end.
+    expect(setTag('ENCUT = 400\n', 'PLUGINS/STRUCTURE', 'T')).toBe('ENCUT = 400\nPLUGINS/STRUCTURE = T\n');
+  });
+
   it('reports unbalanced blocks', () => {
     expect(parseIncar('PLUGINS {\nSTRUCTURE = T\n').issues.map((i) => i.message)).toEqual(["'PLUGINS {' is never closed with '}'"]);
     expect(parseIncar('NSW = 1\n}\n').issues.map((i) => i.message)).toEqual(["'}' without a matching 'GROUP {'"]);

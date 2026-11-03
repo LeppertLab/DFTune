@@ -17,7 +17,7 @@ export function TagField({ def, name, value, onChange }: Props) {
   if (def?.type === 'bool') {
     return (
       <select className={value === undefined ? 'unset' : ''} value={value === undefined ? '' : sameValue(def, value, '.TRUE.') ? '.TRUE.' : '.FALSE.'} onChange={(e) => onChange(e.target.value || null)} aria-label={name}>
-        <option value="">default ({def.default})</option>
+        <option value="">default{placeholder ? ` (${placeholder})` : ''}</option>
         <option value=".TRUE.">.TRUE.</option>
         <option value=".FALSE.">.FALSE.</option>
       </select>

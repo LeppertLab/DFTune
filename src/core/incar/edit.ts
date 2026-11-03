@@ -13,10 +13,14 @@ export function setTags(text: string, changes: TagChanges): string {
   return out;
 }
 
-/** Replaces the value of the first occurrence of `key`, or appends `KEY = value`. */
+/**
+ * Replaces the value of the first occurrence of `key`, or adds `KEY = value`: inside the file's
+ * `GROUP { … }` block for a GROUP/TAG key when there is one, else at the end.
+ */
 export function setTag(text: string, key: string, value: string): string {
   const K = key.toUpperCase();
-  const entry = parseIncar(text).tags.get(K);
+  const doc = parseIncar(text);
+  const entry = doc.tags.get(K);
   if (entry) {
     const { start, end } = entry.valueSpan;
     if (text.slice(start, end) === value) return text;
@@ -24,6 +28,17 @@ export function setTag(text: string, key: string, value: string): string {
     return splice(text, entry.valueSpan, pad + value);
   }
   const eol = text.includes('\r\n') ? '\r\n' : '\n';
+  const slash = K.lastIndexOf('/');
+  const block = slash > 0 ? doc.blocks.find((b) => b.name === K.slice(0, slash)) : undefined;
+  if (block) {
+    // Before the line with the closing brace, indented like the block's first tag.
+    const close = block.span.end - 1;
+    const lineStart = text.lastIndexOf('\n', close - 1) + 1;
+    const first = doc.entries.find((e) => e.span.start > block.span.start && e.span.end < block.span.end);
+    const lead = first ? text.slice(text.lastIndexOf('\n', first.span.start - 1) + 1, first.span.start) : '';
+    const indent = first && /^[ \t]*$/.test(lead) ? lead : '  ';
+    return `${text.slice(0, lineStart)}${indent}${K.slice(slash + 1)} = ${value}${eol}${text.slice(lineStart)}`;
+  }
   const sep = text.length === 0 || text.endsWith('\n') ? '' : eol;
   return `${text}${sep}${K} = ${value}${eol}`;
 }

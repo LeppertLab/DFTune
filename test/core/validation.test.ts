@@ -5,7 +5,7 @@ import { parseIncar } from '../../src/core/incar/parse';
 import { describeKpoints, meshSize, readKpoints, type KpointsInfo } from '../../src/core/kpoints/read';
 import { readPoscar, type PoscarInfo } from '../../src/core/poscar/read';
 import { TAG_DEFS } from '../../src/core/tags/definitions';
-import { wikiValueType } from '../../src/core/tags/known';
+import { fallbackDef, groupTags, tagGroup, wikiValueType } from '../../src/core/tags/known';
 import { WIKI_TAGS } from '../../src/core/tags/wikiTags.generated';
 import { checkValue, validate } from '../../src/core/validation/rules';
 
@@ -116,6 +116,14 @@ describe('validation', () => {
       if (!t || !/^(-?[\d.]+([eEdD][-+]?\d+)?|\.(TRUE|FALSE)\.)$/i.test(def)) continue;
       expect(checkValue({ name, type: t, category: 'electronic', summary: '' }, def), `${name} = ${def}`).toBeUndefined();
     }
+  });
+
+  it('builds typed definitions for documented tags without a curated one', () => {
+    expect(fallbackDef('ML_OUTPUT_MODE')).toMatchObject({ type: 'string', category: 'mlff', defaultNote: '0 if ML_MODE = run; 1 else' });
+    expect(fallbackDef('KERNEL_TRUNCATION/LTRUNCATE')).toMatchObject({ type: 'bool', default: '.False.' });
+    expect(fallbackDef('NOT_A_TAG')).toBeUndefined();
+    expect(groupTags('KERNEL_TRUNCATION')).toContain('KERNEL_TRUNCATION/IPAD');
+    expect(tagGroup('KERNEL_TRUNCATION/IPAD')).toBe('KERNEL_TRUNCATION');
   });
 
   it('recognizes older tag names', () => {

@@ -11,3 +11,9 @@ EB_K   = 78.4
 ML_ISTART = 0             # deprecated, use ML_MODE
 LVDW   = .TRUE.           # legacy name of IVDW
 NEW_FLAG = 1              # not a VASP tag
+ML_OUTPUT_MODE = 0        # documented, no curated definition: sorted into MLFF
+
+KERNEL_TRUNCATION {
+   LTRUNCATE       = T
+   IDIMENSIONALITY = 2
+}

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CATEGORY_LABELS, TAG_DEFS, TAGS, knownTag, wikiUrl, type Category, type Diagnostic, type IncarDoc, type KnownTag, type TagChanges } from '../../core';
+import { CATEGORY_LABELS, TAG_DEFS, TAGS, fallbackDef, knownTag, tagGroup, wikiUrl, type Category, type Diagnostic, type IncarDoc, type KnownTag, type TagChanges, type TagDef } from '../../core';
 import { loadUiState, vscode } from '../vscode';
 import { TagField } from './TagField';
 
@@ -34,11 +34,20 @@ export function TagTable({ doc, diagnostics, onApply, onReveal }: Props) {
     if (d.advanced && !set && !filters.advanced && !q) return false;
     return matches(d.name, d.summary);
   });
+  // Documented tags set in the file without a curated definition join their wiki category.
+  // Nested tags (GROUP/TAG) have their own cards in the Setup column.
+  const uncurated = [...doc.tags.keys()].filter((k) => !TAGS.has(k) && !tagGroup(k));
+  const extra = uncurated.map((k) => (knownTag(k)?.category ? fallbackDef(k) : undefined)).filter((d): d is TagDef => !!d && matches(d.name, d.summary));
   const byCategory = new Map<Category, typeof visible>();
-  for (const def of visible) byCategory.set(def.category, [...(byCategory.get(def.category) ?? []), def]);
+  for (const category of Object.keys(CATEGORY_LABELS) as Category[]) {
+    const defs = [...visible, ...extra].filter((d) => d.category === category);
+    if (defs.length) byCategory.set(category, defs);
+  }
 
-  // Tags in the file without a curated definition: shown and editable as raw text.
-  const unknown = [...doc.tags.values()].filter((e) => !TAGS.has(e.key) && matches(e.key, knownTag(e.key)?.summary));
+  // Everything else in the file (unknown tags, older names, tags without a category): raw text.
+  const unknown = uncurated
+    .filter((k) => !knownTag(k)?.category && matches(k, knownTag(k)?.summary))
+    .map((k) => doc.tags.get(k)!);
 
   return (
     <div className="tag-table">
@@ -85,9 +94,10 @@ export function TagTable({ doc, diagnostics, onApply, onReveal }: Props) {
               <Row
                 key={def.name}
                 name={def.name}
+                page={TAGS.has(def.name) ? undefined : knownTag(def.name)?.page ?? null}
                 summary={def.summary}
                 set={!!entry}
-                problem={problemTags.has(def.name)}
+                problem={problemTags.has(def.name) || (!TAGS.has(def.name) && !!(knownTag(def.name)?.deprecated || knownTag(def.name)?.aliasOf))}
                 onReveal={entry ? () => onReveal(entry.span.start, entry.span.end) : undefined}
               >
                 <TagField def={def} name={def.name} value={entry?.value} onChange={(v) => onApply({ [def.name]: v })} />

@@ -4,6 +4,15 @@
   "description": "Set up VASP calculations by physical intent instead of raw INCAR tags. Works on remote HPC files over Remote-SSH.",
   "version": "0.4.0",
   "publisher": "project-electrons",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LeppertLab/project-electrons"
+  },
+  "homepage": "https://github.com/LeppertLab/project-electrons#readme",
+  "bugs": {
+    "url": "https://github.com/LeppertLab/project-electrons/issues"
+  },
   "private": true,
   "engines": {
     "vscode": "^1.90.0"
@@ -131,7 +140,7 @@
     "watch": "node esbuild.mjs --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "package": "npm run build -- --production && vsce package --no-dependencies --allow-missing-repository --skip-license"
+    "package": "npm run build -- --production && vsce package --no-dependencies"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

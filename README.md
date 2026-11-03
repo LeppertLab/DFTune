@@ -52,4 +52,8 @@ Tag defaults follow the [VASP wiki](https://vasp.at/wiki) for VASP 6. To add a t
 
 ## Installing on a cluster
 
-Build the `.vsix` (`npm run package`). Then, in a VS Code window connected over Remote-SSH, run *Extensions: Install from VSIX…*. VS Code installs it on the remote host.
+Download the `.vsix` from the [latest release](https://github.com/LeppertLab/project-electrons/releases/latest), or build it yourself (`npm run package`). Then, in a VS Code window connected over Remote-SSH, run *Extensions: Install from VSIX…*. VS Code installs it on the remote host.
+
+## License
+
+MIT, see [LICENSE](LICENSE). The exception is the tag descriptions in `src/core/tags/wikiTags.generated.ts`: they are excerpts from the [VASP Wiki](https://vasp.at/wiki), © VASP Software GmbH and the VASP Wiki authors, and are distributed under the [GNU Free Documentation License 1.2](LICENSES/GFDL-1.2.txt).

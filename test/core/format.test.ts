@@ -74,8 +74,8 @@ describe('formatIncar', () => {
     // From testing 0.4.0: "# ML_MB" was moved to the paragraph below it.
     const text = '# MLFF Settings\nML_MODE      = run\nML_LMLFF     = .TRUE.\n# ML_MB      = 2000\n\n# Write/Start\nNWRITE       = 0\nISTART       = 0\n';
     const out = formatIncar(text)!;
-    const mlff = out.slice(out.indexOf('# MLFF Settings'));
-    expect(mlff).toBe('# MLFF Settings\nML_LMLFF = .TRUE.\nML_MODE  = run\n# ML_MB      = 2000\n');
+    const mlff = out.slice(out.indexOf('# MLFF Settings')).split('\n\n')[0];
+    expect(mlff).toBe('# MLFF Settings\nML_LMLFF = .TRUE.\nML_MODE  = run\n# ML_MB      = 2000');
     expect(formatIncar('ENCUT = 400\n! check this later\n\nNSW = 0\n')).toContain('ENCUT = 400\n! check this later\n');
   });
 

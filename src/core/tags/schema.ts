@@ -17,7 +17,6 @@ export type Category =
 
 /** Labels, in the order the builder and the formatter show the categories. */
 export const CATEGORY_LABELS: Record<Category, string> = {
-  flow: 'Flow control',
   electronic: 'Electronic structure',
   smearing: 'Occupations & smearing',
   xc: 'Exchange–correlation',
@@ -30,6 +29,7 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   manybody: 'Many-body (GW, BSE, RPA)',
   mlff: 'Machine-learned force fields',
   parallel: 'Parallelization',
+  flow: 'Flow control',
 };
 
 export interface TagOption {

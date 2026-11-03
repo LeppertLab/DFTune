@@ -92,17 +92,19 @@ export function alignedRows(ls: Line[]): string[] {
 }
 
 /**
- * Replaces the line by a canonical keyword when the whole line, or its first word, is a known
- * spelling (`words` maps lower-case spellings to the canonical one). Anything else is kept.
+ * Replaces the keyword at the start of a line by its canonical spelling, when its first one or
+ * more words are a known spelling (`words` maps lower-case spellings, words separated by single
+ * spaces, to the canonical one). The longest match wins and the rest of the line is kept as is:
+ * `line mode ! path` → `Line-mode ! path`. Anything else is kept.
  */
 export function canonicalWord(text: string, words: Record<string, string>): string {
   const t = text.trim();
-  const whole = words[t.toLowerCase().replace(/\s+/g, ' ')];
-  if (whole) return whole;
-  const m = t.match(/^(\S+)(.*)$/);
-  if (!m) return t;
-  const word = words[m[1].toLowerCase()];
-  return word ? word + m[2] : t;
+  const tokens = [...t.matchAll(/\S+/g)];
+  for (let k = tokens.length; k >= 1; k--) {
+    const word = words[tokens.slice(0, k).map((m) => m[0].toLowerCase()).join(' ')];
+    if (word) return word + t.slice(tokens[k - 1].index! + tokens[k - 1][0].length);
+  }
+  return t;
 }
 
 /** Joins formatted lines with the file's line ending, without trailing blank lines, ending in one newline. */

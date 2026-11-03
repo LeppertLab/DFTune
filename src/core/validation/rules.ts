@@ -191,7 +191,9 @@ const FIXES: Record<string, (r: TagReader, ctx: ValidationContext, d: Diagnostic
     return { title: `Set IBRION = ${ibrion + 1}`, tags: { IBRION: String(ibrion + 1) } };
   },
   'kspacing-ignored': () => ({ title: 'Remove KSPACING', tags: { KSPACING: null } }),
-  'tetra-mesh': (r) => (r.bool('KGAMMA') === false ? { title: 'Remove KGAMMA', tags: { KGAMMA: null } } : undefined),
+  'line-mode-scf': () => ({ title: 'Set ICHARG = 11 (non-self-consistent band structure)', tags: { ICHARG: '11' } }),
+  // Only for the KGAMMA variant: with a KPOINTS file KGAMMA has no effect.
+  'tetra-mesh': (_r, _ctx, d) => (d.tag === 'KGAMMA' ? { title: 'Remove KGAMMA', tags: { KGAMMA: null } } : undefined),
 };
 
 function gaussian(r: TagReader) {

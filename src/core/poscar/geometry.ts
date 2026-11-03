@@ -1,6 +1,6 @@
 // Reciprocal-space quantities of a structure, for k-point checks.
 
-import { norm, type Structure, type Vec3 } from './parse';
+import { angle, norm, type Structure, type Vec3 } from './parse';
 
 const cross = (u: Vec3, v: Vec3): Vec3 => [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
 
@@ -26,12 +26,11 @@ export function meshSpacing(s: Pick<Structure, 'lattice' | 'volume'>, mesh: Vec3
  */
 export function hexagonalAxis(s: Pick<Structure, 'lattice'>): number | undefined {
   const L = s.lattice;
-  const deg = (u: Vec3, v: Vec3) => (Math.acos((u[0] * v[0] + u[1] * v[1] + u[2] * v[2]) / (norm(u) * norm(v))) * 180) / Math.PI;
   for (const [i, j, k] of [[0, 1, 2], [1, 2, 0], [0, 2, 1]]) {
     const equal = Math.abs(norm(L[i]) - norm(L[j])) < 1e-3 * norm(L[i]);
-    const ang = deg(L[i], L[j]);
+    const ang = angle(L[i], L[j]);
     const inPlane = Math.abs(ang - 120) < 0.5 || Math.abs(ang - 60) < 0.5;
-    const perpendicular = Math.abs(deg(L[i], L[k]) - 90) < 0.5 && Math.abs(deg(L[j], L[k]) - 90) < 0.5;
+    const perpendicular = Math.abs(angle(L[i], L[k]) - 90) < 0.5 && Math.abs(angle(L[j], L[k]) - 90) < 0.5;
     if (equal && inPlane && perpendicular) return k;
   }
   return undefined;

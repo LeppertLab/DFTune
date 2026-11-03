@@ -38,6 +38,8 @@ export interface Structure {
 export interface PoscarDoc {
   lines: PLine[];
   diagnostics: Diagnostic[];
+  /** Present as soon as the species and counts could be read, even if positions are missing. */
+  header?: { comment: string; species?: string[]; counts: number[]; nions: number };
   /** Present when the header and all positions could be read. */
   structure?: Structure;
 }
@@ -45,11 +47,16 @@ export interface PoscarDoc {
 /** Atoms closer than this (Å) are reported. */
 export const MIN_DISTANCE = 0.5;
 /** Above this many atoms the distance check is skipped (it is quadratic). */
-const MAX_ATOMS_DISTANCE_CHECK = 1500;
+const MAX_ATOMS_DISTANCE_CHECK = 4000;
 
 const LOGICAL = /^\.?[TF]/i;
 
-export function parsePoscar(text: string): PoscarDoc {
+export interface ParseOptions {
+  /** Run the quadratic close-atoms check (default true). Off when only the cell and counts are needed. */
+  distances?: boolean;
+}
+
+export function parsePoscar(text: string, options: ParseOptions = {}): PoscarDoc {
   const lines = splitLines<PoscarRole>(text, 'extra');
   const diagnostics: Diagnostic[] = [];
   const doc: PoscarDoc = { lines, diagnostics };
@@ -176,6 +183,7 @@ export function parsePoscar(text: string): PoscarDoc {
     error('The structure has no atoms.', lineSpan(countLine));
     return doc;
   }
+  doc.header = { comment: lines[0].text.trim(), species, counts, nions };
   i++;
 
   // Selective dynamics and coordinate mode.
@@ -265,42 +273,79 @@ export function parsePoscar(text: string): PoscarDoc {
     report('info', 'poscar-all-fixed', 'Selective dynamics fixes every coordinate of every atom: nothing can move in a relaxation or MD.', lineSpan(lines[atomLines[0].n - 2]));
   }
 
-  checkDistances(structure, (message, span) => report('warning', 'poscar-close-atoms', message, span));
+  if (options.distances !== false) checkDistances(structure, (message, span) => report('warning', 'poscar-close-atoms', message, span));
   return doc;
 }
 
+/**
+ * Pairs of atoms (and atoms and their own images) closer than MIN_DISTANCE. Exact for any cell
+ * shape: a distance ≤ r bounds the fractional separation along axis k by r·|b_k|/2π, so only the
+ * integer image shifts inside that bound are tried (usually one, often none).
+ */
 function checkDistances(s: Structure, warn: (message: string, span: Span) => void) {
   if (s.nions > MAX_ATOMS_DISTANCE_CHECK) return;
   const L = s.lattice;
   const label = speciesLabeler(s);
-  // Cartesian positions wrapped into the cell, and the 27 image shifts.
-  const cart = s.frac.map((f) => mulVecMat(f.map((x) => x - Math.floor(x)) as Vec3, L));
-  const shifts: Vec3[] = [];
-  for (const a of [-1, 0, 1]) for (const b of [-1, 0, 1]) for (const c of [-1, 0, 1]) shifts.push(mulVecMat([a, b, c], L));
+  const r2 = MIN_DISTANCE * MIN_DISTANCE;
+  // r·|b_k|/2π, with b_k the reciprocal vectors: |b_k|/2π = |a_i × a_j| / V.
+  const reach = [cross(L[1], L[2]), cross(L[2], L[0]), cross(L[0], L[1])].map((v) => (MIN_DISTANCE * norm(v)) / s.volume);
+  const n = s.nions;
+  const fx = new Float64Array(n);
+  const fy = new Float64Array(n);
+  const fz = new Float64Array(n);
+  s.frac.forEach((f, i) => {
+    fx[i] = f[0] - Math.floor(f[0]);
+    fy[i] = f[1] - Math.floor(f[1]);
+    fz[i] = f[2] - Math.floor(f[2]);
+  });
+  const [[l00, l01, l02], [l10, l11, l12], [l20, l21, l22]] = L;
+  const [r0, r1, r2_] = reach;
   let reported = 0;
-  for (let i = 0; i < s.nions && reported < 10; i++) {
-    for (let j = i; j < s.nions && reported < 10; j++) {
+  for (let i = 0; i < n && reported < 10; i++) {
+    for (let j = i; j < n && reported < 10; j++) {
+      // Integer shifts along each axis that can bring j within reach of i; most pairs have none.
+      const d0 = fx[j] - fx[i];
+      const lo0 = Math.ceil(-d0 - r0);
+      const hi0 = Math.floor(-d0 + r0);
+      if (lo0 > hi0) continue;
+      const d1 = fy[j] - fy[i];
+      const lo1 = Math.ceil(-d1 - r1);
+      const hi1 = Math.floor(-d1 + r1);
+      if (lo1 > hi1) continue;
+      const d2 = fz[j] - fz[i];
+      const lo2 = Math.ceil(-d2 - r2_);
+      const hi2 = Math.floor(-d2 + r2_);
+      if (lo2 > hi2) continue;
       let best = Infinity;
-      for (const t of shifts) {
-        if (i === j && t[0] === 0 && t[1] === 0 && t[2] === 0) continue;
-        const dx = cart[j][0] + t[0] - cart[i][0];
-        const dy = cart[j][1] + t[1] - cart[i][1];
-        const dz = cart[j][2] + t[2] - cart[i][2];
-        best = Math.min(best, dx * dx + dy * dy + dz * dz);
+      for (let a = lo0; a <= hi0; a++) {
+        for (let b = lo1; b <= hi1; b++) {
+          for (let c = lo2; c <= hi2; c++) {
+            if (i === j && a === 0 && b === 0 && c === 0) continue;
+            const u = d0 + a;
+            const v = d1 + b;
+            const w = d2 + c;
+            const x = u * l00 + v * l10 + w * l20;
+            const y = u * l01 + v * l11 + w * l21;
+            const z = u * l02 + v * l12 + w * l22;
+            best = Math.min(best, x * x + y * y + z * z);
+          }
+        }
       }
-      const d = Math.sqrt(best);
-      if (d < MIN_DISTANCE) {
+      if (best < r2) {
+        const dist = Math.sqrt(best);
         const line = s.atomLines[j];
         const message =
           i === j
-            ? `Atom ${i + 1} (${label(i)}) is only ${d.toFixed(2)} Å from its own periodic image: the cell is too small.`
-            : `Atoms ${i + 1} (${label(i)}) and ${j + 1} (${label(j)}) are only ${d.toFixed(2)} Å apart${d < 0.01 ? ' (duplicate position?)' : ''}.`;
+            ? `Atom ${i + 1} (${label(i)}) is only ${dist.toFixed(2)} Å from its own periodic image: the cell is too small.`
+            : `Atoms ${i + 1} (${label(i)}) and ${j + 1} (${label(j)}) are only ${dist.toFixed(2)} Å apart${dist < 0.01 ? ' (duplicate position?)' : ''}.`;
         warn(message, { start: line.start, end: line.end });
         reported++;
       }
     }
   }
 }
+
+const cross = (u: Vec3, v: Vec3): Vec3 => [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
 
 /** "Fe" or "species 2" for atom `i` (zero-based). */
 export function speciesLabeler(s: Pick<Structure, 'species' | 'counts'>): (i: number) => string {

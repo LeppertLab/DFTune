@@ -1,19 +1,19 @@
 // Quick fixes (lightbulb, Ctrl+.) for diagnostics that carry a fix.
 
 import * as vscode from 'vscode';
-import type { Diagnostic } from '../core';
+import type { LintCache } from './lintCache';
 
 /**
- * Offers the fix of every diagnostic at the cursor. The diagnostics are computed again (they are
- * cheap) rather than kept from the last refresh, so the edit always matches the current text.
+ * Offers the fix of every diagnostic at the cursor. The diagnostics come from the cache, which
+ * holds them per document version, so the edit always matches the current text.
  */
-export function registerQuickFixes(languageId: string, lint: (doc: vscode.TextDocument) => Promise<Diagnostic[]>): vscode.Disposable {
+export function registerQuickFixes(languageId: string, cache: LintCache): vscode.Disposable {
   return vscode.languages.registerCodeActionsProvider(
     languageId,
     {
       async provideCodeActions(doc, range, context) {
         const version = doc.version;
-        const diagnostics = await lint(doc);
+        const diagnostics = await cache.get(doc);
         if (doc.version !== version) return [];
         const actions: vscode.CodeAction[] = [];
         for (const d of diagnostics) {

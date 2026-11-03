@@ -28,6 +28,7 @@ const MODE_WORDS: Record<string, string> = {
   line: 'Line-mode',
   'line-mode': 'Line-mode',
   linemode: 'Line-mode',
+  'line mode': 'Line-mode',
 };
 const COORD_WORDS: Record<string, string> = {
   r: 'Reciprocal',

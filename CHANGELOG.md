@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.0.0 (2026-11-03)
+
+DFTune now covers all four VASP input files: the INCAR builder, plus checks, hovers, quick fixes and formatting for INCAR, KPOINTS and POSCAR, and checks against the POTCAR. This release hardens what 0.7–0.9 added, after a full code review.
+
+### Added
+- Quick fix `ICHARG = 11` for an INCAR next to a line-mode KPOINTS.
+- *Generate KPOINTS Mesh…* on a CONTCAR, `*.vasp` or `POSCAR.*` file uses that file's cell (before, it always looked for a file named POSCAR).
+
+### Changed
+- The close-atoms check in POSCAR files is exact for any cell shape (strongly skewed cells could hide a close contact) and about 30× faster; it now runs for cells up to 4000 atoms.
+- *New VASP Calculation…* no longer offers `KSPACING` when the folder already has a KPOINTS file (VASP would ignore it); it offers to keep or replace the KPOINTS instead.
+- The INCAR checks read POSCAR and KPOINTS with the same parsers as their own linters, so both always agree.
+- Diagnostics are computed once per edit and shared with the quick fixes; a result that arrives after a newer edit (slow file systems) is dropped instead of shown.
+- README reorganized by input file.
+
+### Fixed
+- Format Document no longer repeats words of multi-word keywords: `Line mode` became `Line-mode mode`, `Selective dynamics ! relax` became `Selective dynamics dynamics ! relax`.
+- "Remove KGAMMA" was offered for a Monkhorst–Pack KPOINTS file, where KGAMMA has no effect.
+
 ## 0.9.0 (2026-11-03)
 
 ### Added

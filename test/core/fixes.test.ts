@@ -38,6 +38,11 @@ describe('INCAR quick fixes', () => {
     expect(fixIncar('ISMEAR = 0\nIBRION = 5\nEDIFF = 1E-7\n', 'phonon-symmetry')).toMatch(/^IBRION = 6$/m);
   });
 
+  it('makes a line-mode run non-self-consistent', () => {
+    const kpoints = { mode: 'line' as const, points: 40 };
+    expect(fixIncar('ISMEAR = 0\n', 'line-mode-scf', { kpoints })).toMatch(/^ICHARG = 11$/m);
+  });
+
   it('uses the POTCAR for the cutoff', () => {
     expect(fixIncar('ENCUT = 300\nISMEAR = 0\n', 'encut-below-enmax', { poscar, potcar })).toMatch(/^ENCUT = 520$/m);
     expect(fixIncar('ISMEAR = 0\nIBRION = 2\nNSW = 10\nISIF = 3\n', 'pulay', { poscar, potcar })).toMatch(/^ENCUT = 520$/m);
@@ -80,5 +85,35 @@ describe('meshKpoints', async () => {
     expect(text.split('\n').slice(1, 5)).toEqual(['0', 'Gamma', '7 7 7', '0 0 0']);
     expect(lintKpoints(text, si)).toEqual([]);
     expect(formatKpoints(text)).toBe(text);
+  });
+});
+
+describe('review regressions', async () => {
+  const { formatKpoints } = await import('../../src/core/kpoints/format');
+  const { formatPoscar } = await import('../../src/core/poscar/format');
+
+  it('does not repeat words of multi-word keywords', () => {
+    expect(formatKpoints('k\n10\nLine mode\nrec\n0 0 0\n0.5 0 0\n')!.split('\n')[2]).toBe('Line-mode');
+    expect(formatKpoints('k\n10\nline mode ! path\nrec\n0 0 0\n0.5 0 0\n')!.split('\n')[2]).toBe('Line-mode ! path');
+    expect(formatKpoints('k\n0\nMonkhorst Pack grid\n2 2 2\n')!.split('\n')[2]).toBe('Monkhorst-Pack grid');
+    expect(formatKpoints('k\n0\nGamma-centred\n2 2 2\n')!.split('\n')[2]).toBe('Gamma-centred');
+    const pos = formatPoscar('t\n1\n5 0 0\n0 5 0\n0 0 5\nH\n1\nSelective dynamics ! relax\nDirect\n0 0 0 T T T\n')!;
+    expect(pos.split('\n')[7]).toBe('Selective dynamics ! relax');
+  });
+
+  it('offers "Remove KGAMMA" only where KGAMMA is the problem', () => {
+    const text = 'ISMEAR = -5\nKGAMMA = .FALSE.\n';
+    const mp = validate(parseIncar(text), { kpoints: { mode: 'mesh', centering: 'monkhorst-pack', subdivisions: [4, 4, 4] } });
+    expect(mp.find((d) => d.code === 'tetra-mesh')?.fix).toBeUndefined();
+    const none = validate(parseIncar(text), { kpoints: null });
+    expect(none.find((d) => d.code === 'tetra-mesh')?.fix?.title).toBe('Remove KGAMMA');
+  });
+
+  it('finds close atoms in strongly skewed cells', () => {
+    // b − 3a = (0, 1, 0): atoms at y = 0 and y = 0.7 Å are 0.3 Å apart through that translation,
+    // which is not among the 27 nearest images of the wrapped positions.
+    const text = 'skewed\n1\n5 0 0\n15 1 0\n0 0 5\nH\n2\nCartesian\n0 0 0\n0 0.7 0\n';
+    const d = parsePoscar(text).diagnostics.filter((x) => x.code === 'poscar-close-atoms');
+    expect(d.map((x) => x.message)).toEqual(['Atoms 1 (H) and 2 (H) are only 0.30 Å apart.']);
   });
 });

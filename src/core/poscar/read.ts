@@ -1,5 +1,6 @@
-// Reads just enough of a POSCAR/CONTCAR to size per-atom and per-species INCAR arrays, plus the
-// cell when the file is complete. Tolerant: the header alone is enough.
+// What the INCAR checks and the builder need from a POSCAR/CONTCAR: species and counts (to size
+// per-atom and per-species arrays), plus the cell when the whole file could be read. A view on
+// parsePoscar, so the INCAR checks and the POSCAR linter always agree on what the file says.
 
 import { parsePoscar } from './parse';
 
@@ -15,35 +16,16 @@ export interface PoscarInfo {
 }
 
 export function readPoscar(text: string): PoscarInfo | undefined {
-  const info = readHeader(text);
-  if (!info) return undefined;
-  const s = parsePoscar(text).structure;
-  return s ? { ...info, lattice: s.lattice, volume: s.volume } : info;
-}
-
-function readHeader(text: string): PoscarInfo | undefined {
-  const lines = text.split(/\r?\n/);
-  if (lines.length < 7) return undefined;
-  const words = (i: number) => (lines[i] ?? '').trim().split(/\s+/).filter(Boolean);
-  const isCounts = (ws: string[]) => ws.length > 0 && ws.every((w) => /^\d+$/.test(w));
-
-  let species: string[] | undefined;
-  let counts: number[];
-  const line6 = words(5);
-  if (isCounts(line6)) {
-    counts = line6.map(Number);
-  } else {
-    const line7 = words(6);
-    if (!isCounts(line7)) return undefined;
+  const doc = parsePoscar(text, { distances: false });
+  if (!doc.header) return undefined;
+  const { comment, species, counts, nions } = doc.header;
+  const info: PoscarInfo = {
+    comment,
     // POTCAR-hashed names such as "Fe_pv/3a4b…" → "Fe".
-    species = line6.map((w) => w.split(/[/_]/)[0]);
-    counts = line7.map(Number);
-    if (species.length !== counts.length) return undefined;
-  }
-  return {
-    comment: lines[0].trim(),
-    species,
+    species: species?.map((w) => w.split(/[/_]/)[0]),
     counts,
-    nions: counts.reduce((a, b) => a + b, 0),
+    nions,
   };
+  const s = doc.structure;
+  return s ? { ...info, lattice: s.lattice, volume: s.volume } : info;
 }

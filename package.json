@@ -2,7 +2,7 @@
   "name": "dftune",
   "displayName": "DFTune: DFT Input Builder",
   "description": "Set up DFT calculations by physical intent instead of raw input tags. VASP INCAR builder, plus checks, hovers and formatting for INCAR, KPOINTS and POSCAR files; works on remote HPC files over Remote-SSH.",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "publisher": "DaanHolleman",
   "icon": "images/icon.png",
   "license": "MIT",

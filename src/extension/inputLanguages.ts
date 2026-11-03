@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 import { formatKpoints, formatPoscar, kpointsHover, lintKpoints, lintPoscar, minimalEdit, parsePoscar, poscarHover, type Diagnostic } from '../core';
 import { FolderWatch, findPoscar, findPotcar } from './inputs';
 import { toVscodeDiagnostics } from './language';
+import { LintCache } from './lintCache';
 import { registerQuickFixes } from './quickFixes';
 
 type HoverResult = { markdown: string; start: number; end: number } | undefined;
@@ -38,7 +39,7 @@ const LANGUAGES: InputLanguage[] = [
     label: 'POSCAR',
     lint: async (text, uri) => lintPoscar(text, (await findPotcar(uri))?.info),
     format: formatPoscar,
-    hover: async (text, offset) => poscarHover(parsePoscar(text), offset),
+    hover: async (text, offset) => poscarHover(parsePoscar(text, { distances: false }), offset),
   },
 ];
 
@@ -48,6 +49,7 @@ export function registerInputLanguages(context: vscode.ExtensionContext) {
 
 function register(context: vscode.ExtensionContext, lang: InputLanguage) {
   const collection = vscode.languages.createDiagnosticCollection(lang.id);
+  const cache = new LintCache((doc) => lang.lint(doc.getText(), doc.uri));
   const timers = new Map<string, ReturnType<typeof setTimeout>>();
 
   const refresh = (doc: vscode.TextDocument) => {
@@ -56,13 +58,12 @@ function register(context: vscode.ExtensionContext, lang: InputLanguage) {
     clearTimeout(timers.get(key));
     timers.set(key, setTimeout(async () => {
       timers.delete(key);
-      const diagnostics = await lang.lint(doc.getText(), doc.uri);
-      if (doc.isClosed) return;
-      collection.set(doc.uri, toVscodeDiagnostics(doc, diagnostics, lang.label));
+      await cache.whenCurrent(doc, (diagnostics) => collection.set(doc.uri, toVscodeDiagnostics(doc, diagnostics, lang.label)));
     }, 250));
   };
   // A neighbouring input file changed on disk: recheck the open files of this language there.
   const folders = new FolderWatch((dir) => {
+    cache.invalidate();
     for (const d of vscode.workspace.textDocuments) if (FolderWatch.dirOf(d.uri) === dir) refresh(d);
   });
   const open = (doc: vscode.TextDocument) => {
@@ -81,6 +82,7 @@ function register(context: vscode.ExtensionContext, lang: InputLanguage) {
     vscode.workspace.onDidCloseTextDocument((doc) => {
       if (doc.languageId !== lang.id) return;
       folders.untrack(doc.uri);
+      cache.delete(doc.uri);
       clearTimeout(timers.get(doc.uri.toString()));
       timers.delete(doc.uri.toString());
       collection.delete(doc.uri);
@@ -97,7 +99,7 @@ function register(context: vscode.ExtensionContext, lang: InputLanguage) {
         return edit ? [vscode.TextEdit.replace(new vscode.Range(doc.positionAt(edit.start), doc.positionAt(edit.end)), edit.text)] : [];
       },
     }),
-    registerQuickFixes(lang.id, (doc) => lang.lint(doc.getText(), doc.uri)),
+    registerQuickFixes(lang.id, cache),
     vscode.languages.registerHoverProvider(lang.id, {
       async provideHover(doc, position) {
         const h = await lang.hover(doc.getText(), doc.offsetAt(position), doc.uri);

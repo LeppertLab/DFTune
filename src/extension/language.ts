@@ -23,6 +23,7 @@ import {
   type TagDef,
 } from '../core';
 import { FolderWatch, findInputs, findPoscar } from './inputs';
+import { LintCache } from './lintCache';
 import { registerQuickFixes } from './quickFixes';
 
 const SEVERITY: Record<Diagnostic['severity'], vscode.DiagnosticSeverity> = {
@@ -34,6 +35,7 @@ const SEVERITY: Record<Diagnostic['severity'], vscode.DiagnosticSeverity> = {
 
 export function registerLanguageFeatures(context: vscode.ExtensionContext) {
   const collection = vscode.languages.createDiagnosticCollection('incar');
+  const cache = new LintCache(lintIncar);
   const timers = new Map<string, ReturnType<typeof setTimeout>>();
 
   const refresh = (doc: vscode.TextDocument) => {
@@ -42,14 +44,13 @@ export function registerLanguageFeatures(context: vscode.ExtensionContext) {
     clearTimeout(timers.get(key));
     timers.set(key, setTimeout(async () => {
       timers.delete(key);
-      const diagnostics = await lintIncar(doc);
-      if (doc.isClosed) return;
-      collection.set(doc.uri, toVscodeDiagnostics(doc, diagnostics));
+      await cache.whenCurrent(doc, (diagnostics) => collection.set(doc.uri, toVscodeDiagnostics(doc, diagnostics)));
     }, 250));
   };
 
   // A POSCAR, KPOINTS or POTCAR changed on disk: recheck the INCARs open in that folder.
   const folders = new FolderWatch((dir) => {
+    cache.invalidate();
     for (const d of vscode.workspace.textDocuments) if (FolderWatch.dirOf(d.uri) === dir) refresh(d);
   });
   const track = (doc: vscode.TextDocument) => doc.languageId === 'incar' && folders.track(doc.uri);
@@ -69,12 +70,13 @@ export function registerLanguageFeatures(context: vscode.ExtensionContext) {
     vscode.workspace.onDidChangeTextDocument((e) => refresh(e.document)),
     vscode.workspace.onDidCloseTextDocument((doc) => {
       if (doc.languageId === 'incar') folders.untrack(doc.uri);
+      cache.delete(doc.uri);
       clearTimeout(timers.get(doc.uri.toString()));
       timers.delete(doc.uri.toString());
       collection.delete(doc.uri);
     }),
     vscode.languages.registerHoverProvider('incar', { provideHover }),
-    registerQuickFixes('incar', lintIncar),
+    registerQuickFixes('incar', cache),
     vscode.languages.registerDocumentFormattingEditProvider('incar', { provideDocumentFormattingEdits }),
     vscode.languages.registerCompletionItemProvider('incar', { provideCompletionItems }, '=', ' '),
   );

@@ -60,7 +60,8 @@ const vscode = {
     asRelativePath: (u) => u.path,
   },
   window: {
-    showWarningMessage: async (m) => console.log('  warning shown:', m),
+    // Accepts "Replace?" prompts; other warnings are only printed.
+    showWarningMessage: async (m, _opts, ...items) => (items.includes('Replace') ? 'Replace' : console.log('  warning shown:', m)),
     showInformationMessage() {},
     // Picks the second item when there is one (the "Standard" density), else the first.
     showQuickPick: async (items) => items[1] ?? items[0],
@@ -150,6 +151,13 @@ function format(lang, text, name) {
     await commands['dftune.generateKpoints'](uri(dir));
     const written = readFileSync(join(dir, 'KPOINTS'), 'utf8');
     check(/^0\nGamma\n\d+ \d+ \d+\n0 0 0\n$/.test(written.split('\n').slice(1).join('\n')), `KPOINTS generated: ${written.split('\n')[3]}`);
+    // Run on a CONTCAR with no POSCAR around: the CONTCAR's own cell (the slab gives 5 5 2 at 0.3 Å⁻¹,
+    // the POSCAR fixture 5 5 5).
+    rmSync(join(dir, 'POSCAR'));
+    copyFileSync(join(fixtures, 'CONTCAR.slab'), join(dir, 'CONTCAR'));
+    await commands['dftune.generateKpoints'](uri(join(dir, 'CONTCAR')));
+    const fromContcar = readFileSync(join(dir, 'KPOINTS'), 'utf8').split('\n')[3];
+    check(fromContcar === '5 5 2', `KPOINTS generated from a CONTCAR: ${fromContcar}`);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

@@ -1,4 +1,7 @@
-// Reads just enough of a KPOINTS file to check it against the INCAR (https://vasp.at/wiki/KPOINTS).
+// The k-point setup of a KPOINTS file, as the INCAR checks and the builder need it
+// (https://vasp.at/wiki/KPOINTS). A view on parseKpoints, so both always agree.
+
+import { parseKpoints } from './parse';
 
 export type KpointsInfo =
   /** Regular mesh: "Gamma" or "Monkhorst-Pack" with N1 N2 N3 subdivisions. */
@@ -12,30 +15,31 @@ export type KpointsInfo =
   /** Mesh given by generating vectors ("Reciprocal"/"Cartesian" basis after a 0 count). */
   | { mode: 'generated' };
 
+/** The k-point setup of a KPOINTS file, read with parseKpoints; undefined if it cannot be determined. */
 export function readKpoints(text: string): KpointsInfo | undefined {
-  const lines = text.split(/\r?\n/);
-  const words = (i: number) => (lines[i] ?? '').trim().split(/\s+/).filter(Boolean);
-  const count = Number(words(1)[0]);
-  if (!Number.isInteger(count) || count < 0) return undefined;
-  // Only the first letter of the mode line matters to VASP.
-  const mode = (lines[2] ?? '').trim().charAt(0).toUpperCase();
-
-  if (mode === 'L') return { mode: 'line', points: count };
-  if (count === 0) {
-    if (mode === 'A') {
-      const length = Number(words(3)[0]);
+  const doc = parseKpoints(text);
+  const count = Number(doc.lines[1]?.tokens[0]?.text);
+  const role = (r: string) => doc.lines.find((l) => l.role === r);
+  switch (doc.layout) {
+    case 'line':
+      return { mode: 'line', points: count };
+    case 'auto': {
+      const length = Number(role('length')?.tokens[0]?.text);
       return Number.isFinite(length) ? { mode: 'auto', length } : undefined;
     }
-    if (mode === 'G' || mode === 'M') {
-      const n = words(3).slice(0, 3).map(Number);
+    case 'mesh': {
+      const line = role('mesh');
+      const n = (line?.fields === 3 ? line.tokens.slice(0, 3) : []).map((t) => Number(t.text));
       if (n.length !== 3 || !n.every((x) => Number.isInteger(x) && x > 0)) return undefined;
-      return { mode: 'mesh', centering: mode === 'G' ? 'gamma' : 'monkhorst-pack', subdivisions: n as [number, number, number] };
+      const gamma = role('mode')!.text.trim().charAt(0).toUpperCase() === 'G';
+      return { mode: 'mesh', centering: gamma ? 'gamma' : 'monkhorst-pack', subdivisions: n as [number, number, number] };
     }
-    return { mode: 'generated' };
+    case 'explicit':
+      return { mode: 'explicit', nkpts: count, tetrahedra: !!role('tetra-flag') };
+    case 'vectors':
+      return { mode: 'generated' };
   }
-  // Explicit list: `count` k points after the coordinate-system line, then optionally "Tetrahedra".
-  const after = (lines[3 + count] ?? '').trim().charAt(0).toUpperCase();
-  return { mode: 'explicit', nkpts: count, tetrahedra: after === 'T' };
+  return undefined;
 }
 
 /** One-line summary, e.g. "Γ-centred 4×4×2 mesh". */

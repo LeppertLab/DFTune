@@ -1,8 +1,6 @@
 // Reciprocal-space quantities of a structure, for k-point checks.
 
-import { angle, norm, type Structure, type Vec3 } from './parse';
-
-const cross = (u: Vec3, v: Vec3): Vec3 => [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+import { angle, cross, norm, type Structure, type Vec3 } from './parse';
 
 /** |b1|, |b2|, |b3| in Å⁻¹, including the factor 2π (the convention of KSPACING). */
 export function reciprocalLengths(s: Pick<Structure, 'lattice' | 'volume'>): Vec3 {

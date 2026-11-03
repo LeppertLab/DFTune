@@ -55,7 +55,7 @@ The files of one calculation are found in the same folder: `POSCAR.relax` for `I
 
 ### Quick fixes
 
-Problems with an obvious remedy offer a fix (lightbulb, Ctrl+.; in the builder a button): a misspelled or renamed tag, `LASPH` for meta-GGAs, `LMAXMIX` for +U, `ENCUT` from the POTCAR, Gaussian smearing instead of the default or tetrahedra with forces, `IBRION` for `NSW > 0`, `ICHARG = 11` for a line-mode KPOINTS, removing `NPAR` next to `NCORE` or an ignored `KSPACING`, Gamma instead of Monkhorst–Pack, a balanced k-point mesh, Direct/Cartesian.
+Problems with an obvious remedy offer a fix (lightbulb, Ctrl+.; in the builder a button): a misspelled or renamed tag, `LASPH` for meta-GGAs, `LMAXMIX` for +U, `ENCUT` from the POTCAR, Gaussian smearing instead of the default or tetrahedra with forces, `IBRION` for `NSW > 0`, removing `NPAR` next to `NCORE` or an ignored `KSPACING`, Gamma instead of Monkhorst–Pack, a balanced k-point mesh, Direct/Cartesian.
 
 ## Development
 

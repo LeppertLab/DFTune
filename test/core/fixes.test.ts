@@ -38,11 +38,6 @@ describe('INCAR quick fixes', () => {
     expect(fixIncar('ISMEAR = 0\nIBRION = 5\nEDIFF = 1E-7\n', 'phonon-symmetry')).toMatch(/^IBRION = 6$/m);
   });
 
-  it('makes a line-mode run non-self-consistent', () => {
-    const kpoints = { mode: 'line' as const, points: 40 };
-    expect(fixIncar('ISMEAR = 0\n', 'line-mode-scf', { kpoints })).toMatch(/^ICHARG = 11$/m);
-  });
-
   it('uses the POTCAR for the cutoff', () => {
     expect(fixIncar('ENCUT = 300\nISMEAR = 0\n', 'encut-below-enmax', { poscar, potcar })).toMatch(/^ENCUT = 520$/m);
     expect(fixIncar('ISMEAR = 0\nIBRION = 2\nNSW = 10\nISIF = 3\n', 'pulay', { poscar, potcar })).toMatch(/^ENCUT = 520$/m);

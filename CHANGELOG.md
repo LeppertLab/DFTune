@@ -5,17 +5,20 @@
 DFTune now covers all four VASP input files: the INCAR builder, plus checks, hovers, quick fixes and formatting for INCAR, KPOINTS and POSCAR, and checks against the POTCAR. This release hardens what 0.7–0.9 added, after a full code review.
 
 ### Added
-- Quick fix `ICHARG = 11` for an INCAR next to a line-mode KPOINTS.
 - *Generate KPOINTS Mesh…* on a CONTCAR, `*.vasp` or `POSCAR.*` file uses that file's cell (before, it always looked for a file named POSCAR).
 
 ### Changed
 - The close-atoms check in POSCAR files is exact for any cell shape (strongly skewed cells could hide a close contact) and about 30× faster; it now runs for cells up to 4000 atoms.
 - *New VASP Calculation…* no longer offers `KSPACING` when the folder already has a KPOINTS file (VASP would ignore it); it offers to keep or replace the KPOINTS instead.
 - The INCAR checks read POSCAR and KPOINTS with the same parsers as their own linters, so both always agree.
-- Diagnostics are computed once per edit and shared with the quick fixes; a result that arrives after a newer edit (slow file systems) is dropped instead of shown.
+- Diagnostics are computed once per edit and shared with the quick fixes. A result that arrives after a newer edit (slow file systems) is dropped; one that was overtaken by a change to a neighbouring file is computed again; a failed check is not remembered.
+- The INCAR checks read only the header lines of POSCAR and KPOINTS (species, counts, cell, mesh), not every atom or k point, so large files don't slow down typing in the INCAR.
+- *New VASP Calculation…* asks only once before replacing an existing KPOINTS.
 - README reorganized by input file.
 
 ### Fixed
+- A POSCAR with a bad scaling factor or lattice (a template, say) but valid species and counts no longer loses all INCAR checks that depend on it (MAGMOM length, per-species arrays, POTCAR order, the DFT+U table).
+- *Generate KPOINTS Mesh…* on a structure file that cannot be read falls back to the POSCAR next to it instead of giving up.
 - Format Document no longer repeats words of multi-word keywords: `Line mode` became `Line-mode mode`, `Selective dynamics ! relax` became `Selective dynamics dynamics ! relax`.
 - "Remove KGAMMA" was offered for a Monkhorst–Pack KPOINTS file, where KGAMMA has no effect.
 

@@ -1,5 +1,5 @@
 // What the INCAR checks and the builder need from a POSCAR/CONTCAR: species and counts (to size
-// per-atom and per-species arrays), plus the cell when the whole file could be read. A view on
+// per-atom and per-species arrays), plus the cell when the scale and lattice are valid. A view on
 // parsePoscar, so the INCAR checks and the POSCAR linter always agree on what the file says.
 
 import { parsePoscar } from './parse';
@@ -10,13 +10,14 @@ export interface PoscarInfo {
   species?: string[];
   counts: number[];
   nions: number;
-  /** Scaled lattice vectors (Å) and cell volume, when the whole file could be read. */
+  /** Scaled lattice vectors (Å) and cell volume, when the scale and lattice lines are valid. */
   lattice?: [[number, number, number], [number, number, number], [number, number, number]];
   volume?: number;
 }
 
 export function readPoscar(text: string): PoscarInfo | undefined {
-  const doc = parsePoscar(text, { distances: false });
+  // Header and cell only: no need to read (or check) every atom on each INCAR lint.
+  const doc = parsePoscar(text, { positions: false });
   if (!doc.header) return undefined;
   const { comment, species, counts, nions } = doc.header;
   const info: PoscarInfo = {
@@ -26,6 +27,5 @@ export function readPoscar(text: string): PoscarInfo | undefined {
     counts,
     nions,
   };
-  const s = doc.structure;
-  return s ? { ...info, lattice: s.lattice, volume: s.volume } : info;
+  return doc.cell ? { ...info, lattice: doc.cell.lattice, volume: doc.cell.volume } : info;
 }

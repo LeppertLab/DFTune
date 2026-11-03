@@ -41,7 +41,12 @@ export interface KpointsDoc {
   layout?: 'auto' | 'mesh' | 'vectors' | 'explicit' | 'line';
 }
 
-export function parseKpoints(text: string): KpointsDoc {
+export interface KpointsParseOptions {
+  /** Check the k-point, segment and tetrahedra lines (default true). Off reads the header lines only. */
+  points?: boolean;
+}
+
+export function parseKpoints(text: string, options: KpointsParseOptions = {}): KpointsDoc {
   const lines = splitLines<LineRole>(text, 'extra');
   const diagnostics: Diagnostic[] = [];
   const doc: KpointsDoc = { lines, diagnostics };
@@ -128,7 +133,7 @@ export function parseKpoints(text: string): KpointsDoc {
   if (first === 'L') {
     doc.layout = 'line';
     if (count === 0) error('Line mode needs the number of points per segment on line 2, found 0.', countTok);
-    lineMode(3);
+    lineMode(3, options.points === false);
   } else if (count === 0) {
     if (first === 'A') {
       doc.layout = 'auto';
@@ -166,7 +171,7 @@ export function parseKpoints(text: string): KpointsDoc {
     }
   } else {
     doc.layout = 'explicit';
-    explicit(3);
+    explicit(3, options.points === false);
   }
   return doc;
 
@@ -187,7 +192,13 @@ export function parseKpoints(text: string): KpointsDoc {
     }
   }
 
-  function explicit(from: number) {
+  function explicit(from: number, headerOnly: boolean) {
+    if (headerOnly) {
+      // Just the Tetrahedra flag after the list.
+      const flag = lines[from + count];
+      if (flag && flag.text.trim().charAt(0).toUpperCase() === 'T') flag.role = 'tetra-flag';
+      return;
+    }
     // The mode line (3) is the coordinate system; lines 4 … 3+count hold `kx ky kz weight`.
     let total = 0;
     for (let k = 0; k < count; k++) {
@@ -241,7 +252,7 @@ export function parseKpoints(text: string): KpointsDoc {
     finish(i);
   }
 
-  function lineMode(from: number) {
+  function lineMode(from: number, headerOnly: boolean) {
     const coord = need(from, 'the coordinate line (line 4: Reciprocal or Cartesian)');
     if (!coord) return;
     coord.role = 'coords';
@@ -249,6 +260,7 @@ export function parseKpoints(text: string): KpointsDoc {
       error('Line 4 must say Reciprocal or Cartesian.', lineSpan(coord));
       return;
     }
+    if (headerOnly) return;
     let points = 0;
     let last: KLine | undefined;
     let i = from + 1;

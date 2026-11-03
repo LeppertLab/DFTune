@@ -17,7 +17,7 @@ export type KpointsInfo =
 
 /** The k-point setup of a KPOINTS file, read with parseKpoints; undefined if it cannot be determined. */
 export function readKpoints(text: string): KpointsInfo | undefined {
-  const doc = parseKpoints(text);
+  const doc = parseKpoints(text, { points: false });
   const count = Number(doc.lines[1]?.tokens[0]?.text);
   const role = (r: string) => doc.lines.find((l) => l.role === r);
   switch (doc.layout) {

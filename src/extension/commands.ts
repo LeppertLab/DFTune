@@ -49,7 +49,8 @@ async function newCalculation(folder?: vscode.Uri) {
   if (kpoints.kind === 'kspacing') text += `\n# k points: spacing ${kpoints.spacing} 1/A\nKSPACING = ${kpoints.spacing}\n`;
   await vscode.workspace.fs.writeFile(incar, new TextEncoder().encode(text));
   if (kpoints.kind === 'file' && poscar?.info.lattice && poscar.info.volume) {
-    await writeKpoints(vscode.Uri.joinPath(folder, 'KPOINTS'), meshKpoints({ lattice: poscar.info.lattice, volume: poscar.info.volume }, kpoints.spacing));
+    // Replacing an existing KPOINTS was chosen in the k-points pick, so it is not asked again.
+    await writeKpoints(vscode.Uri.joinPath(folder, 'KPOINTS'), meshKpoints({ lattice: poscar.info.lattice, volume: poscar.info.volume }, kpoints.spacing), true);
   }
 
   await vscode.window.showTextDocument(incar, { viewColumn: vscode.ViewColumn.One });
@@ -98,8 +99,8 @@ async function pickDensity(poscar: PoscarInfo | undefined, title: string): Promi
 }
 
 /** Writes a KPOINTS file, asking before replacing one, and opens it. */
-async function writeKpoints(target: vscode.Uri, text: string): Promise<boolean> {
-  if (await exists(target)) {
+async function writeKpoints(target: vscode.Uri, text: string, alreadyConfirmed = false): Promise<boolean> {
+  if (!alreadyConfirmed && (await exists(target))) {
     const answer = await vscode.window.showWarningMessage(`${vscode.workspace.asRelativePath(target)} already exists. Replace it?`, { modal: true }, 'Replace');
     if (answer !== 'Replace') return false;
   }
@@ -121,7 +122,7 @@ async function generateKpoints(uri?: vscode.Uri) {
   const isFolder = (await vscode.workspace.fs.stat(source)).type === vscode.FileType.Directory;
   const anchor = isFolder ? vscode.Uri.joinPath(source, 'INCAR') : source;
   // Run on a structure file (CONTCAR, Si.vasp, POSCAR.relax): use that file itself.
-  const poscar = isStructureFile(anchor) ? await readStructure(anchor) : await findPoscar(anchor);
+  const poscar = (isStructureFile(anchor) ? await readStructure(anchor) : undefined) ?? (await findPoscar(anchor));
   if (!poscar?.info.lattice || !poscar.info.volume) {
     vscode.window.showWarningMessage(poscar ? `${poscar.fileName} could not be read completely: fix its problems first.` : 'No POSCAR found for this file.');
     return;

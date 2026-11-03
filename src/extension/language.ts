@@ -69,7 +69,8 @@ export function registerLanguageFeatures(context: vscode.ExtensionContext) {
     }),
     vscode.workspace.onDidChangeTextDocument((e) => refresh(e.document)),
     vscode.workspace.onDidCloseTextDocument((doc) => {
-      if (doc.languageId === 'incar') folders.untrack(doc.uri);
+      if (doc.languageId !== 'incar') return;
+      folders.untrack(doc.uri);
       cache.delete(doc.uri);
       clearTimeout(timers.get(doc.uri.toString()));
       timers.delete(doc.uri.toString());

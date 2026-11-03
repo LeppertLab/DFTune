@@ -40,6 +40,8 @@ export interface PoscarDoc {
   diagnostics: Diagnostic[];
   /** Present as soon as the species and counts could be read, even if positions are missing. */
   header?: { comment: string; species?: string[]; counts: number[]; nions: number };
+  /** The scaled lattice (Å) and cell volume, as soon as the scale and lattice lines are valid. */
+  cell?: { lattice: [Vec3, Vec3, Vec3]; volume: number };
   /** Present when the header and all positions could be read. */
   structure?: Structure;
 }
@@ -48,12 +50,16 @@ export interface PoscarDoc {
 export const MIN_DISTANCE = 0.5;
 /** Above this many atoms the distance check is skipped (it is quadratic). */
 const MAX_ATOMS_DISTANCE_CHECK = 4000;
+/** Image shifts tried before the distance check gives up: bounds the work for degenerate, very thin cells. */
+const MAX_SHIFT_BUDGET = 5_000_000;
 
 const LOGICAL = /^\.?[TF]/i;
 
 export interface ParseOptions {
   /** Run the quadratic close-atoms check (default true). Off when only the cell and counts are needed. */
   distances?: boolean;
+  /** Read the atom positions (default true). Off stops after the coordinate line: header and cell only. */
+  positions?: boolean;
 }
 
 export function parsePoscar(text: string, options: ParseOptions = {}): PoscarDoc {
@@ -88,48 +94,54 @@ export function parsePoscar(text: string, options: ParseOptions = {}): PoscarDoc
     return l.tokens.slice(0, n).map((t) => toNumber(t.text));
   };
 
+  /** Scale and lattice vectors (lines 2–5); undefined after reporting a problem. */
+  function readCell(): { lattice: [Vec3, Vec3, Vec3]; factors: Vec3 } | undefined {
+    const scaleLine = need(1, 'the scaling factor (line 2)');
+    if (!scaleLine) return undefined;
+    const nScale = scaleLine.tokens.length >= 3 && scaleLine.tokens.slice(0, 3).every((t) => isNumber(t.text)) ? 3 : 1;
+    const scale = numbers(scaleLine, 'scale', nScale, 'Scaling factor');
+    let ok = !!scale;
+    if (scale && nScale === 3 && scale.some((x) => x <= 0)) {
+      error('Three scaling factors must all be positive (a single negative number gives the cell volume).', lineSpan(scaleLine));
+      ok = false;
+    } else if (scale && scale[0] === 0) {
+      error('The scaling factor cannot be zero.', scaleLine.tokens[0]);
+      ok = false;
+    }
+    const raw: Vec3[] = [];
+    for (let i = 2; i < 5; i++) {
+      const l = need(i, `lattice vector ${i - 1} (line ${i + 1})`);
+      if (!l) return undefined;
+      const v = numbers(l, 'lattice', 3, `Lattice vector ${'abc'[i - 2]}`);
+      if (v) raw.push(v as Vec3);
+      else ok = false;
+    }
+    if (!ok || !scale) return undefined;
+    const rawVolume = det(raw);
+    if (Math.abs(rawVolume) < 1e-8) {
+      error('The lattice vectors are linearly dependent: the cell has no volume.', { start: lines[2].start, end: lines[4].end }, 'poscar-lattice');
+      return undefined;
+    }
+    if (rawVolume < 0) {
+      report('warning', 'poscar-left-handed', 'The lattice vectors form a left-handed set (negative triple product), which VASP refuses: swap two of them.', { start: lines[2].start, end: lines[4].end });
+    }
+    // Per-axis factors; a single negative scale is the cell volume. Cartesian positions are scaled the same way.
+    const s = scale[0] > 0 ? scale[0] : Math.cbrt(-scale[0] / Math.abs(rawVolume));
+    const factors: Vec3 = nScale === 3 ? (scale as Vec3) : [s, s, s];
+    return { lattice: raw.map((v) => v.map((x, k) => x * factors[k]) as Vec3) as [Vec3, Vec3, Vec3], factors };
+  }
+
   if (text.trim() === '') {
     error('The file is empty.', { start: 0, end: 0 }, 'poscar-incomplete');
     return doc;
   }
   lines[0].role = 'title';
 
-  // Line 2: scale.
-  const scaleLine = need(1, 'the scaling factor (line 2)');
-  if (!scaleLine) return doc;
-  const nScale = scaleLine.tokens.length >= 3 && scaleLine.tokens.slice(0, 3).every((t) => isNumber(t.text)) ? 3 : 1;
-  const scale = numbers(scaleLine, 'scale', nScale, 'Scaling factor');
-  if (!scale) return doc;
-  if (nScale === 3 && scale.some((s) => s <= 0)) {
-    error('Three scaling factors must all be positive (a single negative number gives the cell volume).', lineSpan(scaleLine));
-    return doc;
-  }
-  if (scale[0] === 0) {
-    error('The scaling factor cannot be zero.', scaleLine.tokens[0]);
-    return doc;
-  }
-
-  // Lines 3–5: lattice.
-  const raw: Vec3[] = [];
-  for (let i = 2; i < 5; i++) {
-    const l = need(i, `lattice vector ${i - 1} (line ${i + 1})`);
-    if (!l) return doc;
-    const v = numbers(l, 'lattice', 3, `Lattice vector ${'abc'[i - 2]}`);
-    if (!v) return doc;
-    raw.push(v as Vec3);
-  }
-  const rawVolume = det(raw);
-  if (Math.abs(rawVolume) < 1e-8) {
-    error('The lattice vectors are linearly dependent: the cell has no volume.', { start: lines[2].start, end: lines[4].end }, 'poscar-lattice');
-    return doc;
-  }
-  if (rawVolume < 0) {
-    report('warning', 'poscar-left-handed', 'The lattice vectors form a left-handed set (negative triple product), which VASP refuses: swap two of them.', { start: lines[2].start, end: lines[4].end });
-  }
-  // Per-axis factors; a single negative scale is the cell volume. Cartesian positions are scaled the same way.
-  const s = scale[0] > 0 ? scale[0] : Math.cbrt(-scale[0] / Math.abs(rawVolume));
-  const factors: Vec3 = nScale === 3 ? (scale as Vec3) : [s, s, s];
-  const lattice = raw.map((v) => v.map((x, k) => x * factors[k]) as Vec3);
+  // Lines 2–5: scale and lattice. A problem here is reported, but the species and counts below
+  // are still read, so checks that only need those (MAGMOM length, POTCAR order) keep working.
+  const cell = readCell();
+  if (cell) doc.cell = { lattice: cell.lattice, volume: Math.abs(det(cell.lattice)) };
+  else if (lines.length < 5) return doc;
 
   // Line 6: species (VASP 5) or counts (VASP 4).
   let i = 5;
@@ -207,6 +219,12 @@ export function parsePoscar(text: string, options: ParseOptions = {}): PoscarDoc
     return doc;
   }
   i++;
+  // Without a valid cell the positions cannot be turned into fractional coordinates.
+  if (!cell || options.positions === false) {
+    for (let k = i; k < lines.length; k++) if (isBlank(lines[k])) lines[k].role = 'blank';
+    return doc;
+  }
+  const { lattice, factors } = cell;
 
   // Positions.
   const fieldCount = selective ? 6 : 3;
@@ -301,6 +319,7 @@ function checkDistances(s: Structure, warn: (message: string, span: Span) => voi
   const [[l00, l01, l02], [l10, l11, l12], [l20, l21, l22]] = L;
   const [r0, r1, r2_] = reach;
   let reported = 0;
+  let budget = MAX_SHIFT_BUDGET;
   for (let i = 0; i < n && reported < 10; i++) {
     for (let j = i; j < n && reported < 10; j++) {
       // Integer shifts along each axis that can bring j within reach of i; most pairs have none.
@@ -316,6 +335,8 @@ function checkDistances(s: Structure, warn: (message: string, span: Span) => voi
       const lo2 = Math.ceil(-d2 - r2_);
       const hi2 = Math.floor(-d2 + r2_);
       if (lo2 > hi2) continue;
+      budget -= (hi0 - lo0 + 1) * (hi1 - lo1 + 1) * (hi2 - lo2 + 1);
+      if (budget < 0) return;
       let best = Infinity;
       for (let a = lo0; a <= hi0; a++) {
         for (let b = lo1; b <= hi1; b++) {
@@ -345,7 +366,7 @@ function checkDistances(s: Structure, warn: (message: string, span: Span) => voi
   }
 }
 
-const cross = (u: Vec3, v: Vec3): Vec3 => [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+export const cross = (u: Vec3, v: Vec3): Vec3 => [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
 
 /** "Fe" or "species 2" for atom `i` (zero-based). */
 export function speciesLabeler(s: Pick<Structure, 'species' | 'counts'>): (i: number) => string {

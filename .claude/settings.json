@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx vitest run)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git -c user.name=DaanHolleman -c user.email=dholleman123@gmail.com commit *)",
+      "Bash(git checkout -b *)",
+      "Bash(git checkout main)",
+      "Bash(git merge --ff-only *)",
+      "Bash(git branch -d *)",
+      "Bash(git push origin main)"
+    ]
+  }
+}

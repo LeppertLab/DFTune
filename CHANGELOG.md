@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0 (2026-11-04)
+
+### Added
+- pw.x inputs: Format Document (one variable per line with `=` aligned, documented spelling of names, `.true.`/`.false.`, cards with aligned columns and `{option}` in braces; values, strings and comments untouched, order kept).
+- pw.x cross-checks, each verified against the QE 7.4 source: `nat`/`ntyp` against the cards, species labels (case-sensitive), card columns, `ibrav` against `CELL_PARAMETERS` and `celldm`/`A` (including the `celldm(i)` each `ibrav` needs and the units rules), K_POINTS grids and lists (also BZ labels on band paths), `&IONS` for relax/md and `&CELL` for vc-* calculations (with a fix that adds them), `nspin = 2` without smearing, tetrahedra or `tot_magnetization` ("specify occupations"), smearing without `degauss`, tetrahedra without an automatic grid, `ecutrho` against `ecutwfc` (an error only when `ecutrho <= ecutwfc`, as in QE), magnetization notes, the OCCUPATIONS card.
+- Warnings for Windows line endings (CRLF) and tab characters, which the QE documentation lists as sources of trouble, with fixes.
+
 ## 1.1.0 (2026-11-04)
 
 First Quantum ESPRESSO release: pw.x input files.

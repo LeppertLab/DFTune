@@ -55,3 +55,4 @@ export * from './qe/values';
 export * from './qe/parse';
 export * from './qe/validate';
 export * from './qe/hover';
+export * from './qe/format';

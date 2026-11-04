@@ -92,7 +92,7 @@ describe('validateQe', () => {
   });
 
   it('knows array variables and the Fortran spellings VASP-style checks would trip over', () => {
-    expect(codes(input("calculation = 'scf'", 'celldm(2) = 1.0, starting_magnetization(1) = 0.5, nspin = 2', 'conv_thr = 1.D-8'))).toEqual([]);
+    expect(codes(input("calculation = 'scf'", "celldm(2) = 1.0, starting_magnetization(1) = 0.5, nspin = 2, occupations = 'smearing', degauss = 0.02", 'conv_thr = 1.D-8'))).toEqual([]);
     expect(codes(input('', 'occupations = "smearing", smearing = "mv", degauss = 0.01, input_dft = "pbe"'))).toEqual([]);
   });
 
@@ -122,7 +122,7 @@ describe('validateQe', () => {
     expect(opt.message).toMatch(/not one of/);
     expect(opt.fix?.edit.text).toBe("'relax'");
     expect(codes(input("calculation = 'SCF'"))).toEqual([]);
-    expect(codes(input("calculation = 'vc-relax'"))).toEqual([]);
+    expect(codes(input("calculation = 'vc-relax'")).filter((c) => c === 'qe-option')).toEqual([]);
   });
 
   it('checks namelists: order, duplicates, unknown, missing, required variables', () => {
@@ -157,7 +157,9 @@ describe('the generated table is self-consistent', () => {
       for (const v of varsOf('pw', nl)) {
         const key = v.dim ? `${v.name}(1)` : v.name;
         const text = `&${nl}\n ${key} = ${sample(v)}\n/\n`;
-        const problems = validateQe(parseQe(text, { cards: cardsOf('pw') }), 'pw').filter((d) => d.code !== 'qe-required' && !d.code.startsWith('qe-namelist') && d.code !== 'qe-card-missing');
+        // Only the per-variable checks: whole-input rules (a lone degauss is "ignored" …) need a complete input.
+        const own = ['qe-unknown-variable', 'qe-misplaced', 'qe-value', 'qe-index', 'qe-option', 'qe-unquoted', 'qe-syntax', 'qe-string'];
+        const problems = validateQe(parseQe(text, { cards: cardsOf('pw') }), 'pw').filter((d) => own.includes(d.code));
         expect(problems.map((d) => d.message), `${nl}/${v.name}`).toEqual([]);
       }
     }

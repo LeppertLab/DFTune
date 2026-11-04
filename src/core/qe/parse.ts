@@ -27,6 +27,8 @@ export interface QeEntry {
   /** Value as written, without trailing commas; empty (start === end) when missing. */
   value: string;
   valueSpan: Span;
+  /** The value's items (commas and comments dropped), with their positions. */
+  items: Token[];
   /** From the key to the end of the value. */
   span: Span;
 }
@@ -50,8 +52,10 @@ export interface QeCard {
   /** Lower-case option, e.g. "automatic" or "angstrom"; undefined when none is given. */
   option?: string;
   optionSpan?: Span;
-  /** The lines of the card after its keyword line (comments and blank lines are not included). */
+  /** The data lines of the card after its keyword line (comments stripped; comment-only and blank lines are not included). */
   lines: Line[];
+  /** Every line after the keyword line up to the end of the card, comments and blank lines included, unmodified. */
+  raw: Line[];
   span: Span;
 }
 
@@ -61,6 +65,10 @@ export interface QeDoc {
   cards: QeCard[];
   /** Text lines outside namelists and cards (the title line of ph.x, q-point lists, …). */
   loose: Line[];
+  /** Every line of the file. */
+  lines: Line[];
+  /** `!` comments inside namelists (from the `!` to the end of the line). */
+  comments: Span[];
   issues: Diagnostic[];
 }
 
@@ -81,7 +89,7 @@ const NAMELIST_START = /^\s*&\s*([A-Za-z_]\w*)/;
 export function parseQe(text: string, options: QeParseOptions = {}): QeDoc {
   const cardNames = new Set(options.cards ?? []);
   const lines = splitLines<'text'>(text, 'text');
-  const doc: QeDoc = { text, namelists: [], cards: [], loose: [], issues: [] };
+  const doc: QeDoc = { text, namelists: [], cards: [], loose: [], lines, comments: [], issues: [] };
   const issue = (severity: Diagnostic['severity'], code: string, message: string, span: Span) => doc.issues.push({ severity, code, message, span });
 
   let current: { nl: QeNamelist; tokens: Tok[] } | undefined;
@@ -105,11 +113,12 @@ export function parseQe(text: string, options: QeParseOptions = {}): QeDoc {
     if (current && (startsNamelist || keyword)) finishNamelist(false, current.tokens.length ? current.tokens[current.tokens.length - 1].end : current.nl.span.end);
 
     if (current) {
-      if (scanLine(line, 0, current.tokens, issue)) finishNamelist(true, current.tokens[current.tokens.length - 1].end);
+      if (scanLine(line, 0, current.tokens, doc.comments, issue)) finishNamelist(true, current.tokens[current.tokens.length - 1].end);
       continue;
     }
 
     const trimmed = line.text.trim();
+    if (card && !startsNamelist && !keyword) card.raw.push(line);
     if (trimmed === '' || trimmed[0] === '!' || trimmed[0] === '#') continue;
 
     if (startsNamelist) {
@@ -120,12 +129,12 @@ export function parseQe(text: string, options: QeParseOptions = {}): QeDoc {
       const nl: QeNamelist = { name: name.toUpperCase(), nameSpan: { start: nameStart, end: nameEnd }, entries: [], closed: false, span: { start: nameStart, end: nameEnd } };
       doc.namelists.push(nl);
       current = { nl, tokens: [] };
-      if (scanLine(line, nameEnd - line.start, current.tokens, issue)) finishNamelist(true, current.tokens[current.tokens.length - 1].end);
+      if (scanLine(line, nameEnd - line.start, current.tokens, doc.comments, issue)) finishNamelist(true, current.tokens[current.tokens.length - 1].end);
       continue;
     }
 
     if (keyword) {
-      card = { name: keyword.name, nameSpan: keyword.nameSpan, option: keyword.option, optionSpan: keyword.optionSpan, lines: [], span: lineSpan(line) };
+      card = { name: keyword.name, nameSpan: keyword.nameSpan, option: keyword.option, optionSpan: keyword.optionSpan, lines: [], raw: [], span: lineSpan(line) };
       doc.cards.push(card);
       continue;
     }
@@ -169,7 +178,7 @@ function cardKeyword(line: Line, cards: ReadonlySet<string>): { name: string; na
  * Tokenizes one line of a namelist body, from column `from`, appending to `tokens`. Returns true
  * when the namelist ends on this line (a `/` or `&END` outside a string); the rest is ignored.
  */
-function scanLine(line: Line, from: number, tokens: Tok[], issue: (s: Diagnostic['severity'], code: string, message: string, span: Span) => void): boolean {
+function scanLine(line: Line, from: number, tokens: Tok[], comments: Span[], issue: (s: Diagnostic['severity'], code: string, message: string, span: Span) => void): boolean {
   const t = line.text;
   let i = from;
   const at = (k: number) => line.start + k;
@@ -178,6 +187,7 @@ function scanLine(line: Line, from: number, tokens: Tok[], issue: (s: Diagnostic
     if (c === ' ' || c === '\t') {
       i++;
     } else if (c === '!') {
+      comments.push({ start: at(i), end: line.end });
       return false; // comment to the end of the line
     } else if (c === '/') {
       tokens.push({ kind: 'end', text: '/', start: at(i), end: at(i + 1) });
@@ -244,6 +254,7 @@ function buildEntries(nl: QeNamelist, tokens: Tok[], text: string, issue: (s: Di
       name: (m ? m[1] : t.text).toLowerCase(),
       keySpan: { start: t.start, end: t.end },
       value: text.slice(valueSpan.start, valueSpan.end),
+      items: valueTokens.filter((v) => v.kind !== 'comma').map((v) => ({ text: v.text, start: v.start, end: v.end })),
       valueSpan,
       span: { start: t.start, end: valueSpan.end },
     };

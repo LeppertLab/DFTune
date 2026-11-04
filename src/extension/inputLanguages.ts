@@ -8,6 +8,7 @@ import {
   detectProgram,
   formatKpoints,
   formatPoscar,
+  formatQe,
   kpointsHover,
   lintKpoints,
   lintPoscar,
@@ -62,6 +63,7 @@ const LANGUAGES: InputLanguage[] = [
     id: 'qe',
     label: 'QE',
     lint: async (text) => lintQe(text),
+    format: formatQe,
     hover: async (text, offset) => {
       const program = detectProgram(text);
       return program ? qeHover(parseQe(text, { cards: cardsOf(program) }), program, offset) : undefined;

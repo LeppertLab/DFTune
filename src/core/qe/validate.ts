@@ -8,6 +8,7 @@ import type { Diagnostic, Fix } from '../validation/rules';
 import { editDistance } from '../validation/rules';
 import type { QeDoc, QeEntry } from './parse';
 import { allVarNames, cardsOf, lookupVar, namelistsDefining, namelistsOf, type QeProgram, type QeVar } from './tags';
+import { checkPw } from './rules';
 import { checkItem, isInteger, isQuoted, unquote, valueItems } from './values';
 
 const REQUIRED_CARDS: Partial<Record<QeProgram, string[]>> = { pw: ['ATOMIC_SPECIES', 'ATOMIC_POSITIONS', 'K_POINTS'] };
@@ -34,6 +35,21 @@ export function validateQe(doc: QeDoc, program: QeProgram): Diagnostic[] {
   const out: Diagnostic[] = [...doc.issues];
   const report = (severity: Diagnostic['severity'], code: string, message: string, span: Span, fix?: Fix) => out.push({ severity, code, message, span, ...(fix && { fix }) });
 
+  // The QE input documentation: "TABS, CRLF, ANY OTHER STRANGE CHARACTER, ARE A SOURCE OF TROUBLE".
+  const crlf = doc.text.indexOf('\r\n');
+  if (crlf >= 0) {
+    report('warning', 'qe-crlf', 'The file has Windows line endings (CRLF). QE can fail on them, e.g. a pseudopotential file name then ends in a carriage return. Convert them to LF.', { start: crlf, end: crlf + 2 }, {
+      title: 'Convert line endings to LF',
+      edit: { start: 0, end: doc.text.length, text: doc.text.replace(/\r\n/g, '\n') },
+    });
+  }
+  const tab = doc.text.indexOf('\t');
+  if (tab >= 0) {
+    report('warning', 'qe-tab', 'The file contains tab characters. The QE input documentation lists tabs among the sources of trouble: use spaces.', { start: tab, end: tab + 1 }, {
+      title: 'Replace tabs by spaces',
+      edit: { start: 0, end: doc.text.length, text: doc.text.replace(/\t/g, '  ') },
+    });
+  }
   checkNamelists(doc, program, report);
   for (const nl of doc.namelists) {
     const seen = new Set<string>();
@@ -57,6 +73,7 @@ export function validateQe(doc: QeDoc, program: QeProgram): Diagnostic[] {
     }
   }
   checkCards(doc, program, report);
+  if (program === 'pw') checkPw(doc, report);
   return out;
 }
 

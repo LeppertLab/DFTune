@@ -92,6 +92,33 @@ export function alignedRows(ls: Line[]): string[] {
 }
 
 /**
+ * Rows of cells in columns separated by two spaces: `num` columns line up on the decimal point,
+ * `left` columns (labels, file names) are left-aligned. Rows may have fewer cells; the last
+ * column is not padded, so no line ends in spaces.
+ */
+export function alignColumns(rows: string[][], kinds: ('num' | 'left')[], gap = '  '): string[] {
+  const widths = kinds.map((kind, c) => {
+    const cells = rows.map((r) => r[c]).filter((x): x is string => x !== undefined);
+    if (kind === 'left') return { int: Math.max(0, ...cells.map((x) => x.length)), frac: 0 };
+    const parts = cells.map(split);
+    return { int: Math.max(0, ...parts.map((p) => p[0].length)), frac: Math.max(0, ...parts.map((p) => p[1].length)) };
+  });
+  return rows.map((row) =>
+    row
+      .map((cell, c) => {
+        const kind = kinds[Math.min(c, kinds.length - 1)];
+        const w = widths[Math.min(c, kinds.length - 1)];
+        if (c >= kinds.length) return cell;
+        if (kind === 'left') return cell.padEnd(w.int);
+        const [int, frac] = split(cell);
+        return int.padStart(w.int) + frac.padEnd(w.frac);
+      })
+      .join(gap)
+      .trimEnd(),
+  );
+}
+
+/**
  * Replaces the keyword at the start of a line by its canonical spelling, when its first one or
  * more words are a known spelling (`words` maps lower-case spellings, words separated by single
  * spaces, to the canonical one). The longest match wins and the rest of the line is kept as is:

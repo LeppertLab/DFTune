@@ -140,7 +140,9 @@ function format(lang, text, name) {
   check(ih && /For POSCAR: a \d+ × \d+ × \d+ mesh/.test(ih.contents.value), 'KSPACING hover shows the mesh for the POSCAR');
 
   // Quantum ESPRESSO.
-  for (const id of ['hover', 'completion', 'actions']) check(!!providers[id].qe, `QE ${id} registered`);
+  for (const id of ['hover', 'completion', 'actions', 'format']) check(!!providers[id].qe, `QE ${id} registered`);
+  const messy = "&control calculation='scf',prefix='x'\n/\n";
+  check(format('qe', messy, 'x.in') === "&CONTROL\n  calculation = 'scf'\n  prefix      = 'x'\n/\n", 'QE Format Document works through the extension');
   check(sniffed.languageId === 'qe', 'a plain-text file starting with &CONTROL is switched to the QE language');
   const qd = doc('qe', QE_BAD, 'scf.bad.in');
   const qh = await providers.hover.qe.provideHover(qd, qd.positionAt(QE_BAD.indexOf('celldm') + 2));

@@ -10,7 +10,10 @@
       "Bash(git checkout main)",
       "Bash(git merge --ff-only *)",
       "Bash(git branch -d *)",
-      "Bash(git push origin main)"
+      "Bash(git push origin main)",
+      "Bash(npm run -s package)",
+      "Bash(npm run -s smoke)",
+      "Bash(node esbuild.mjs)"
     ]
   }
 }

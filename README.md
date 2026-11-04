@@ -2,7 +2,7 @@
 
 # DFTune
 
-A VS Code extension for setting up VASP calculations by **physical intent** (calculation type, functional, magnetism, smearing, accuracy, DFT+U) instead of remembering tags and magic numbers, and for catching the mistakes VASP itself doesn't complain about. It covers all four input files: an INCAR builder, plus checks, hovers, quick fixes and formatting for INCAR, KPOINTS and POSCAR, and checks against the POTCAR. Quantum ESPRESSO is planned.
+A VS Code extension for setting up VASP calculations by **physical intent** (calculation type, functional, magnetism, smearing, accuracy, DFT+U) instead of remembering tags and magic numbers, and for catching the mistakes VASP itself doesn't complain about. It covers all four input files: an INCAR builder, plus checks, hovers, quick fixes and formatting for INCAR, KPOINTS and POSCAR, and checks against the POTCAR. Quantum ESPRESSO inputs are being added (pw.x so far).
 
 It is built for the usual HPC workflow: VS Code connected to a cluster with **Remote-SSH**. The extension runs on the cluster (`extensionKind: workspace`) and edits the files in place, so nothing is copied back and forth. The builder UI is bundled locally and needs no internet access.
 
@@ -45,6 +45,16 @@ For `POSCAR`, `CONTCAR`, `POSCAR.*`, `CONTCAR.*`, `*.vasp` and `*.poscar`: highl
 
 The POTCAR itself is never shown or changed; only its header lines (`TITEL`, `ENMAX`, `ZVAL`) are read. It is checked against the POSCAR, from both the INCAR and the POSCAR: the number of species and their order (a POTCAR in the wrong order runs without complaint and silently uses the wrong potentials). The INCAR's `ENCUT` is compared with the largest `ENMAX`, and cell relaxations get a concrete cutoff (1.3 × `ENMAX`) against Pulay stress.
 
+### Quantum ESPRESSO (pw.x)
+
+Files are recognized by name (`*.pwi`, `scf.in`, `relax.in`, `vc-relax.in`, `bands.in`, `pw.*.in`, …) or by content: a plain-text file that starts with `&CONTROL` is switched to the *Quantum ESPRESSO* language automatically.
+
+- **Highlighting** of namelists, variables, cards, strings, logicals and numbers.
+- **Checks** for what QE itself stops on. Unlike VASP, QE rejects variables it does not know, so these are errors: unknown variables (with *did you mean*), variables in the wrong namelist (`ecutrho` in `&CONTROL` → belongs in `&SYSTEM`), namelists out of order, repeated or missing, unterminated namelists and strings, values of the wrong type (`nbnd = 4.5`, `nosym = yes`), several values for a scalar, array indices out of range, and the required variables (`ecutwfc`, `ibrav` unless `space_group`, `nat`, `ntyp`). Softer: unquoted strings, values outside the documented options (`calculation = 'relx'`), a variable set twice, missing cards, and obsolete variables that QE 7.4 still reads (the old `lda_plus_u` / `Hubbard_U` input, replaced by the `HUBBARD` card). Names that QE accepts but does not document are not reported.
+- **Hover** on a variable: description, type, default and allowed values, taken from the Quantum ESPRESSO 7.4 input documentation (249 variables of pw.x; the tables also include ph.x, projwfc.x, dos.x, bands.x and pp.x for the coming releases).
+- **Completion** of variable names inside a namelist (required ones first), of the values of variables with a fixed set of options, and of namelist and card names.
+- **Quick fixes** for typos, quoting strings and values near an allowed option.
+
 ### Files that belong together
 
 The files of one calculation are found in the same folder: `POSCAR.relax` for `INCAR.relax` (or `KPOINTS.relax`), otherwise `POSCAR`; likewise for KPOINTS and POTCAR. Open files are rechecked when one of their neighbours changes on disk. Only folders with an open input file are watched, which keeps the extension light on large cluster file systems.
@@ -74,12 +84,12 @@ npm run package     # build a .vsix
 
 | Path | What |
 | --- | --- |
-| `src/core/` | Pure TypeScript, no VS Code dependency: lossless INCAR parser/editor, tag knowledge base, intent layer, validation; KPOINTS and POSCAR parsers, formatters and hovers; POTCAR header reader |
+| `src/core/` | Pure TypeScript, no VS Code dependency: lossless INCAR parser/editor, tag knowledge base, intent layer, validation; KPOINTS and POSCAR parsers, formatters and hovers; POTCAR header reader; Quantum ESPRESSO input parser, tag table and checks (`qe/`) |
 | `src/extension/` | VS Code glue: custom editor, language features, commands |
 | `src/webview/` | React UI of the builder |
 | `test/` | vitest suites, fixtures, browser harness, smoke test of the bundle |
 
-Tag defaults follow the [VASP wiki](https://vasp.at/wiki) for VASP 6. To add a tag, add a `TagDef` to `src/core/tags/definitions.ts`. The full tag list in `src/core/tags/wikiTags.generated.ts` is refreshed with `node scripts/fetch-wiki-tags.mjs`. Patch tags (VTST, VASPsol) live in `src/core/tags/known.ts`. To add a preset, add a choice to `src/core/intents/definitions.ts`; the tests check automatically that every choice is detected again after it is applied.
+Tag defaults follow the [VASP wiki](https://vasp.at/wiki) for VASP 6. The Quantum ESPRESSO variable table is generated from the input definitions of a QE release with `node scripts/fetch-qe-tags.mjs [qe-7.4]`. To add a tag, add a `TagDef` to `src/core/tags/definitions.ts`. The full tag list in `src/core/tags/wikiTags.generated.ts` is refreshed with `node scripts/fetch-wiki-tags.mjs`. Patch tags (VTST, VASPsol) live in `src/core/tags/known.ts`. To add a preset, add a choice to `src/core/intents/definitions.ts`; the tests check automatically that every choice is detected again after it is applied.
 
 ## Installing
 
@@ -91,4 +101,7 @@ Releases are published by pushing a `vX.Y.Z` tag that matches `package.json`: CI
 
 ## License
 
-MIT, see [LICENSE](LICENSE). The exception is the tag descriptions in `src/core/tags/wikiTags.generated.ts`: they are excerpts from the [VASP Wiki](https://vasp.at/wiki), © VASP Software GmbH and the VASP Wiki authors, and are distributed under the [GNU Free Documentation License 1.2](LICENSES/GFDL-1.2.txt).
+MIT, see [LICENSE](LICENSE). There are two exceptions:
+
+- The tag descriptions in `src/core/tags/wikiTags.generated.ts` are excerpts from the [VASP Wiki](https://vasp.at/wiki), © VASP Software GmbH and the VASP Wiki authors, and are distributed under the [GNU Free Documentation License 1.2](LICENSES/GFDL-1.2.txt).
+- The variable descriptions in `src/core/qe/tags.generated.ts` are excerpts from the input documentation of [Quantum ESPRESSO](https://www.quantum-espresso.org), which is distributed under the [GNU General Public License, version 2 or later](LICENSES/GPL-2.0.txt); the excerpts keep that licence.

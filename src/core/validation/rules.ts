@@ -234,7 +234,7 @@ function closestTag(key: string): string | undefined {
 }
 
 /** Edit distance counting a swap of adjacent letters as one edit (ENCTU → ENCUT). */
-function editDistance(a: string, b: string): number {
+export function editDistance(a: string, b: string): number {
   const d = Array.from({ length: a.length + 1 }, (_, i) => Array.from({ length: b.length + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)));
   for (let i = 1; i <= a.length; i++) {
     for (let j = 1; j <= b.length; j++) {

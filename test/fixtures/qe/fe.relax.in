@@ -1,0 +1,32 @@
+# bcc Fe, spin-polarized, with smearing
+&control
+  calculation = 'vc-relax'
+  prefix = 'fe'
+  outdir = '/scratch/fe'
+  pseudo_dir = '$HOME/upf'
+  forc_conv_thr = 1.0d-4
+/
+&system
+  ibrav = 3, A = 2.87, nat = 1, ntyp = 1
+  ecutwfc = 45, ecutrho = 360
+  occupations = 'smearing', smearing = 'mv', degauss = 0.02
+  nspin = 2
+  starting_magnetization(1) = 0.5
+/
+&electrons
+  conv_thr = 1.D-9
+  mixing_beta = 0.3
+/
+&ions
+  ion_dynamics = 'bfgs'
+/
+&cell
+  cell_dynamics = 'bfgs'
+  press = 0.0
+/
+ATOMIC_SPECIES
+Fe 55.845 Fe.pbe-spn-kjpaw_psl.0.2.1.UPF
+ATOMIC_POSITIONS {crystal}
+Fe 0.0 0.0 0.0
+K_POINTS {automatic}
+12 12 12 0 0 0

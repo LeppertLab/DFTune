@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.0 (2026-11-04)
+
+First Quantum ESPRESSO release: pw.x input files.
+
+### Added
+- New *Quantum ESPRESSO* language for pw.x inputs (`*.pwi`, `scf.in`, `relax.in`, `vc-relax.in`, `bands.in`, `pw.*.in`, …); plain-text files that start with `&CONTROL` are switched to it automatically. Highlighting of namelists, variables, cards, strings and numbers.
+- Checks for what QE stops on: unknown variables (with *did you mean*), variables in the wrong namelist, namelists out of order, repeated or missing, unterminated namelists and strings, values of the wrong type, several values for a scalar, array indices out of range, required variables. Notes for unquoted strings, values outside the documented options, repeated variables and missing cards. Variables that QE 7.4 still reads but no longer documents are not errors: the old DFT+U input (`lda_plus_u`, `Hubbard_U`, …, replaced by the `HUBBARD` card) is a warning, and the other accepted names (mostly cp.x variables) are silently accepted. The list comes from the namelist declarations in the QE source.
+- Hover with description, type, default and allowed values for the 249 variables of pw.x, from the Quantum ESPRESSO 7.4 input documentation (the table also holds ph.x, projwfc.x, dos.x, bands.x and pp.x, for later releases). Completion of variable names, values and namelist/card names. Quick fixes for typos, quoting and near-miss options.
+- `scripts/fetch-qe-tags.mjs` regenerates the variable table from the `INPUT_*.def` files of a QE release. The descriptions are excerpts from the QE documentation and keep its GPL-2.0-or-later licence (`LICENSES/GPL-2.0.txt`).
+
 ## 1.0.0 (2026-11-03)
 
 DFTune now covers all four VASP input files: the INCAR builder, plus checks, hovers, quick fixes and formatting for INCAR, KPOINTS and POSCAR, and checks against the POTCAR. This release hardens what 0.7–0.9 added, after a full code review.

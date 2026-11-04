@@ -1,8 +1,8 @@
 {
   "name": "dftune",
   "displayName": "DFTune: DFT Input Builder",
-  "description": "Set up DFT calculations by physical intent instead of raw input tags. VASP INCAR builder, plus checks, hovers and formatting for INCAR, KPOINTS and POSCAR files; works on remote HPC files over Remote-SSH.",
-  "version": "1.0.0",
+  "description": "Set up DFT calculations by physical intent instead of raw input tags. VASP: INCAR builder, plus checks, hovers, quick fixes and formatting for INCAR, KPOINTS and POSCAR. Quantum ESPRESSO: checks, hovers and completion for pw.x inputs. Works on remote HPC files over Remote-SSH.",
+  "version": "1.1.0",
   "publisher": "DaanHolleman",
   "icon": "images/icon.png",
   "license": "MIT",
@@ -32,7 +32,8 @@
     "HPC",
     "materials",
     "Quantum ESPRESSO",
-    "DFTune"
+    "DFTune",
+    "pw.x"
   ],
   "extensionKind": [
     "workspace"
@@ -92,6 +93,32 @@
           "*.poscar"
         ],
         "configuration": "./positional-language-configuration.json"
+      },
+      {
+        "id": "qe",
+        "aliases": [
+          "Quantum ESPRESSO",
+          "QE input"
+        ],
+        "filenamePatterns": [
+          "*.pwi",
+          "*.pw.in",
+          "pw.*.in",
+          "pw_*.in",
+          "scf.in",
+          "scf.*.in",
+          "nscf.in",
+          "relax.in",
+          "vc-relax.in",
+          "bands.in",
+          "ph.in",
+          "dos.in",
+          "projwfc.in",
+          "pp.in",
+          "*.phi"
+        ],
+        "firstLine": "^\\s*&\\s*(?:[Cc][Oo][Nn][Tt][Rr][Oo][Ll]|[Ii][Nn][Pp][Uu][Tt][Pp][Hh]|[Pp][Rr][Oo][Jj][Ww][Ff][Cc]|[Dd][Oo][Ss]|[Bb][Aa][Nn][Dd][Ss]|[Ii][Nn][Pp][Uu][Tt][Pp][Pp]|[Pp][Ll][Oo][Tt])\\b",
+        "configuration": "./qe-language-configuration.json"
       }
     ],
     "grammars": [
@@ -109,6 +136,11 @@
         "language": "poscar",
         "scopeName": "source.poscar",
         "path": "./syntaxes/poscar.tmLanguage.json"
+      },
+      {
+        "language": "qe",
+        "scopeName": "source.qe",
+        "path": "./syntaxes/qe.tmLanguage.json"
       }
     ],
     "customEditors": [

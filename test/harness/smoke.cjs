@@ -33,8 +33,8 @@ const vscode = {
   CodeActionKind: { QuickFix: 'quickfix' },
   WorkspaceEdit: class { constructor() { this.edits = []; } replace(uri, range, newText) { this.edits.push({ uri, range, newText }); } },
   FileType: { File: 1, Directory: 2 },
-  CompletionItem: class { constructor(label) { this.label = label; } },
-  CompletionItemKind: {}, CompletionItemTag: {},
+  CompletionItem: class { constructor(label, kind) { this.label = label; this.kind = kind; } },
+  CompletionItemKind: { Property: 9, EnumMember: 19, Module: 8, Keyword: 13 }, CompletionItemTag: {},
   SnippetString: class { constructor(v) { this.value = v; } },
   ViewColumn: { One: 1, Beside: -2 },
   Disposable: { from: () => disposable },
@@ -44,6 +44,7 @@ const vscode = {
     registerHoverProvider: (id, p) => ((providers.hover[id] = p), disposable),
     registerDocumentFormattingEditProvider: (id, p) => ((providers.format[id] = p), disposable),
     registerCompletionItemProvider: (id, p) => ((providers.completion[id] = p), disposable),
+    setTextDocumentLanguage: async (d, id) => { d.languageId = id; return d; },
     registerCodeActionsProvider: (id, p) => ((providers.actions[id] = p), disposable),
   },
   workspace: {
@@ -95,13 +96,18 @@ const check = (ok, what) => { console.log(`${ok ? 'ok  ' : 'FAIL'} ${what}`); if
 
 const ext = require(join(root, 'dist', 'extension.js'));
 const pos = readFileSync(join(fixtures, 'POSCAR'), 'utf8');
+const QE_BAD = "&CONTROL\n calculation = 'scf'\n/\n&SYSTEM\n ibrav = 2, celldm(1) = 10.2, nat = 2, ntyp = 1, ecutwfx = 20\n/\n&ELECTRONS\n/\nATOMIC_SPECIES\nSi 28 Si.UPF\nATOMIC_POSITIONS alat\nSi 0 0 0\nSi 0.25 0.25 0.25\nK_POINTS gamma\n";
 // Open documents are linted on activation, with their neighbours: POSCAR.headers finds
 // POTCAR.headers (same suffix); INCAR.headers finds that too, plus the plain POSCAR.
 vscode.workspace.textDocuments.push(
   doc('poscar', 't\n1\n5 0 0\n0 5 0\n0 0 5\nH\n2\nD\n0 0 0\n', 'POSCAR.bad'),
   doc('poscar', pos.replace('Fe O', 'O Fe'), 'POSCAR.headers'),
   doc('incar', 'ENCUT = 300\nISMEAR = 0\n', 'INCAR.headers'),
+  doc('qe', QE_BAD, 'scf.bad.in'),
 );
+// A plain-text file that starts with a QE namelist is switched to the QE language.
+const sniffed = doc('plaintext', '! my run\n&CONTROL\n calculation = "scf"\n/\n', 'my-run.in');
+vscode.workspace.textDocuments.push(sniffed);
 ext.activate({ subscriptions: [], extensionUri: { path: root } });
 
 /** Applies a formatter's edits to `text`. */
@@ -132,6 +138,19 @@ function format(lang, text, name) {
   const id = doc('incar', 'KSPACING = 0.3\n', 'INCAR.smoke');
   const ih = await providers.hover.incar.provideHover(id, new Position(0, 2));
   check(ih && /For POSCAR: a \d+ × \d+ × \d+ mesh/.test(ih.contents.value), 'KSPACING hover shows the mesh for the POSCAR');
+
+  // Quantum ESPRESSO.
+  for (const id of ['hover', 'completion', 'actions']) check(!!providers[id].qe, `QE ${id} registered`);
+  check(sniffed.languageId === 'qe', 'a plain-text file starting with &CONTROL is switched to the QE language');
+  const qd = doc('qe', QE_BAD, 'scf.bad.in');
+  const qh = await providers.hover.qe.provideHover(qd, qd.positionAt(QE_BAD.indexOf('celldm') + 2));
+  check(qh && qh.contents.value.includes('**celldm**(1…6)'), 'QE hover describes the variable');
+  const completions = await providers.completion.qe.provideCompletionItems(doc('qe', "&CONTROL\n calculation = \n/\n", 'c.in'), new Position(1, 15));
+  check(completions.some((c) => c.label === 'vc-relax' && c.insertText === "'vc-relax'"), 'QE completes the values of calculation');
+  const nameCompletions = await providers.completion.qe.provideCompletionItems(doc('qe', "&SYSTEM\n ec\n/\n", 's.in'), new Position(1, 3));
+  check(nameCompletions.some((c) => c.label === 'ecutwfc'), 'QE completes variable names inside a namelist');
+  const qacts = await providers.actions.qe.provideCodeActions(qd, new Range(qd.positionAt(QE_BAD.indexOf('ecutwfx')), qd.positionAt(QE_BAD.indexOf('ecutwfx'))), { diagnostics: [] });
+  check(qacts.length === 1 && qacts[0].edit.edits[0].newText === 'ecutwfc', `QE quick fix: ${qacts.map((a) => a.title)}`);
 
   // Quick fixes, through the code-action provider.
   for (const id of ['incar', 'kpoints', 'poscar']) check(!!providers.actions[id], `quick fixes registered for ${id}`);
@@ -168,6 +187,9 @@ function format(lang, text, name) {
   check(bad.length === 1 && bad[0].source === 'POSCAR' && bad[0].severity === 0, `POSCAR diagnostics published: ${bad.map((x) => x.message).join('; ')}`);
   const swapped = get('poscar', 'POSCAR.headers');
   check(swapped.some((d) => /wrong order/.test(d.message)), 'POSCAR checked against the POTCAR next to it');
+  const qeProblems = get('qe', 'scf.bad.in');
+  // The typo is reported, and with it that ecutwfc is now missing.
+  check(qeProblems.length === 2 && qeProblems.every((d) => d.source === 'QE') && qeProblems.some((d) => /Did you mean ecutwfc/.test(d.message)), `QE diagnostics: ${qeProblems.map((d) => d.message)}`);
   const incar = get('incar', 'INCAR.headers');
   check(incar.some((d) => /below the largest ENMAX/.test(d.message)), 'INCAR ENCUT checked against the POTCAR');
   process.exit(failed ? 1 : 0);

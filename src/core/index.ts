@@ -50,3 +50,8 @@ export * from './kpoints/context';
 export * from './potcar/check';
 export * from './poscar/lint';
 export * from './kpoints/generate';
+export * from './qe/tags';
+export * from './qe/values';
+export * from './qe/parse';
+export * from './qe/validate';
+export * from './qe/hover';

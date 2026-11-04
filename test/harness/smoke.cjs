@@ -113,6 +113,8 @@ vscode.workspace.textDocuments.push(
   doc('qe', QE_BAD, 'scf.bad.in'),
   doc('qe', QE_PSEUDO, 'scf.pseudo.in'),
   doc('qe', readFileSync(join(fixtures, 'qe', 'ph.in'), 'utf8'), 'qe/ph.in'),
+  doc('qe', readFileSync(join(fixtures, 'qe', 'dos.in'), 'utf8'), 'qe/dos.in'),
+  doc('qe', readFileSync(join(fixtures, 'qe', 'bands.pp.in'), 'utf8').replace("prefix = 'si'", "prefix = 'ge'"), 'qe/bands.pp.in'),
 );
 // A plain-text file that starts with a QE namelist is switched to the QE language.
 const sniffed = doc('plaintext', '! my run\n&CONTROL\n calculation = "scf"\n/\n', 'my-run.in');
@@ -227,6 +229,10 @@ function format(lang, text, name) {
   // ph.x: the pw.x input next to it (si.scf.in, same prefix, conv_thr 1d-8) is found and compared.
   const phProblems = get('qe', 'qe/ph.in').map((d) => d.message);
   check(phProblems.length === 1 && /tight scf/.test(phProblems[0]), `ph.x checked against the pw.x input next to it: ${phProblems}`);
+  // dos.x finds the scf run next to it and agrees. With several pw.x inputs and none of the same prefix, nothing is compared (no guessing).
+  check(get('qe', 'qe/dos.in').length === 0, `dos.x agrees with the pw.x run next to it: ${get('qe', 'qe/dos.in').map((d) => d.message)}`);
+  const bandsProblems = get('qe', 'qe/bands.pp.in').map((d) => d.message);
+  check(bandsProblems.length === 0, `bands.x with a prefix no pw.x input has: nothing compared (${bandsProblems.length} problems)`);
   const incar = get('incar', 'INCAR.headers');
   check(incar.some((d) => /below the largest ENMAX/.test(d.message)), 'INCAR ENCUT checked against the POTCAR');
   process.exit(failed ? 1 : 0);

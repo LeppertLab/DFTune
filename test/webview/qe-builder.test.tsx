@@ -16,6 +16,14 @@ beforeAll(async () => {
 const render = (text: string, fileName = 'scf.in') => renderToStaticMarkup(<QeBuilder state={{ text, fileName }} />);
 
 describe('QE builder view', () => {
+  it('has setup cards for dos.x, projwfc.x and bands.x inputs', () => {
+    const dos = render(fixture('dos.in'), 'dos.in');
+    for (const label of ['Brillouin-zone integration', 'Energy window', 'Files']) expect(dos).toContain(label);
+    expect(dos).toContain('aria-label="Emin"');
+    expect(render(fixture('projwfc.in'), 'projwfc.in')).toContain('Energy window and broadening');
+    expect(render(fixture('bands.pp.in'), 'bands.pp.in')).toContain('aria-label="filband"');
+  });
+
   it('has setup cards for ph.x inputs', () => {
     const html = render(fixture('ph.grid.in'), 'ph.grid.in');
     for (const label of ['q points', 'Electric field', 'Convergence', 'Files']) expect(html).toContain(label);
@@ -55,9 +63,9 @@ describe('QE builder view', () => {
 
   it('handles an empty input, and one that is not pw.x', () => {
     expect(render('')).toContain('No K_POINTS card');
-    const dos = render("&dos\n prefix='si'\n/\n", 'dos.in');
-    expect(dos).toContain('dos.x inputs only get the variable table');
-    expect(dos).not.toContain('Setup');
-    expect(dos).toContain('&amp;DOS');
+    const pp = render("&inputpp\n prefix='si', plot_num = 0\n/\n", 'pp.in');
+    expect(pp).toContain('pp.x inputs only get the variable table');
+    expect(pp).not.toContain('Setup');
+    expect(pp).toContain('&amp;INPUTPP');
   });
 });

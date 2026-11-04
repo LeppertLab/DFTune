@@ -13,6 +13,7 @@ import type { Span } from '../incar/parse';
 import type { Line } from '../lines';
 import { Reader } from './reader';
 import type { QeDoc } from './parse';
+import { checkSamePrefixAndOutdir } from './postRules';
 import type { Report } from './rules';
 import { isInteger, isReal, toReal } from './values';
 
@@ -95,15 +96,7 @@ export function checkPhAgainstPw(ph: QeDoc, pw: QeDoc, report: Report) {
   const p = new Reader(ph);
   const w = new Reader(pw);
   if (!p.namelist(NL)) return;
-  const prefixPh = p.str(NL, 'prefix') ?? 'pwscf';
-  const prefixPw = w.str('CONTROL', 'prefix') ?? 'pwscf';
-  const dir = (d: string | undefined) => (d ?? '.').replace(/\/+$/, '').replace(/^\.\//, '') || '.';
-  if (prefixPh !== prefixPw) {
-    report('warning', 'qe-ph-prefix', `prefix = '${prefixPh}' but the pw.x input has prefix = '${prefixPw}': ph.x reads the scf data of its own prefix and stops if they are missing.`, p.entry(NL, 'prefix')?.valueSpan ?? p.namelist(NL)!.nameSpan);
-  }
-  if (dir(p.str(NL, 'outdir')) !== dir(w.str('CONTROL', 'outdir'))) {
-    report('warning', 'qe-ph-outdir', `outdir = '${p.str(NL, 'outdir') ?? './'}' but the pw.x input has outdir = '${w.str('CONTROL', 'outdir') ?? './'}': ph.x looks for the scf data in its own outdir.`, p.entry(NL, 'outdir')?.valueSpan ?? p.namelist(NL)!.nameSpan);
-  }
+  checkSamePrefixAndOutdir(p, w, NL, 'ph', report);
   const calc = w.str('CONTROL', 'calculation') ?? 'scf';
   if (calc === 'nscf' || calc === 'bands') {
     report('warning', 'qe-ph-pw-calc', `The pw.x input next to it is a '${calc}' run; ph.x needs the data of a self-consistent (scf) run.`, p.namelist(NL)!.nameSpan);

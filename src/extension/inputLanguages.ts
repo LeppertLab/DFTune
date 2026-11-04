@@ -46,7 +46,7 @@ interface InputLanguage {
 }
 
 /** Programs whose inputs are checked in depth; for the others only the syntax is. */
-const QE_CHECKED: QeProgram[] = ['pw', 'ph'];
+const QE_CHECKED: QeProgram[] = ['pw', 'ph', 'dos', 'projwfc', 'bands'];
 
 async function lintQe(text: string, uri: vscode.Uri): Promise<Diagnostic[]> {
   const program = detectProgram(text);

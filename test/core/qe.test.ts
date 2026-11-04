@@ -8,7 +8,7 @@ import { checkItem, parseLogical, valueItems } from '../../src/core/qe/values';
 
 const dir = join(__dirname, '..', 'fixtures', 'qe');
 // pw.x inputs only: the ph.x ones are checked in qe-ph.test.ts.
-const fixtures = readdirSync(dir).filter((f) => !f.startsWith('ph')).map((f) => [f, readFileSync(join(dir, f), 'utf8')] as const);
+const fixtures = readdirSync(dir).filter((f) => !/^(ph|dos|projwfc|bands\.pp)/.test(f)).map((f) => [f, readFileSync(join(dir, f), 'utf8')] as const);
 const parse = (text: string) => parseQe(text, { cards: cardsOf('pw') });
 const check = (text: string) => validateQe(parse(text), 'pw');
 const codes = (text: string) => check(text).map((d) => d.code);

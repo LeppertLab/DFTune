@@ -9,7 +9,8 @@
 import { writeFileSync } from 'node:fs';
 
 const TAG = process.argv[2] ?? 'qe-7.4';
-const BASE = `https://gitlab.com/QEF/q-e/-/raw/${TAG}`;
+// GitHub mirror of the QE repository (GitLab rate-limits unauthenticated clients).
+const BASE = `https://raw.githubusercontent.com/QEF/q-e/${TAG}`;
 
 /** program id → definition file. plotband.x and plotrho.x have no .def (interactive prompts). */
 const PROGRAMS = {
@@ -213,8 +214,15 @@ function parseDef(text) {
 // The Fortran source declares every name a namelist accepts, with `! obsolete` on retired ones.
 // Names that are accepted but missing from the documentation must not be reported as unknown.
 
-/** program id → file declaring its namelists (only pw.x has the legacy input worth tracking). */
-const SOURCES = { pw: 'Modules/input_parameters.f90' };
+/** program id → the source files with its `NAMELIST / name / …` declarations. */
+const SOURCES = {
+  pw: ['Modules/input_parameters.f90'],
+  ph: ['PHonon/PH/phq_readin.f90'],
+  projwfc: ['PP/src/projwfc.f90'],
+  dos: ['PP/src/dos.f90'],
+  bands: ['PP/src/bands.f90'],
+  pp: ['PP/src/postproc.f90', 'PP/src/chdens_module.f90'],
+};
 /** Names the input reader warns about ("The input parameter X is obsolete"). */
 const OBSOLETE_SOURCE = 'Modules/read_namelists.f90';
 
@@ -249,15 +257,27 @@ for (const [id, path] of Object.entries(PROGRAMS)) {
   if (!res.ok) throw new Error(`${path}: ${res.status}`);
   programs[id] = parseDef(await res.text());
   if (SOURCES[id]) {
-    const src = await fetch(`${BASE}/${SOURCES[id]}`);
-    if (!src.ok) throw new Error(`${SOURCES[id]}: ${src.status}`);
-    const declared = parseNamelistDeclarations(await src.text());
-    const reader = await fetch(`${BASE}/${OBSOLETE_SOURCE}`);
-    if (!reader.ok) throw new Error(`${OBSOLETE_SOURCE}: ${reader.status}`);
-    const warned = new Set([...(await reader.text()).matchAll(/input parameter (\w+) is obsolete/gi)].map((m) => m[1].toLowerCase()));
+    const declared = {};
+    for (const file of SOURCES[id]) {
+      const src = await fetch(`${BASE}/${file}`);
+      if (!src.ok) throw new Error(`${file}: ${src.status}`);
+      for (const [nl, names] of Object.entries(parseNamelistDeclarations(await src.text()))) {
+        declared[nl] = new Map([...(declared[nl] ?? []), ...names]);
+      }
+    }
+    // pw.x also warns at run time about obsolete parameters.
+    let warned = new Set();
+    if (id === 'pw') {
+      const reader = await fetch(`${BASE}/${OBSOLETE_SOURCE}`);
+      if (!reader.ok) throw new Error(`${OBSOLETE_SOURCE}: ${reader.status}`);
+      warned = new Set([...(await reader.text()).matchAll(/input parameter (\w+) is obsolete/gi)].map((m) => m[1].toLowerCase()));
+    }
     for (const [nl, vars] of Object.entries(programs[id].namelists)) {
       const names = declared[nl];
-      if (!names) continue;
+      if (!names) {
+        console.log(`  note: no declaration found for &${nl}`);
+        continue;
+      }
       const documented = new Set([...vars.keys()].map((k) => k.toLowerCase()));
       for (const [lower, flag] of names) {
         if (documented.has(lower)) continue;
@@ -274,7 +294,7 @@ for (const [id, path] of Object.entries(PROGRAMS)) {
           status: obsolete ? 'obsolete' : 'undocumented',
         });
       }
-      // The reverse: documented but not declared (should not happen; reported to catch parser slips).
+      // The reverse: documented but not declared (reported to catch parser slips).
       const undeclared = [...documented].filter((n) => !names.has(n));
       if (undeclared.length) console.log(`  note: ${nl} documented but not in the source declaration: ${undeclared.join(' ')}`);
     }

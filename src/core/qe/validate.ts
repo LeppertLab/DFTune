@@ -10,6 +10,7 @@ import type { QeDoc, QeEntry } from './parse';
 import { allVarNames, cardsOf, lookupVar, namelistsDefining, namelistsOf, type QeProgram, type QeVar } from './tags';
 import { automaticGrid, kpointsCard, setKpointsCard } from './kpoints';
 import { checkPh, checkPhAgainstPw } from './phRules';
+import { checkPost, checkPostAgainstPw } from './postRules';
 import { checkPseudos, type QeContext } from './pseudos';
 import { qeCell } from './structure';
 import { checkPw } from './rules';
@@ -84,6 +85,10 @@ export function validateQe(doc: QeDoc, program: QeProgram, ctx: QeContext = {}):
   if (program === 'ph') {
     checkPh(doc, report);
     if (ctx.pw) checkPhAgainstPw(doc, ctx.pw, report);
+  }
+  if (program === 'dos' || program === 'projwfc' || program === 'bands') {
+    checkPost(doc, program, report);
+    if (ctx.pw) checkPostAgainstPw(doc, program, ctx.pw, report);
   }
   return out;
 }

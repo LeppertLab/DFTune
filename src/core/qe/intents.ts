@@ -292,7 +292,53 @@ export const QE_INTENTS_PH: QeIntent[] = [
   },
 ];
 
+const fields = (id: string, label: string, namelist: string, names: string[]): QeIntent => ({ id, label, owns: [], related: names.map((n) => own(namelist, n)), choices: [] });
+
+/** The presets for dos.x, projwfc.x and bands.x: how to integrate, the energy window, files. */
+export const QE_INTENTS_POST: Record<'dos' | 'projwfc' | 'bands', QeIntent[]> = {
+  dos: [
+    {
+      id: 'integration',
+      label: 'Brillouin-zone integration',
+      owns: [own('DOS', 'bz_sum'), own('DOS', 'degauss'), own('DOS', 'ngauss')],
+      related: [own('DOS', 'degauss'), own('DOS', 'ngauss')],
+      choices: [
+        { id: 'pw', label: 'As in the pw.x run', description: 'Use the occupations method and broadening of the pw.x run (read from its data).', set: [], matches: (r) => !r.has('DOS', 'bz_sum') && !r.has('DOS', 'degauss') },
+        {
+          id: 'smearing',
+          label: 'Gaussian-type broadening',
+          description: 'Broaden each level with the given width (degauss, in Ry).',
+          set: [v('DOS', 'bz_sum', "'smearing'")],
+          suggest: [v('DOS', 'degauss', '0.02')],
+          matches: (r) => (r.str('DOS', 'bz_sum') ?? (r.has('DOS', 'degauss') ? 'smearing' : '')) === 'smearing',
+        },
+        {
+          id: 'tetrahedra',
+          label: 'Tetrahedra (optimized)',
+          description: 'Tetrahedron method: no broadening parameter.',
+          set: [v('DOS', 'bz_sum', "'tetrahedra_opt'")],
+          matches: (r) => (r.str('DOS', 'bz_sum') ?? '').startsWith('tetrahedra'),
+          hints: ['Needs a pw.x run with K_POINTS {automatic}.'],
+        },
+      ],
+    },
+    fields('window', 'Energy window', 'DOS', ['Emin', 'Emax', 'DeltaE']),
+    fields('files', 'Files', 'DOS', ['prefix', 'outdir', 'fildos']),
+  ],
+  projwfc: [
+    fields('window', 'Energy window and broadening', 'PROJWFC', ['Emin', 'Emax', 'DeltaE', 'degauss', 'ngauss']),
+    fields('options', 'Options', 'PROJWFC', ['lsym', 'pawproj', 'diag_basis', 'lwrite_overlaps']),
+    fields('files', 'Files', 'PROJWFC', ['prefix', 'outdir', 'filpdos', 'filproj']),
+  ],
+  bands: [
+    fields('options', 'Options', 'BANDS', ['spin_component', 'lsym', 'no_overlap', 'lp', 'lsigma']),
+    fields('files', 'Files', 'BANDS', ['prefix', 'outdir', 'filband', 'filp']),
+  ],
+};
+
 /** The intents of a program's builder. */
 export function intentsFor(program: string): QeIntent[] {
-  return program === 'pw' ? QE_INTENTS : program === 'ph' ? QE_INTENTS_PH : [];
+  if (program === 'pw') return QE_INTENTS;
+  if (program === 'ph') return QE_INTENTS_PH;
+  return program in QE_INTENTS_POST ? QE_INTENTS_POST[program as keyof typeof QE_INTENTS_POST] : [];
 }

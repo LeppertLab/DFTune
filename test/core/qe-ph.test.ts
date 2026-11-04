@@ -96,8 +96,8 @@ describe('ph.x against the pw.x input', () => {
   });
 
   it('compares prefix and outdir', () => {
-    expect(codes(fixture('ph.in'), pw().replace("prefix = 'si'", "prefix = 'ge'"))).toEqual(['qe-ph-prefix']);
-    expect(codes(fixture('ph.in'), pw().replace("outdir = './tmp'", "outdir = '/scratch/si'"))).toEqual(['qe-ph-outdir']);
+    expect(codes(fixture('ph.in'), pw().replace("prefix = 'si'", "prefix = 'ge'"))).toEqual(['qe-post-prefix']);
+    expect(codes(fixture('ph.in'), pw().replace("outdir = './tmp'", "outdir = '/scratch/si'"))).toEqual(['qe-post-outdir']);
     // The defaults are the same on both sides, and spellings of the same directory agree.
     expect(codes("t\n&inputph\n/\n0 0 0\n", "&CONTROL\n/\n&SYSTEM\n/\n&ELECTRONS\nconv_thr = 1d-14\n/\n")).toEqual([]);
     expect(codes(fixture('ph.in'), pw().replace("outdir = './tmp'", "outdir = 'tmp/'"))).toEqual([]);

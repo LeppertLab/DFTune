@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { setVariables } from '../../src/core/qe/edit';
-import { QE_INTENTS, QE_INTENTS_PH, describeQeChoice, detectQeIntent, intentsFor, qeIntentChanges } from '../../src/core/qe/intents';
+import { QE_INTENTS, QE_INTENTS_PH, QE_INTENTS_POST, describeQeChoice, detectQeIntent, intentsFor, qeIntentChanges } from '../../src/core/qe/intents';
 import { parseQe } from '../../src/core/qe/parse';
 import { Reader } from '../../src/core/qe/reader';
 import { cardsOf } from '../../src/core/qe/tags';
@@ -119,6 +119,34 @@ describe('ph.x intents', () => {
   it('picks the intents by program', () => {
     expect(intentsFor('pw')).toBe(QE_INTENTS);
     expect(intentsFor('ph')).toBe(QE_INTENTS_PH);
-    expect(intentsFor('dos')).toEqual([]);
+    expect(intentsFor('dos')).toBe(QE_INTENTS_POST.dos);
+    expect(intentsFor('pp')).toEqual([]);
+  });
+});
+
+describe('dos.x, projwfc.x and bands.x intents', () => {
+  const dos = (extra = '') => `&DOS\n  prefix = 'si'\n${extra}/\n`;
+  const readerDos = (text: string) => new Reader(parseQe(text, { cards: cardsOf('dos') }));
+  const kind = QE_INTENTS_POST.dos.find((k) => k.id === 'integration')!;
+  const apply = (text: string, id: string) => setVariables(text, 'dos', qeIntentChanges(kind, id, readerDos(text)));
+
+  it('switches the integration and detects it again', () => {
+    for (const choice of kind.choices) {
+      const text = apply(dos(), choice.id);
+      expect(detectQeIntent(kind, readerDos(text)), choice.id).toBe(choice.id);
+    }
+    const smearing = apply(dos(), 'smearing');
+    expect(smearing).toMatch(/bz_sum = 'smearing'/);
+    expect(smearing).toMatch(/degauss = 0\.02/);
+    const tetra = apply(smearing, 'tetrahedra');
+    expect(tetra).toMatch(/bz_sum = 'tetrahedra_opt'/);
+    expect(tetra).not.toMatch(/degauss/);
+  });
+
+  it('has field cards for the rest', () => {
+    for (const program of ['dos', 'projwfc', 'bands'] as const) {
+      expect(QE_INTENTS_POST[program].length, program).toBeGreaterThan(0);
+      for (const k of QE_INTENTS_POST[program]) for (const f of k.related) expect(f.name, `${program}/${k.id}`).toBeTruthy();
+    }
   });
 });

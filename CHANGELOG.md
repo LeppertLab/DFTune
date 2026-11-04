@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.8.0 (2026-11-04)
+
+### Added
+- dos.x, projwfc.x and bands.x inputs: builder cards (Brillouin-zone integration for dos.x, energy window, options, files), and checks verified against `PP/src/dos.f90`, `projwfc.f90` and `bands.f90`: the combinations projwfc.x refuses, `spin_component` for bands.x.
+- They are compared with the pw.x input next to them (the nscf run for dos.x and projwfc.x, the bands run for bands.x, matched by prefix): prefix and outdir, dos.x with tetrahedra needing an automatic grid, bands.x with Γ-only runs / `lsigma` / `spin_component`, projwfc.x needing wavefunctions and its noncollinear and Γ restrictions.
+
+### Changed
+- The variable tables of ph.x, projwfc.x and pp.x now also include the variables the QE source accepts but does not document (e.g. `lforcet`, `only_wfc`, `iverbosity`), so valid inputs using them are not reported as unknown. The generator reads the QE sources from the GitHub mirror.
+- ph.x prefix/outdir comparison shares its code with the other programs (warning codes are now `qe-post-prefix` and `qe-post-outdir`).
+
 ## 1.7.0 (2026-11-04)
 
 ### Added

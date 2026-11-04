@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { QE_INTENTS, Reader, cardsOf, describeCell, detectProgram, parseQe, qeCell, qeStructure, validateQe, type QeChange, type TextEdit } from '../../core';
+import { Reader, intentsFor, cardsOf, describeCell, detectProgram, parseQe, qeCell, qeStructure, validateQe, type QeChange, type TextEdit } from '../../core';
 import type { ToWebviewQe } from '../../extension/messages';
 import { Diagnostics } from '../components/Diagnostics';
 import { vscode } from '../vscode';
@@ -53,7 +53,7 @@ export function QeBuilder({ state }: { state: State }) {
           </div>
           <div className="muted">{kp ? `K_POINTS ${kp.option ?? 'tpiba'}${kp.option === 'automatic' ? ': ' + (kp.lines.find((l) => l.text.trim())?.text.trim() ?? '') : ''}` : 'No K_POINTS card'}</div>
           {state.pseudos && <div className="muted">{state.pseudos.map(([file, p]) => (p.status === 'ok' && p.info ? `${file} (${p.info.element ?? '?'}, ${p.info.type ?? '?'}, ${p.info.functional ?? '?'})` : `${file} (${p.status})`)).join(' · ')}</div>}
-          {program !== 'pw' && <div className="muted">This builder covers pw.x; {program}.x inputs only get the variable table.</div>}
+          {intentsFor(program).length === 0 && <div className="muted">The builder has no setup cards for {program}.x yet: {program}.x inputs only get the variable table.</div>}
         </div>
         <button className="secondary" onClick={() => reveal(0)} title="Show the input text beside the builder">
           Show text
@@ -63,10 +63,10 @@ export function QeBuilder({ state }: { state: State }) {
       <Diagnostics diagnostics={diagnostics} onReveal={reveal} onFix={fix} />
 
       <div className="columns">
-        {program === 'pw' && (
+        {intentsFor(program).length > 0 && (
           <section className="setup">
             <h2>Setup</h2>
-            {QE_INTENTS.map((kind) => (
+            {intentsFor(program).map((kind) => (
               <QeIntentCard key={kind.id} kind={kind} doc={doc} reader={reader} program={program} onApply={apply} />
             ))}
           </section>

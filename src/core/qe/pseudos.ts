@@ -25,6 +25,8 @@ export type PseudoLookup = Map<string, PseudoFile>;
 
 export interface QeContext {
   pseudos?: PseudoLookup;
+  /** For a ph.x input: the pw.x input it continues. */
+  pw?: QeDoc;
 }
 
 interface SpeciesRow {

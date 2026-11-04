@@ -221,3 +221,78 @@ export function describeQeChoice(choice: QeChoice): string {
   const fmt = (s: VarRef & { value: string }, mark = '') => `${s.name}${s.index !== undefined ? `(${s.index})` : ''} = ${s.value}${mark}`;
   return [...choice.set.map((s) => fmt(s)), ...(choice.suggest ?? []).map((s) => fmt(s, '*'))].join(', ') || '(none of these variables set)';
 }
+
+/** The presets for ph.x: which q points, electric fields, and how tight. */
+export const QE_INTENTS_PH: QeIntent[] = [
+  {
+    id: 'qpoints',
+    label: 'q points',
+    owns: [own('INPUTPH', 'ldisp'), own('INPUTPH', 'qplot')],
+    related: [own('INPUTPH', 'nq1'), own('INPUTPH', 'nq2'), own('INPUTPH', 'nq3')],
+    choices: [
+      {
+        id: 'gamma',
+        label: 'One q point (Γ)',
+        description: 'Phonons at a single q point, given on the line after the namelist (0.0 0.0 0.0 for Γ).',
+        set: [],
+        matches: (r) => !r.bool('INPUTPH', 'ldisp') && !r.bool('INPUTPH', 'qplot'),
+      },
+      {
+        id: 'grid',
+        label: 'Grid of q points',
+        description: 'Phonons on a uniform q grid (nq1 × nq2 × nq3), for dispersions and interpolation with q2r.x and matdyn.x.',
+        set: [v('INPUTPH', 'ldisp', '.true.')],
+        suggest: [v('INPUTPH', 'nq1', '4'), v('INPUTPH', 'nq2', '4'), v('INPUTPH', 'nq3', '4')],
+        matches: (r) => r.bool('INPUTPH', 'ldisp') === true && !r.bool('INPUTPH', 'qplot'),
+        hints: ['The k-point grid of the scf run must be a multiple of the q grid (e.g. 8 × 8 × 8 k for 4 × 4 × 4 q).'],
+      },
+      {
+        id: 'path',
+        label: 'Path of q points',
+        description: 'Phonons on a list of q points given after the namelist.',
+        set: [v('INPUTPH', 'ldisp', '.true.'), v('INPUTPH', 'qplot', '.true.')],
+        matches: (r) => r.bool('INPUTPH', 'qplot') === true,
+        hints: ['After the namelist: the number of q points, then one line "xq1 xq2 xq3 weight" for each.'],
+      },
+    ],
+  },
+  {
+    id: 'field',
+    label: 'Electric field',
+    owns: [own('INPUTPH', 'epsil')],
+    related: [],
+    choices: [
+      { id: 'none', label: 'Phonons only', description: 'No dielectric properties.', set: [], matches: (r) => !r.bool('INPUTPH', 'epsil') },
+      {
+        id: 'epsil',
+        label: 'Dielectric constant and effective charges',
+        description: 'Dielectric tensor, and with the phonons also the Born effective charges Z*, at Γ.',
+        set: [v('INPUTPH', 'epsil', '.true.')],
+        matches: (r) => r.bool('INPUTPH', 'epsil') === true,
+        hints: ['Insulators only (not with smearing); at Γ only.'],
+      },
+    ],
+  },
+  {
+    id: 'convergence',
+    label: 'Convergence',
+    owns: [own('INPUTPH', 'tr2_ph')],
+    related: [own('INPUTPH', 'alpha_mix', '1'), own('INPUTPH', 'niter_ph')],
+    choices: [
+      { id: 'normal', label: 'Default (1e-12)', description: 'The default threshold for the self-consistency of the response.', set: [v('INPUTPH', 'tr2_ph', '1.0d-12')], matches: (r) => !r.has('INPUTPH', 'tr2_ph') || near(r.num('INPUTPH', 'tr2_ph'), 1e-12) },
+      { id: 'tight', label: 'Tight (1e-14)', description: 'Common for production phonons and dispersions.', set: [v('INPUTPH', 'tr2_ph', '1.0d-14')], matches: (r) => near(r.num('INPUTPH', 'tr2_ph'), 1e-14) },
+    ],
+  },
+  {
+    id: 'files',
+    label: 'Files',
+    owns: [],
+    related: [own('INPUTPH', 'prefix'), own('INPUTPH', 'outdir'), own('INPUTPH', 'fildyn')],
+    choices: [],
+  },
+];
+
+/** The intents of a program's builder. */
+export function intentsFor(program: string): QeIntent[] {
+  return program === 'pw' ? QE_INTENTS : program === 'ph' ? QE_INTENTS_PH : [];
+}

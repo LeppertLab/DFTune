@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { setVariables } from '../../src/core/qe/edit';
-import { QE_INTENTS, describeQeChoice, detectQeIntent, qeIntentChanges } from '../../src/core/qe/intents';
+import { QE_INTENTS, QE_INTENTS_PH, describeQeChoice, detectQeIntent, intentsFor, qeIntentChanges } from '../../src/core/qe/intents';
 import { parseQe } from '../../src/core/qe/parse';
 import { Reader } from '../../src/core/qe/reader';
 import { cardsOf } from '../../src/core/qe/tags';
@@ -81,5 +81,44 @@ describe('QE intents', () => {
   it('describes the variables a choice writes', () => {
     const smearing = QE_INTENTS.find((k) => k.id === 'occupations')!.choices.find((c) => c.id === 'smearing')!;
     expect(describeQeChoice(smearing)).toBe("occupations = 'smearing', smearing = 'mv'*, degauss = 0.02*");
+  });
+});
+
+describe('ph.x intents', () => {
+  const ph = (name: string) => readFileSync(join(__dirname, '..', 'fixtures', 'qe', name), 'utf8');
+  const phReader = (text: string) => new Reader(parseQe(text, { cards: cardsOf('ph') }));
+  const applyPh = (text: string, kindId: string, choiceId: string) => {
+    const kind = QE_INTENTS_PH.find((k) => k.id === kindId)!;
+    return setVariables(text, 'ph', qeIntentChanges(kind, choiceId, phReader(text)));
+  };
+  const detectPh = (text: string, kindId: string) => detectQeIntent(QE_INTENTS_PH.find((k) => k.id === kindId)!, phReader(text));
+
+  it('detects every choice again after applying it', () => {
+    for (const base of ['ph.in', 'ph.grid.in']) {
+      for (const kind of QE_INTENTS_PH) {
+        for (const choice of kind.choices) {
+          const text = applyPh(ph(base), kind.id, choice.id);
+          expect(detectPh(text, kind.id), `${base}: ${kind.id}/${choice.id}`).toBe(choice.id);
+          expect(parseQe(text, { cards: cardsOf('ph') }).issues, `${base}: ${kind.id}/${choice.id}`).toEqual([]);
+        }
+      }
+    }
+  });
+
+  it('switches between one q point and a grid, keeping the title and the q point line', () => {
+    const grid = applyPh(ph('ph.in'), 'qpoints', 'grid');
+    expect(grid.split('\n')[0]).toBe('phonons of Si at Gamma');
+    expect(grid).toMatch(/ldisp = \.true\./);
+    expect(grid).toMatch(/nq1 = 4/);
+    expect(grid.trimEnd().endsWith('0.0 0.0 0.0')).toBe(true);
+    const back = applyPh(grid, 'qpoints', 'gamma');
+    expect(back).not.toMatch(/ldisp/);
+    expect(back).toContain('nq1 = 4'); // not owned: stays
+  });
+
+  it('picks the intents by program', () => {
+    expect(intentsFor('pw')).toBe(QE_INTENTS);
+    expect(intentsFor('ph')).toBe(QE_INTENTS_PH);
+    expect(intentsFor('dos')).toEqual([]);
   });
 });

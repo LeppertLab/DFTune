@@ -16,6 +16,14 @@ beforeAll(async () => {
 const render = (text: string, fileName = 'scf.in') => renderToStaticMarkup(<QeBuilder state={{ text, fileName }} />);
 
 describe('QE builder view', () => {
+  it('has setup cards for ph.x inputs', () => {
+    const html = render(fixture('ph.grid.in'), 'ph.grid.in');
+    for (const label of ['q points', 'Electric field', 'Convergence', 'Files']) expect(html).toContain(label);
+    expect(html).toContain('Grid of q points');
+    expect(html).toContain('&amp;INPUTPH');
+    expect(html).toContain('aria-label="nq1"');
+  });
+
   it('renders the setup cards, the header and the variable table for a real input', () => {
     const html = render(fixture('fe.relax.in'), 'fe.relax.in');
     expect(html).toContain('fe.relax.in');
@@ -47,8 +55,9 @@ describe('QE builder view', () => {
 
   it('handles an empty input, and one that is not pw.x', () => {
     expect(render('')).toContain('No K_POINTS card');
-    const ph = render("title\n&inputph\n prefix='si', ldisp=.true.\n/\n", 'ph.in');
-    expect(ph).toContain('ph.x inputs only get the variable table');
-    expect(ph).not.toContain('Setup');
+    const dos = render("&dos\n prefix='si'\n/\n", 'dos.in');
+    expect(dos).toContain('dos.x inputs only get the variable table');
+    expect(dos).not.toContain('Setup');
+    expect(dos).toContain('&amp;DOS');
   });
 });

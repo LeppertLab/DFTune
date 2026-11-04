@@ -112,6 +112,7 @@ vscode.workspace.textDocuments.push(
   doc('incar', 'ENCUT = 300\nISMEAR = 0\n', 'INCAR.headers'),
   doc('qe', QE_BAD, 'scf.bad.in'),
   doc('qe', QE_PSEUDO, 'scf.pseudo.in'),
+  doc('qe', readFileSync(join(fixtures, 'qe', 'ph.in'), 'utf8'), 'qe/ph.in'),
 );
 // A plain-text file that starts with a QE namelist is switched to the QE language.
 const sniffed = doc('plaintext', '! my run\n&CONTROL\n calculation = "scf"\n/\n', 'my-run.in');
@@ -223,6 +224,9 @@ function format(lang, text, name) {
   check(qeProblems.length === 2 && qeProblems.every((d) => d.source === 'QE') && qeProblems.some((d) => /Did you mean ecutwfc/.test(d.message)), `QE diagnostics: ${qeProblems.map((d) => d.message)}`);
   const qePseudo = get('qe', 'scf.pseudo.in').map((d) => d.message);
   check(qePseudo.some((m) => /Ge\.missing\.UPF not found/.test(m)) && qePseudo.some((m) => /ecutwfc = 20 Ry is below the 30 Ry/.test(m)), `QE pseudopotential checks: ${qePseudo.length} problems`);
+  // ph.x: the pw.x input next to it (si.scf.in, same prefix, conv_thr 1d-8) is found and compared.
+  const phProblems = get('qe', 'qe/ph.in').map((d) => d.message);
+  check(phProblems.length === 1 && /tight scf/.test(phProblems[0]), `ph.x checked against the pw.x input next to it: ${phProblems}`);
   const incar = get('incar', 'INCAR.headers');
   check(incar.some((d) => /below the largest ENMAX/.test(d.message)), 'INCAR ENCUT checked against the POTCAR');
   process.exit(failed ? 1 : 0);

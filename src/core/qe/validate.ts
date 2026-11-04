@@ -9,6 +9,7 @@ import { editDistance } from '../validation/rules';
 import type { QeDoc, QeEntry } from './parse';
 import { allVarNames, cardsOf, lookupVar, namelistsDefining, namelistsOf, type QeProgram, type QeVar } from './tags';
 import { automaticGrid, kpointsCard, setKpointsCard } from './kpoints';
+import { checkPh, checkPhAgainstPw } from './phRules';
 import { checkPseudos, type QeContext } from './pseudos';
 import { qeCell } from './structure';
 import { checkPw } from './rules';
@@ -79,6 +80,10 @@ export function validateQe(doc: QeDoc, program: QeProgram, ctx: QeContext = {}):
   if (program === 'pw') {
     checkPw(doc, report);
     if (ctx.pseudos) checkPseudos(doc, ctx.pseudos, report);
+  }
+  if (program === 'ph') {
+    checkPh(doc, report);
+    if (ctx.pw) checkPhAgainstPw(doc, ctx.pw, report);
   }
   return out;
 }

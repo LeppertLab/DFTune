@@ -65,3 +65,4 @@ export * from './poscar/masses';
 export * from './qe/edit';
 export * from './qe/intents';
 export * from './qe/reader';
+export * from './qe/phRules';

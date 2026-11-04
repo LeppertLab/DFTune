@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.7.0 (2026-11-04)
+
+### Added
+- ph.x inputs: checks verified against `phq_readin.f90` (title line, the q point line or `qplot` list, `nq1..3` for `ldisp`, Γ for `epsil`, `zue`/`trans`, `modenum` with `ldisp`, `only_init`/`only_wfc`, `tr2_ph`, `start_q`), with fixes for the missing title and q point.
+- ph.x against the pw.x input in the same folder: prefix and outdir must match, the pw.x run must be scf with a tight `conv_thr`, no `epsil` for metals. The pw.x input is found by prefix (the scf one when there are several) and rechecked when it changes.
+- Builder cards for ph.x: q points (one point, grid, path), electric field, convergence, files.
+- The file watcher also follows `*.in` and `*.pwi`, so a ph.x input is rechecked when its pw.x input changes.
+
 ## 1.6.0 (2026-11-04)
 
 ### Added

@@ -81,9 +81,9 @@ export async function findInputs(incar: vscode.Uri) {
   return { poscar, kpoints, potcar };
 }
 
-/** Watches POSCAR*, KPOINTS* and POTCAR* directly in `dir` (not recursively). */
+/** Watches POSCAR*, KPOINTS*, POTCAR* and Quantum ESPRESSO inputs (*.in, *.pwi) directly in `dir` (not recursively). */
 export function watchInputs(onChange: (uri: vscode.Uri) => void, dir: vscode.Uri): vscode.Disposable {
-  const watchers = ['POSCAR*', 'KPOINTS*', 'POTCAR*'].map((glob) => vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(dir, glob)));
+  const watchers = ['POSCAR*', 'KPOINTS*', 'POTCAR*', '*.in', '*.pwi'].map((glob) => vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(dir, glob)));
   for (const w of watchers) {
     w.onDidChange(onChange);
     w.onDidCreate(onChange);

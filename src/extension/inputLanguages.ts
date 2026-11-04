@@ -25,6 +25,7 @@ import {
 } from '../core';
 import { FolderWatch, findPoscar, findPotcar } from './inputs';
 import { findPseudos } from './pseudos';
+import { findPwInput } from './siblings';
 import { toVscodeDiagnostics } from './language';
 import { LintCache } from './lintCache';
 import { registerQuickFixes } from './quickFixes';
@@ -45,13 +46,14 @@ interface InputLanguage {
 }
 
 /** Programs whose inputs are checked in depth; for the others only the syntax is. */
-const QE_CHECKED: QeProgram[] = ['pw'];
+const QE_CHECKED: QeProgram[] = ['pw', 'ph'];
 
 async function lintQe(text: string, uri: vscode.Uri): Promise<Diagnostic[]> {
   const program = detectProgram(text);
   const doc = parseQe(text, { cards: program ? cardsOf(program) : [] });
   if (!program || !QE_CHECKED.includes(program)) return doc.issues;
-  return validateQe(doc, program, { pseudos: await findPseudos(uri, text) });
+  const [pseudos, pw] = await Promise.all([findPseudos(uri, text), findPwInput(uri, text)]);
+  return validateQe(doc, program, { pseudos, pw });
 }
 
 /** The cell of the POSCAR next to `uri`, when it could be read completely. */

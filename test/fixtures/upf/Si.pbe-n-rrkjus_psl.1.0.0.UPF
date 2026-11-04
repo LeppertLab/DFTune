@@ -1,0 +1,41 @@
+<UPF version="2.0.1">
+<!-- synthetic test file: header lines only, no pseudopotential data -->
+<PP_INFO>
+   Generated using "atomic" code by A. Dal Corso  v.6.3MaX
+   Author: ADC
+   Generation date: 12Dec2017
+   Pseudopotential type: US
+   Element: Si
+   Functional: PBE
+   Suggested minimum cutoff for wavefunctions:  30. Ry
+   Suggested minimum cutoff for charge density: 240. Ry
+   The Pseudo was generated with a Scalar-Relativistic Calculation
+</PP_INFO>
+<PP_HEADER
+   generated="Generated using &quot;atomic&quot; code by A. Dal Corso"
+   author="ADC"
+   date="171212"
+   comment="Pslibrary 1.0.0"
+   element="Si"
+   pseudo_type="US"
+   relativistic="scalar"
+   is_ultrasoft="T"
+   is_paw="F"
+   is_coulomb="F"
+   has_so="F"
+   has_wfc="F"
+   has_gipaw="F"
+   paw_as_gipaw="F"
+   core_correction="T"
+   functional="SLA  PW   PBX  PBC"
+   z_valence="   4.0000000000000"
+   total_psenergy="  -7.5232344040E+00"
+   wfc_cutoff="   0.0000000000000E+00"
+   rho_cutoff="   0.0000000000000E+00"
+   l_max="2"
+   l_max_rho="4"
+   l_local="-3"
+   mesh_size="1141"
+   number_of_wfc="2"
+   number_of_proj="6"/>
+</UPF>

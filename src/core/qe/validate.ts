@@ -8,6 +8,7 @@ import type { Diagnostic, Fix } from '../validation/rules';
 import { editDistance } from '../validation/rules';
 import type { QeDoc, QeEntry } from './parse';
 import { allVarNames, cardsOf, lookupVar, namelistsDefining, namelistsOf, type QeProgram, type QeVar } from './tags';
+import { checkPseudos, type QeContext } from './pseudos';
 import { checkPw } from './rules';
 import { checkItem, isInteger, isQuoted, unquote, valueItems } from './values';
 
@@ -31,7 +32,7 @@ export function closestVar(program: QeProgram, name: string): string | undefined
 
 const rename = (to: string, span: Span): Fix => ({ title: `Change to ${to}`, edit: { start: span.start, end: span.end, text: to } });
 
-export function validateQe(doc: QeDoc, program: QeProgram): Diagnostic[] {
+export function validateQe(doc: QeDoc, program: QeProgram, ctx: QeContext = {}): Diagnostic[] {
   const out: Diagnostic[] = [...doc.issues];
   const report = (severity: Diagnostic['severity'], code: string, message: string, span: Span, fix?: Fix) => out.push({ severity, code, message, span, ...(fix && { fix }) });
 
@@ -73,7 +74,10 @@ export function validateQe(doc: QeDoc, program: QeProgram): Diagnostic[] {
     }
   }
   checkCards(doc, program, report);
-  if (program === 'pw') checkPw(doc, report);
+  if (program === 'pw') {
+    checkPw(doc, report);
+    if (ctx.pseudos) checkPseudos(doc, ctx.pseudos, report);
+  }
   return out;
 }
 

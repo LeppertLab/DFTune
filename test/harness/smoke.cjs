@@ -19,7 +19,7 @@ class Range {
 }
 const disposable = { dispose() {} };
 const event = () => disposable;
-const uri = (path) => ({ path, toString: () => `file://${path}` });
+const uri = (path) => ({ path, toString: () => `file://${path}`, with: ({ path: p }) => uri(p) });
 const vscode = {
   Position, Range,
   Selection: Range,
@@ -96,6 +96,8 @@ const check = (ok, what) => { console.log(`${ok ? 'ok  ' : 'FAIL'} ${what}`); if
 
 const ext = require(join(root, 'dist', 'extension.js'));
 const pos = readFileSync(join(fixtures, 'POSCAR'), 'utf8');
+// pseudo_dir is relative to the input's folder: test/fixtures/upf holds synthetic UPF headers.
+const QE_PSEUDO = "&CONTROL\n calculation = 'scf'\n pseudo_dir = './upf'\n/\n&SYSTEM\n ibrav = 2, celldm(1) = 10.2, nat = 2, ntyp = 2, ecutwfc = 20, ecutrho = 160\n/\n&ELECTRONS\n/\nATOMIC_SPECIES\n Si 28.086 Si.pbe-n-rrkjus_psl.1.0.0.UPF\n Ge 72.6 Ge.missing.UPF\nATOMIC_POSITIONS alat\n Si 0 0 0\n Ge 0.25 0.25 0.25\nK_POINTS gamma\n";
 const QE_BAD = "&CONTROL\n calculation = 'scf'\n/\n&SYSTEM\n ibrav = 2, celldm(1) = 10.2, nat = 2, ntyp = 1, ecutwfx = 20\n/\n&ELECTRONS\n/\nATOMIC_SPECIES\nSi 28 Si.UPF\nATOMIC_POSITIONS alat\nSi 0 0 0\nSi 0.25 0.25 0.25\nK_POINTS gamma\n";
 // Open documents are linted on activation, with their neighbours: POSCAR.headers finds
 // POTCAR.headers (same suffix); INCAR.headers finds that too, plus the plain POSCAR.
@@ -104,6 +106,7 @@ vscode.workspace.textDocuments.push(
   doc('poscar', pos.replace('Fe O', 'O Fe'), 'POSCAR.headers'),
   doc('incar', 'ENCUT = 300\nISMEAR = 0\n', 'INCAR.headers'),
   doc('qe', QE_BAD, 'scf.bad.in'),
+  doc('qe', QE_PSEUDO, 'scf.pseudo.in'),
 );
 // A plain-text file that starts with a QE namelist is switched to the QE language.
 const sniffed = doc('plaintext', '! my run\n&CONTROL\n calculation = "scf"\n/\n', 'my-run.in');
@@ -154,6 +157,10 @@ function format(lang, text, name) {
   const qacts = await providers.actions.qe.provideCodeActions(qd, new Range(qd.positionAt(QE_BAD.indexOf('ecutwfx')), qd.positionAt(QE_BAD.indexOf('ecutwfx'))), { diagnostics: [] });
   check(qacts.length === 1 && qacts[0].edit.edits[0].newText === 'ecutwfc', `QE quick fix: ${qacts.map((a) => a.title)}`);
 
+  const qpd = doc('qe', QE_PSEUDO, 'scf.pseudo.in');
+  const ph2 = await providers.hover.qe.provideHover(qpd, qpd.positionAt(QE_PSEUDO.indexOf(' Si 28.086') + 3));
+  check(ph2 && /element: \*\*Si\*\* · type: ultrasoft/.test(ph2.contents.value), 'QE hover on an ATOMIC_SPECIES line describes the UPF file');
+
   // Quick fixes, through the code-action provider.
   for (const id of ['incar', 'kpoints', 'poscar']) check(!!providers.actions[id], `quick fixes registered for ${id}`);
   const typo = doc('incar', 'ENCTU = 400\nISMEAR = 0\n', 'INCAR.typo');
@@ -192,6 +199,8 @@ function format(lang, text, name) {
   const qeProblems = get('qe', 'scf.bad.in');
   // The typo is reported, and with it that ecutwfc is now missing.
   check(qeProblems.length === 2 && qeProblems.every((d) => d.source === 'QE') && qeProblems.some((d) => /Did you mean ecutwfc/.test(d.message)), `QE diagnostics: ${qeProblems.map((d) => d.message)}`);
+  const qePseudo = get('qe', 'scf.pseudo.in').map((d) => d.message);
+  check(qePseudo.some((m) => /Ge\.missing\.UPF not found/.test(m)) && qePseudo.some((m) => /ecutwfc = 20 Ry is below the 30 Ry/.test(m)), `QE pseudopotential checks: ${qePseudo.length} problems`);
   const incar = get('incar', 'INCAR.headers');
   check(incar.some((d) => /below the largest ENMAX/.test(d.message)), 'INCAR ENCUT checked against the POTCAR');
   process.exit(failed ? 1 : 0);

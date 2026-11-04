@@ -1,0 +1,18 @@
+<UPF version="2.0.1">
+<!-- synthetic test file: header lines only, no pseudopotential data -->
+<PP_INFO>
+   Norm-conserving LDA pseudopotential for germanium
+</PP_INFO>
+<PP_HEADER
+   element="Ge"
+   pseudo_type="NC"
+   relativistic="no"
+   is_ultrasoft="F"
+   is_paw="F"
+   has_so="F"
+   core_correction="F"
+   functional="SLA  PZ   NOGX NOGC"
+   z_valence="   4.0000000000000"
+   l_max="1"
+   number_of_proj="0"/>
+</UPF>

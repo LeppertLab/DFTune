@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.0 (2026-11-04)
+
+### Added
+- Pseudopotentials in pw.x inputs: the files named in `ATOMIC_SPECIES` are found in `pseudo_dir`, `$ESPRESSO_PSEUDO` or `~/espresso/pseudo` and their UPF 1/2 headers read (through `workspace.fs`, so also on Remote-SSH hosts; cached by modification time).
+- Hover on a species line: element, type, functional, valence electrons, suggested cutoffs.
+- Checks: missing file, pseudopotential for another element than the label, mixed functionals without `input_dft`, `ecutwfc`/`ecutrho` below the generator's suggested minimum, a note on the default `ecutrho` for ultrasoft/PAW, `lspinorb` without spin–orbit pseudopotentials, `nbnd` too small for the number of valence electrons (QE: "too few bands"), and an odd number of electrons with fixed occupations.
+
 ## 1.2.0 (2026-11-04)
 
 ### Added

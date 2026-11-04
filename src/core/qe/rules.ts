@@ -15,7 +15,7 @@ export type Report = (severity: Diagnostic['severity'], code: string, message: s
 const START: Span = { start: 0, end: 0 };
 
 /** Typed access to the entries of a parsed input. */
-class Reader {
+export class Reader {
   constructor(readonly doc: QeDoc) {}
   namelist = (name: string): QeNamelist | undefined => this.doc.namelists.find((n) => n.name === name);
   card = (name: string): QeCard | undefined => this.doc.cards.find((c) => c.name === name);

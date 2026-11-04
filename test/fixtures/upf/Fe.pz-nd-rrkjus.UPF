@@ -1,0 +1,16 @@
+<PP_INFO>
+   synthetic UPF v1 header for tests (no data)
+</PP_INFO>
+<PP_HEADER>
+   0                   Version Number
+  Fe                   Element
+   US                  Ultrasoft pseudopotential
+    T                  Nonlinear Core Correction
+ SLA  PZ   NOGX NOGC  Exchange-Correlation functional
+    8.00000000000      Z valence
+  -55.0000000000       Total energy
+    0.0000000    0.0000000 Suggested cutoff for wfc and rho
+    2                  Max angular momentum component
+  1141                 Number of points in mesh
+    2    6             Number of Wavefunctions, Number of Projectors
+</PP_HEADER>

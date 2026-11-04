@@ -24,6 +24,7 @@ import {
   type QeProgram,
 } from '../core';
 import { FolderWatch, findPoscar, findPotcar } from './inputs';
+import { findPseudos } from './pseudos';
 import { toVscodeDiagnostics } from './language';
 import { LintCache } from './lintCache';
 import { registerQuickFixes } from './quickFixes';
@@ -46,10 +47,11 @@ interface InputLanguage {
 /** Programs whose inputs are checked in depth; for the others only the syntax is. */
 const QE_CHECKED: QeProgram[] = ['pw'];
 
-function lintQe(text: string): Diagnostic[] {
+async function lintQe(text: string, uri: vscode.Uri): Promise<Diagnostic[]> {
   const program = detectProgram(text);
   const doc = parseQe(text, { cards: program ? cardsOf(program) : [] });
-  return program && QE_CHECKED.includes(program) ? validateQe(doc, program) : doc.issues;
+  if (!program || !QE_CHECKED.includes(program)) return doc.issues;
+  return validateQe(doc, program, { pseudos: await findPseudos(uri, text) });
 }
 
 /** The cell of the POSCAR next to `uri`, when it could be read completely. */
@@ -62,11 +64,11 @@ const LANGUAGES: InputLanguage[] = [
   {
     id: 'qe',
     label: 'QE',
-    lint: async (text) => lintQe(text),
+    lint: lintQe,
     format: formatQe,
-    hover: async (text, offset) => {
+    hover: async (text, offset, uri) => {
       const program = detectProgram(text);
-      return program ? qeHover(parseQe(text, { cards: cardsOf(program) }), program, offset) : undefined;
+      return program ? qeHover(parseQe(text, { cards: cardsOf(program) }), program, offset, { pseudos: await findPseudos(uri, text) }) : undefined;
     },
     complete: (text, offset) => {
       const program = detectProgram(text) ?? 'pw';

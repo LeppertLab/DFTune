@@ -1,6 +1,7 @@
 // Hover text and completions for QE inputs, independent of VS Code.
 
 import type { QeDoc } from './parse';
+import { speciesRows, type PseudoFile, type QeContext } from './pseudos';
 import { cardsOf, lookupVar, namelistsOf, varsOf, qeDocsUrl, type QeProgram, type QeVar } from './tags';
 
 /** Markdown describing a variable. `current` highlights the option in use. */
@@ -24,13 +25,37 @@ export function varMarkdown(v: QeVar, program: QeProgram, current?: string): str
   return parts.join('\n\n');
 }
 
-/** The hover for the variable name under `offset`. */
-export function qeHover(doc: QeDoc, program: QeProgram, offset: number): { markdown: string; start: number; end: number } | undefined {
+/** Markdown describing a pseudopotential file as found (or not) by the lookup. */
+export function pseudoMarkdown(file: string, found: PseudoFile): string {
+  if (found.status === 'missing') return `**${file}**: not found in \`${found.dir}\``;
+  const i = found.info;
+  if (found.status === 'unreadable' || !i) return `**${file}**: found, but not a UPF file, so element and functional are not read.`;
+  const facts = [
+    i.element && `element: **${i.element}**`,
+    i.type && `type: ${{ NC: 'norm-conserving', US: 'ultrasoft', PAW: 'PAW' }[i.type] ?? i.type}`,
+    i.functional && `functional: ${i.functional}`,
+    i.zValence !== undefined && `valence electrons: ${i.zValence}`,
+    i.coreCorrection !== undefined && `nonlinear core correction: ${i.coreCorrection ? 'yes' : 'no'}`,
+    i.spinOrbit && 'spin–orbit: yes',
+  ].filter(Boolean);
+  const cutoffs = i.suggestedEcutwfc || i.suggestedEcutrho ? `\n\nSuggested minimum cutoffs: ecutwfc ${i.suggestedEcutwfc ?? '?'} Ry, ecutrho ${i.suggestedEcutrho ?? '?'} Ry` : '';
+  return `**${file}** (${i.format.toUpperCase()}) in \`${found.dir}\`\n\n${facts.join(' · ')}${cutoffs}`;
+}
+
+/** The hover for the variable name under `offset`, or for the pseudopotential on an ATOMIC_SPECIES line. */
+export function qeHover(doc: QeDoc, program: QeProgram, offset: number, ctx: QeContext = {}): { markdown: string; start: number; end: number } | undefined {
   for (const nl of doc.namelists) {
     for (const e of nl.entries) {
       if (offset < e.keySpan.start || offset > e.keySpan.end) continue;
       const v = lookupVar(program, nl.name, e.name);
       return v && { markdown: varMarkdown(v, program, e.value), start: e.keySpan.start, end: e.keySpan.end };
+    }
+  }
+  if (program === 'pw') {
+    for (const row of speciesRows(doc)) {
+      if (offset < row.lineSpan.start || offset > row.lineSpan.end) continue;
+      const found = ctx.pseudos?.get(row.file);
+      return found && { markdown: pseudoMarkdown(row.file, found), start: row.lineSpan.start, end: row.lineSpan.end };
     }
   }
   return undefined;

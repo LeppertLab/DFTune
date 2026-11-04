@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.9.0 (2026-11-04)
+
+### Added
+- pp.x inputs: builder cards and checks from `postproc.f90` and `chdens_module.f90` (`plot_num`, `spin_component`, `emin`/`emax`, `iflag`/`output_format`, vectors and points per `iflag`, a missing `&PLOT`).
+- plotband.x and plotrho.x inputs (standard-input answers, one per line): a *QE plotband/plotrho input* language for `plotband.in`, `plotrho.in`, `*.plotband`, `*.plotrho`, with hover on what each line answers and checks of the sequence read from the sources.
+
+### Changed
+- A documented scalar may be given as `name(1)` without an error (the source of pp.x declares `spin_component` as an array although the documentation shows a scalar).
+
 ## 1.8.0 (2026-11-04)
 
 ### Added

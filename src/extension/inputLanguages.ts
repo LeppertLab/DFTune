@@ -14,7 +14,10 @@ import {
   lintPoscar,
   minimalEdit,
   parsePoscar,
+  lintPlotInput,
   parseQe,
+  plotHover,
+  plotProgramOf,
   poscarHover,
   qeCompletions,
   qeHover,
@@ -46,7 +49,7 @@ interface InputLanguage {
 }
 
 /** Programs whose inputs are checked in depth; for the others only the syntax is. */
-const QE_CHECKED: QeProgram[] = ['pw', 'ph', 'dos', 'projwfc', 'bands'];
+const QE_CHECKED: QeProgram[] = ['pw', 'ph', 'dos', 'projwfc', 'bands', 'pp'];
 
 async function lintQe(text: string, uri: vscode.Uri): Promise<Diagnostic[]> {
   const program = detectProgram(text);
@@ -63,6 +66,19 @@ async function cellNear(uri: vscode.Uri) {
 }
 
 const LANGUAGES: InputLanguage[] = [
+  {
+    // plotband.x and plotrho.x read answers to prompts, one per line: no namelist to recognize them by, so by file name.
+    id: 'qe-plot',
+    label: 'QE',
+    lint: async (text, uri) => {
+      const program = plotProgramOf(uri.path);
+      return program ? lintPlotInput(program, text) : [];
+    },
+    hover: async (text, offset, uri) => {
+      const program = plotProgramOf(uri.path);
+      return program ? plotHover(program, text, offset) : undefined;
+    },
+  },
   {
     id: 'qe',
     label: 'QE',

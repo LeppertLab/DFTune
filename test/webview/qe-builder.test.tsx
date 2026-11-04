@@ -16,6 +16,14 @@ beforeAll(async () => {
 const render = (text: string, fileName = 'scf.in') => renderToStaticMarkup(<QeBuilder state={{ text, fileName }} />);
 
 describe('QE builder view', () => {
+  it('has setup cards for pp.x inputs', () => {
+    const html = render(fixture('pp.in'), 'pp.in');
+    expect(html).toContain('What to extract (&amp;INPUTPP)');
+    expect(html).toContain('How to plot it (&amp;PLOT)');
+    expect(html).toContain('aria-label="plot_num"');
+    expect(html).toContain('aria-label="output_format"');
+  });
+
   it('has setup cards for dos.x, projwfc.x and bands.x inputs', () => {
     const dos = render(fixture('dos.in'), 'dos.in');
     for (const label of ['Brillouin-zone integration', 'Energy window', 'Files']) expect(dos).toContain(label);
@@ -63,9 +71,7 @@ describe('QE builder view', () => {
 
   it('handles an empty input, and one that is not pw.x', () => {
     expect(render('')).toContain('No K_POINTS card');
-    const pp = render("&inputpp\n prefix='si', plot_num = 0\n/\n", 'pp.in');
-    expect(pp).toContain('pp.x inputs only get the variable table');
-    expect(pp).not.toContain('Setup');
-    expect(pp).toContain('&amp;INPUTPP');
+    // A file that is not a QE input at all: no program, so the pw.x variable table and cards.
+    expect(render('nothing here\n', 'x.in')).toContain('No K_POINTS card');
   });
 });

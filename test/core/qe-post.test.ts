@@ -99,3 +99,66 @@ describe('dos.x', () => {
     expect(codes('dos', d('').replace("'./tmp'", "'/scratch'"), pw())).toEqual(['qe-post-outdir']);
   });
 });
+
+describe('pp.x', () => {
+  const pp = (inputpp: string, plot = '') => `&INPUTPP\n prefix = 'si', outdir = './tmp'\n ${inputpp}\n/\n${plot ? `&PLOT\n ${plot}\n/\n` : ''}`;
+  const plot2d = 'nfile = 1, iflag = 2, output_format = 3, nx = 50, ny = 50, e1(1) = 1, e2(2) = 1';
+
+  it('accepts the fixture and a complete 2D plot', () => {
+    expect(codes('pp', fixture('pp.in'))).toEqual([]);
+    expect(codes('pp', pp('plot_num = 0, filplot = "x"'.replace(/"/g, "'"), plot2d))).toEqual([]);
+  });
+
+  it('knows the plot_num values', () => {
+    expect(codes('pp', pp('plot_num = 0', plot2d))).toEqual([]);
+    expect(codes('pp', pp('plot_num = 119', plot2d))).toEqual([]);
+    expect(codes('pp', pp('plot_num = 123', plot2d))).toEqual([]);
+    expect(codes('pp', pp('plot_num = 25', plot2d))).toEqual(['qe-pp-plotnum']);
+    expect(codes('pp', pp('plot_num = -3', plot2d))).toEqual(['qe-pp-plotnum']);
+    expect(codes('pp', pp('plot_num = -1'))).toEqual([]);
+  });
+
+  it('limits spin_component by what is plotted, also as spin_component(1)', () => {
+    expect(codes('pp', pp('plot_num = 7, spin_component = 3', plot2d))).toEqual([]);
+    expect(codes('pp', pp('plot_num = 0, spin_component(1) = 3', plot2d))).toEqual([]);
+    expect(codes('pp', pp('plot_num = 10, spin_component = 3', plot2d))).toEqual(['qe-pp-spin']);
+    expect(codes('pp', pp('plot_num = 10, spin_component(1) = 2', plot2d))).toEqual([]);
+    expect(codes('pp', pp('plot_num = 0, spin_component = -1', plot2d))).toEqual(['qe-pp-spin']);
+  });
+
+  it('needs emin <= emax', () => {
+    expect(codes('pp', pp('plot_num = 3, emin = 5, emax = 1', plot2d))).toEqual(['qe-pp-emin']);
+    expect(codes('pp', pp('plot_num = 3, emin = 1, emax = 5', plot2d))).toEqual([]);
+  });
+
+  it('says what a missing or incomplete &PLOT does', () => {
+    expect(check('pp', pp('plot_num = 0')).map((d) => `${d.code}:${d.severity}`)).toEqual(['qe-pp-plot-missing:info']);
+    expect(check('pp', pp('plot_num = 0', 'nfile = 1, iflag = 2')).map((d) => `${d.code}:${d.severity}`)).toEqual(['qe-pp-format:warning']);
+    expect(codes('pp', pp('plot_num = 0', 'nfile = 0, iflag = 2, output_format = 3'))).toContain('qe-pp-nfile');
+  });
+
+  it('checks the output format', () => {
+    for (const bad of [1, 4, 8, -2]) expect(codes('pp', pp('plot_num = 0', `nfile = 1, iflag = 1, output_format = ${bad}, nx = 10, e1(1) = 1`)), `${bad}`).toEqual(['qe-pp-format']);
+    for (const ok of [0, 2, 3, 5, 6, 7]) expect(codes('pp', pp('plot_num = 0', `nfile = 1, iflag = 1, output_format = ${ok}, nx = 10, e1(1) = 1`)), `${ok}`).toEqual([]);
+  });
+
+  it('checks the vectors and points for each iflag', () => {
+    const base = 'nfile = 1, output_format = 3';
+    expect(codes('pp', pp('plot_num = 0', `${base}, iflag = 1, nx = 10`))).toEqual(['qe-pp-vectors']);
+    expect(codes('pp', pp('plot_num = 0', `${base}, iflag = 1, e1(1) = 1`))).toEqual(['qe-pp-nx']);
+    expect(codes('pp', pp('plot_num = 0', `${base}, iflag = 1, e1(1) = 1, nx = 10`))).toEqual([]);
+    expect(codes('pp', pp('plot_num = 0', `${base}, iflag = 2, e1(1) = 1, nx = 10, ny = 10`))).toEqual(['qe-pp-vectors']);
+    expect(codes('pp', pp('plot_num = 0', `${base}, iflag = 2, e1(1) = 1, e2(1) = 1, e2(2) = 1, nx = 10, ny = 10`))).toEqual(['qe-pp-vectors']);
+    expect(codes('pp', pp('plot_num = 0', `${base}, iflag = 2, e1(1) = 1, e2(2) = 1, nx = 10`))).toEqual(['qe-pp-nx']);
+    expect(codes('pp', pp('plot_num = 0', `${base}, iflag = 4, nx = 10`))).toEqual(['qe-pp-nx']);
+    expect(codes('pp', pp('plot_num = 0', `${base}, iflag = 4, nx = 10, ny = 10`))).toEqual([]);
+    expect(codes('pp', pp('plot_num = 0', `${base}, iflag = 5, nx = 10`))).toEqual(['qe-pp-iflag']);
+  });
+
+  it('needs a 3D-capable format and orthogonal vectors for iflag = 3', () => {
+    const vec = 'e1(1) = 1, e2(2) = 1, e3(3) = 1';
+    expect(codes('pp', pp('plot_num = 0', `nfile = 1, iflag = 3, output_format = 5, ${vec}`))).toEqual([]);
+    expect(codes('pp', pp('plot_num = 0', `nfile = 1, iflag = 3, output_format = 7, ${vec}`))).toEqual(['qe-pp-format']);
+    expect(codes('pp', pp('plot_num = 0', `nfile = 1, iflag = 3, output_format = 5, e1(1) = 1, e2(1) = 1, e2(2) = 1, e3(3) = 1`))).toEqual(['qe-pp-vectors']);
+  });
+});

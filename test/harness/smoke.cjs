@@ -114,6 +114,8 @@ vscode.workspace.textDocuments.push(
   doc('qe', QE_PSEUDO, 'scf.pseudo.in'),
   doc('qe', readFileSync(join(fixtures, 'qe', 'ph.in'), 'utf8'), 'qe/ph.in'),
   doc('qe', readFileSync(join(fixtures, 'qe', 'dos.in'), 'utf8'), 'qe/dos.in'),
+  doc('qe-plot', '-6 10\nb.xmgr\nb.ps\nfermi\n2 0\n', 'plotband.in'),
+  doc('qe', readFileSync(join(fixtures, 'qe', 'pp.in'), 'utf8').replace('iflag = 2', 'iflag = 9'), 'qe/pp.bad.in'),
   doc('qe', readFileSync(join(fixtures, 'qe', 'bands.pp.in'), 'utf8').replace("prefix = 'si'", "prefix = 'ge'"), 'qe/bands.pp.in'),
 );
 // A plain-text file that starts with a QE namelist is switched to the QE language.
@@ -131,7 +133,8 @@ function format(lang, text, name) {
 }
 
 (async () => {
-  for (const id of ['incar', 'kpoints', 'poscar']) check(!!providers.format[id], `formatter registered for ${id}`);
+  for (const id of ['incar', 'kpoints', 'poscar', 'qe']) check(!!providers.format[id], `formatter registered for ${id}`);
+  check(!!providers.hover['qe-plot'], 'plotband/plotrho hover registered');
   for (const id of ['incar', 'kpoints', 'poscar']) check(!!providers.hover[id], `hover registered for ${id}`);
   check(!!providers.completion.incar, 'completion registered for incar');
 
@@ -233,6 +236,10 @@ function format(lang, text, name) {
   check(get('qe', 'qe/dos.in').length === 0, `dos.x agrees with the pw.x run next to it: ${get('qe', 'qe/dos.in').map((d) => d.message)}`);
   const bandsProblems = get('qe', 'qe/bands.pp.in').map((d) => d.message);
   check(bandsProblems.length === 0, `bands.x with a prefix no pw.x input has: nothing compared (${bandsProblems.length} problems)`);
+  const plotProblems = get('qe-plot', 'plotband.in').map((d) => d.message);
+  check(plotProblems.length === 1 && /Fermi energy: expected 1 number/.test(plotProblems[0]), `plotband.x input checked by file name: ${plotProblems}`);
+  const ppProblems = get('qe', 'qe/pp.bad.in').map((d) => d.message);
+  check(ppProblems.length === 1 && /iflag = 9 is not implemented/.test(ppProblems[0]), `pp.x input checked: ${ppProblems}`);
   const incar = get('incar', 'INCAR.headers');
   check(incar.some((d) => /below the largest ENMAX/.test(d.message)), 'INCAR ENCUT checked against the POTCAR');
   process.exit(failed ? 1 : 0);

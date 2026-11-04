@@ -8,7 +8,7 @@ import { checkItem, parseLogical, valueItems } from '../../src/core/qe/values';
 
 const dir = join(__dirname, '..', 'fixtures', 'qe');
 // pw.x inputs only: the ph.x ones are checked in qe-ph.test.ts.
-const fixtures = readdirSync(dir).filter((f) => !/^(ph|dos|projwfc|bands\.pp)/.test(f)).map((f) => [f, readFileSync(join(dir, f), 'utf8')] as const);
+const fixtures = readdirSync(dir).filter((f) => !/^(ph|dos|projwfc|bands\.pp|pp)/.test(f)).map((f) => [f, readFileSync(join(dir, f), 'utf8')] as const);
 const parse = (text: string) => parseQe(text, { cards: cardsOf('pw') });
 const check = (text: string) => validateQe(parse(text), 'pw');
 const codes = (text: string) => check(text).map((d) => d.code);
@@ -112,7 +112,8 @@ describe('validateQe', () => {
     expect(check(input('', 'nosym = yes')).find((d) => d.code === 'qe-value')?.message).toMatch(/\.true\./);
     expect(check(input('', 'nbnd = 4 5')).find((d) => d.code === 'qe-value')?.message).toMatch(/single value/);
     expect(check(input('', 'celldm(7) = 1')).find((d) => d.code === 'qe-index')?.message).toMatch(/between 1 and 6/);
-    expect(check(input('', 'nbnd(1) = 4')).find((d) => d.code === 'qe-index')?.message).toMatch(/not an array/);
+    expect(check(input('', 'nbnd(2) = 4')).find((d) => d.code === 'qe-index')?.message).toMatch(/not an array/);
+    expect(codes(input('', 'nbnd(1) = 4'))).toEqual([]); // one-element arrays: a documented scalar may be one in the source
     expect(check(input('', 'nbnd =')).find((d) => d.code === 'qe-value')?.message).toMatch(/missing value/);
   });
 

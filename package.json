@@ -1,8 +1,8 @@
 {
   "name": "dftune",
   "displayName": "DFTune: DFT Input Builder",
-  "description": "Set up DFT calculations by physical intent instead of raw input tags. VASP: INCAR builder, plus checks, hovers, quick fixes and formatting for INCAR, KPOINTS and POSCAR. Quantum ESPRESSO: checks, hovers and completion for pw.x inputs. Works on remote HPC files over Remote-SSH.",
-  "version": "1.8.0",
+  "description": "Set up DFT calculations by physical intent instead of raw input tags. VASP: INCAR builder, plus checks, hovers, quick fixes and formatting for INCAR, KPOINTS and POSCAR. Quantum ESPRESSO: builder, checks, hovers, completion, formatting and conversion for pw.x, ph.x, dos.x, projwfc.x, bands.x and pp.x inputs. Works on remote HPC files over Remote-SSH.",
+  "version": "1.9.0",
   "publisher": "DaanHolleman",
   "icon": "images/icon.png",
   "license": "MIT",
@@ -119,6 +119,21 @@
         ],
         "firstLine": "^\\s*&\\s*(?:[Cc][Oo][Nn][Tt][Rr][Oo][Ll]|[Ii][Nn][Pp][Uu][Tt][Pp][Hh]|[Pp][Rr][Oo][Jj][Ww][Ff][Cc]|[Dd][Oo][Ss]|[Bb][Aa][Nn][Dd][Ss]|[Ii][Nn][Pp][Uu][Tt][Pp][Pp]|[Pp][Ll][Oo][Tt])\\b",
         "configuration": "./qe-language-configuration.json"
+      },
+      {
+        "id": "qe-plot",
+        "aliases": [
+          "QE plotband/plotrho input"
+        ],
+        "filenamePatterns": [
+          "plotband.in",
+          "plotrho.in",
+          "plotband*.in",
+          "plotrho*.in",
+          "*.plotband",
+          "*.plotrho"
+        ],
+        "configuration": "./positional-language-configuration.json"
       }
     ],
     "grammars": [

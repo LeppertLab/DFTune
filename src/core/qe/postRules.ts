@@ -87,3 +87,65 @@ export function checkPostAgainstPw(post: QeDoc, program: QeProgram, pw: QeDoc, r
     if (p.bool('PROJWFC', 'diag_basis') === true && kType === 'gamma') report('error', 'qe-post-incompatible', 'diag_basis = .true. is not implemented for Γ-only runs.', p.entry('PROJWFC', 'diag_basis')!.keySpan);
   }
 }
+
+/** output_format values chdens accepts: 1 and 4 are obsolete, anything below 0 or above 7 is wrong. */
+const VALID_FORMATS = [0, 2, 3, 5, 6, 7];
+
+/** pw.x data → plots: &INPUTPP (what to extract) and &PLOT (how to write it). Conditions from PP/src/postproc.f90 and chdens_module.f90. */
+export function checkPp(doc: QeDoc, report: Report) {
+  const r = new Reader(doc);
+  const inputpp = r.namelist('INPUTPP');
+  const plot = r.namelist('PLOT');
+
+  const plotNum = r.num('INPUTPP', 'plot_num');
+  if (plotNum !== undefined && plotNum !== -1 && (plotNum < 0 || (plotNum > 24 && plotNum !== 119 && plotNum !== 123))) {
+    report('error', 'qe-pp-plotnum', `plot_num = ${plotNum} is not a quantity pp.x knows: use 0–24, 119 or 123 ("Wrong plot_num").`, r.entry('INPUTPP', 'plot_num')!.valueSpan);
+  }
+  const spin = r.num('INPUTPP', 'spin_component', '1') ?? (r.entry('INPUTPP', 'spin_component') && !r.entry('INPUTPP', 'spin_component')!.index ? r.num('INPUTPP', 'spin_component') : undefined);
+  if (spin !== undefined) {
+    const max = plotNum === 7 || plotNum === 13 || plotNum === 18 ? 3 : plotNum === 10 ? 2 : Infinity;
+    if (spin < 0 || spin > max) report('error', 'qe-pp-spin', `spin_component = ${spin} is out of range for plot_num = ${plotNum ?? 0}${max < Infinity ? ` (0–${max})` : ''}: "wrong spin_component".`, r.entry('INPUTPP', 'spin_component', r.has('INPUTPP', 'spin_component', '1') ? '1' : undefined)!.valueSpan);
+  }
+  const emin = r.num('INPUTPP', 'emin');
+  const emax = r.num('INPUTPP', 'emax');
+  if (emin !== undefined && emax !== undefined && emin > emax) report('error', 'qe-pp-emin', 'emin > emax: pp.x stops.', r.entry('INPUTPP', 'emin')!.keySpan);
+
+  if (inputpp && !plot && plotNum !== undefined && plotNum >= 0) {
+    report('info', 'qe-pp-plot-missing', 'There is no &PLOT namelist: pp.x only writes the file named by filplot, no plot. Add &PLOT (iflag, output_format, …) to get one.', inputpp.nameSpan);
+  }
+  if (!plot) return;
+  const iflag = r.num('PLOT', 'iflag');
+  const format = r.num('PLOT', 'output_format');
+  if (iflag === undefined || format === undefined) {
+    report('warning', 'qe-pp-format', 'iflag and output_format must both be set: without them pp.x prints "output format not set, exiting" and writes no plot.', plot.nameSpan);
+    return; // chdens returns here: nothing else in &PLOT is looked at
+  }
+  const nfile = r.num('PLOT', 'nfile');
+  if (nfile !== undefined && nfile < 1) report('error', 'qe-pp-nfile', 'nfile must be at least 1.', r.entry('PLOT', 'nfile')!.valueSpan);
+  if (format !== undefined && !VALID_FORMATS.includes(format)) {
+    report('error', 'qe-pp-format', `output_format = ${format} is wrong or obsolete: use 0, 2, 3, 5, 6 or 7 (see the documentation of output_format for your iflag).`, r.entry('PLOT', 'output_format')!.valueSpan);
+  }
+  if (iflag === undefined) return;
+  const vec = (n: string) => [1, 2, 3].map((i) => r.num('PLOT', n, String(i)) ?? 0);
+  const len2 = (v: number[]) => v[0] ** 2 + v[1] ** 2 + v[2] ** 2;
+  const dot = (a: number[], b: number[]) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const [e1, e2, e3] = [vec('e1'), vec('e2'), vec('e3')];
+  const at = r.entry('PLOT', 'iflag')!.valueSpan;
+  const nx = r.num('PLOT', 'nx') ?? 0;
+  const ny = r.num('PLOT', 'ny') ?? 0;
+  if (iflag <= 1) {
+    if (len2(e1) < 1e-6) report('error', 'qe-pp-vectors', `iflag = ${iflag} needs the vector e1 (e1(1), e1(2), e1(3)): "missing e1 vector".`, at);
+    if (nx <= 0) report('error', 'qe-pp-nx', `iflag = ${iflag} needs nx > 0 (the number of points): "wrong nx".`, at);
+  } else if (iflag === 2) {
+    if (len2(e1) < 1e-6 || len2(e2) < 1e-6) report('error', 'qe-pp-vectors', 'iflag = 2 (2D plot) needs the vectors e1 and e2: "missing e1/e2 vectors".', at);
+    else if (Math.abs(dot(e1, e2)) > 1e-6) report('error', 'qe-pp-vectors', 'e1 and e2 are not orthogonal: pp.x stops.', at);
+    if (nx <= 0 || ny <= 0) report('error', 'qe-pp-nx', 'iflag = 2 needs nx > 0 and ny > 0: "wrong nx/ny".', at);
+  } else if (iflag === 3) {
+    if (Math.abs(dot(e1, e2)) > 1e-6 || Math.abs(dot(e1, e3)) > 1e-6 || Math.abs(dot(e2, e3)) > 1e-6) report('error', 'qe-pp-vectors', 'e1, e2, e3 are not orthogonal: pp.x stops.', at);
+    if (format !== undefined && (format < 3 || format > 6)) report('error', 'qe-pp-format', 'iflag = 3 (3D) needs output_format between 3 and 6: "incompatible iflag/output_format".', r.entry('PLOT', 'output_format')!.valueSpan);
+  } else if (iflag === 4) {
+    if (nx <= 0 || ny <= 0) report('error', 'qe-pp-nx', 'iflag = 4 needs nx > 0 and ny > 0: "wrong nx/ny".', at);
+  } else {
+    report('error', 'qe-pp-iflag', `iflag = ${iflag} is not implemented (use 1 for a line, 2 plane, 3 3D grid, 4 spherical average).`, at);
+  }
+}

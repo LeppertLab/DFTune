@@ -294,8 +294,8 @@ export const QE_INTENTS_PH: QeIntent[] = [
 
 const fields = (id: string, label: string, namelist: string, names: string[]): QeIntent => ({ id, label, owns: [], related: names.map((n) => own(namelist, n)), choices: [] });
 
-/** The presets for dos.x, projwfc.x and bands.x: how to integrate, the energy window, files. */
-export const QE_INTENTS_POST: Record<'dos' | 'projwfc' | 'bands', QeIntent[]> = {
+/** The presets for dos.x, projwfc.x, bands.x and pp.x: how to integrate, the energy window, files. */
+export const QE_INTENTS_POST: Record<'dos' | 'projwfc' | 'bands' | 'pp', QeIntent[]> = {
   dos: [
     {
       id: 'integration',
@@ -329,6 +329,10 @@ export const QE_INTENTS_POST: Record<'dos' | 'projwfc' | 'bands', QeIntent[]> = 
     fields('window', 'Energy window and broadening', 'PROJWFC', ['Emin', 'Emax', 'DeltaE', 'degauss', 'ngauss']),
     fields('options', 'Options', 'PROJWFC', ['lsym', 'pawproj', 'diag_basis', 'lwrite_overlaps']),
     fields('files', 'Files', 'PROJWFC', ['prefix', 'outdir', 'filpdos', 'filproj']),
+  ],
+  pp: [
+    fields('quantity', 'What to extract (&INPUTPP)', 'INPUTPP', ['plot_num', 'spin_component', 'filplot', 'prefix', 'outdir']),
+    fields('plot', 'How to plot it (&PLOT)', 'PLOT', ['iflag', 'output_format', 'fileout', 'nfile', 'nx', 'ny']),
   ],
   bands: [
     fields('options', 'Options', 'BANDS', ['spin_component', 'lsym', 'no_overlap', 'lp', 'lsigma']),

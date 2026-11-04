@@ -10,7 +10,7 @@ import type { QeDoc, QeEntry } from './parse';
 import { allVarNames, cardsOf, lookupVar, namelistsDefining, namelistsOf, type QeProgram, type QeVar } from './tags';
 import { automaticGrid, kpointsCard, setKpointsCard } from './kpoints';
 import { checkPh, checkPhAgainstPw } from './phRules';
-import { checkPost, checkPostAgainstPw } from './postRules';
+import { checkPost, checkPostAgainstPw, checkPp } from './postRules';
 import { checkPseudos, type QeContext } from './pseudos';
 import { qeCell } from './structure';
 import { checkPw } from './rules';
@@ -86,6 +86,7 @@ export function validateQe(doc: QeDoc, program: QeProgram, ctx: QeContext = {}):
     checkPh(doc, report);
     if (ctx.pw) checkPhAgainstPw(doc, ctx.pw, report);
   }
+  if (program === 'pp') checkPp(doc, report);
   if (program === 'dos' || program === 'projwfc' || program === 'bands') {
     checkPost(doc, program, report);
     if (ctx.pw) checkPostAgainstPw(doc, program, ctx.pw, report);
@@ -162,8 +163,9 @@ function checkEntry(e: QeEntry, v: QeVar, report: Report) {
   const label = `${v.name}${e.index ? `(${e.index})` : ''}`;
   // Index (only where the documentation gives the dimension).
   if (e.index !== undefined && !v.status) {
+    // A documented scalar may be a one-element array in the source (pp.x's spin_component(1)): (1) is accepted.
     if (!v.dim) {
-      report('error', 'qe-index', `${v.name} is not an array: remove (${e.index}).`, e.keySpan);
+      if (e.index.trim() !== '1') report('error', 'qe-index', `${v.name} is not an array: remove (${e.index}).`, e.keySpan);
     } else {
       const [lo, hi] = v.dim.split(':');
       const first = e.index.split(',')[0].trim();

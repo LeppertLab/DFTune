@@ -120,7 +120,8 @@ describe('ph.x intents', () => {
     expect(intentsFor('pw')).toBe(QE_INTENTS);
     expect(intentsFor('ph')).toBe(QE_INTENTS_PH);
     expect(intentsFor('dos')).toBe(QE_INTENTS_POST.dos);
-    expect(intentsFor('pp')).toEqual([]);
+    expect(intentsFor('pp')).toBe(QE_INTENTS_POST.pp);
+    expect(intentsFor('qe-plot')).toEqual([]);
   });
 });
 

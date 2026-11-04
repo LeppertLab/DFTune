@@ -1,5 +1,23 @@
 # Changelog
 
+## 2.0.0 (2026-11-04)
+
+Quantum ESPRESSO is complete: pw.x, ph.x, dos.x, projwfc.x, bands.x, pp.x, plotband.x and plotrho.x inputs (1.1.0–1.9.0), on top of the VASP support. This release hardens all of it after a full code review.
+
+### Fixed
+- The builder, the quick fixes and `setVariables` no longer cut into a namelist that ends with `&END` instead of `/` (a variable was inserted inside the word).
+- `celldm = 10.0, 0, 1.6` (the array form: each value goes to the next element, also `3*0`) is read like `celldm(1) = …, celldm(2) = …`: no false "needs celldm(3)", and the cell, structure and k-grid checks work.
+- Card options with `.`, `/` or `^` (`ATOMIC_VELOCITIES {a.u}`, `SOLVENTS {mol/L}`, `{g/cm^3}`) are recognized; before, such a card was swallowed into the one above it.
+- Completion in a namelist that is not closed yet offers the variables of the namelist the cursor is in, not of the first unclosed one.
+- Pseudopotentials generated with the same functional but written differently (`PBE`, `SLA PW PBX PBC`, `SLA PW PBE PBE`, …) are no longer reported as mixed functionals.
+- The cutoff comment on a converted input was the wrong way round: the 40 Ry placeholder claimed to come from the pseudopotentials. It now says "placeholder" or "suggested by the pseudopotentials".
+- The Quantum ESPRESSO builder could show an older text after quick edits (two lookups finishing out of order).
+- Changes to `*.inp` pw.x inputs next to a ph.x, dos.x, projwfc.x or bands.x input now trigger a recheck, like `*.in` and `*.pwi`.
+
+### Changed
+- Fewer file reads while typing in a QE input: the input is parsed once per check, and the neighbouring pw.x inputs are read in parallel and kept parsed by modification time.
+- README organized as VASP and Quantum ESPRESSO.
+
 ## 1.9.0 (2026-11-04)
 
 ### Added

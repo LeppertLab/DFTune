@@ -71,21 +71,22 @@ function number(s: string | undefined): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
-/** Functionals that mean the same thing get the same key, so PBE written two ways is not a mismatch. */
+/**
+ * A key for the exchange-correlation functional, so that the many spellings of one functional
+ * agree: UPF 2 writes "PBE", UPF 1 "SLA PW PBX PBC" or "SLA PW PBE PBE", and so on.
+ */
 export function functionalKey(functional: string | undefined): string | undefined {
   if (!functional) return undefined;
   const f = functional.toUpperCase().replace(/[^A-Z0-9]+/g, ' ').trim();
-  const aliases: Record<string, string> = {
-    'SLA PW PBX PBC': 'PBE',
-    'SLA PW PSX PSC': 'PBESOL',
-    'SLA PZ NOGX NOGC': 'PZ',
-    'SLA PZ': 'PZ',
-    'SLA PW NOGX NOGC': 'PW',
-    'SLA PW': 'PW',
-    'SLA LYP B88 BLYP': 'BLYP',
-    'SLA PW PW91 PW91': 'PW91',
-    'PBE GGA': 'PBE',
-    'LDA': 'PZ',
-  };
-  return aliases[f] ?? f;
+  const tokens = new Set(f.split(' '));
+  const has = (...t: string[]) => t.every((x) => tokens.has(x));
+  if (tokens.has('PBESOL') || has('PSX', 'PSC') || has('PSX') ) return 'PBESOL';
+  if (tokens.has('PBE') || has('PBX', 'PBC') || has('PBX')) return 'PBE';
+  if (tokens.has('REVPBE') || has('RPB')) return 'REVPBE';
+  if (has('LYP') && (tokens.has('B88') || tokens.has('BLYP'))) return 'BLYP';
+  if (tokens.has('PW91') || has('GGX', 'GGC')) return 'PW91';
+  if (tokens.has('PZ') && !has('PBX')) return 'PZ';
+  if (f === 'LDA') return 'PZ';
+  if (tokens.has('SLA') && tokens.has('PW') && tokens.size <= 4 && !tokens.has('PBX') && !tokens.has('PBC')) return 'PW';
+  return f;
 }

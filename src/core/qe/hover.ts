@@ -119,7 +119,13 @@ export function qeCompletions(doc: QeDoc, program: QeProgram, offset: number): Q
   const before = text.slice(lineStart, offset);
   if (/[!#]/.test(before.replace(/'[^']*'|"[^"]*"/g, ''))) return [];
 
-  const nl = doc.namelists.find((n) => offset > n.nameSpan.end && (offset <= n.span.end || !n.closed) && !(n.closed && offset > n.span.end));
+  // The namelist the cursor is in: up to its closing slash, or for an unclosed one up to the next namelist or card.
+  const starts = [...doc.namelists.map((n) => n.nameSpan.start), ...doc.cards.map((c) => c.nameSpan.start)];
+  const nl = doc.namelists.find((n) => {
+    if (offset <= n.nameSpan.end) return false;
+    const bound = n.closed ? n.span.end : Math.min(...starts.filter((s) => s > n.nameSpan.start), Infinity);
+    return offset <= bound;
+  });
   if (!nl) {
     // Between namelists and cards: offer what can start a line.
     if (!/^\s*&?\w*$/.test(before)) return [];

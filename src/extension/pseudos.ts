@@ -2,7 +2,7 @@
 // Remote-SSH hosts), and reads their UPF headers. Results are kept by file and modification time.
 
 import * as vscode from 'vscode';
-import { cardsOf, detectProgram, parseQe, parseUpf, speciesRows, type PseudoLookup, type UpfInfo } from '../core';
+import { cardsOf, detectProgram, parseQe, parseUpf, speciesRows, type PseudoLookup, type QeDoc, type UpfInfo } from '../core';
 
 const cache = new Map<string, { mtime: number; info: UpfInfo | undefined }>();
 
@@ -11,8 +11,7 @@ const cache = new Map<string, { mtime: number; info: UpfInfo | undefined }>();
  * where pw.x is normally run), else $ESPRESSO_PSEUDO, else ~/espresso/pseudo like QE. Undefined
  * when it was not set and the default does not exist: then there is nothing to check against.
  */
-async function pseudoDir(input: vscode.Uri, text: string): Promise<vscode.Uri | undefined> {
-  const doc = parseQe(text, { cards: cardsOf('pw') });
+async function pseudoDir(input: vscode.Uri, doc: QeDoc): Promise<vscode.Uri | undefined> {
   const entry = doc.namelists.find((n) => n.name === 'CONTROL')?.entries.filter((e) => e.name === 'pseudo_dir').pop();
   const given = entry?.items[0]?.text.replace(/^['"]|['"]$/g, '').trim();
   if (given) return given.startsWith('/') ? input.with({ path: given }) : vscode.Uri.joinPath(input, '..', given);
@@ -48,11 +47,12 @@ async function readHeader(uri: vscode.Uri): Promise<{ found: boolean; info?: Upf
 }
 
 /** The pseudopotential files named in the ATOMIC_SPECIES card of a pw.x input; undefined when there is nothing to look in. */
-export async function findPseudos(input: vscode.Uri, text: string): Promise<PseudoLookup | undefined> {
+export async function findPseudos(input: vscode.Uri, text: string, parsed?: QeDoc): Promise<PseudoLookup | undefined> {
   if (detectProgram(text) !== 'pw') return undefined;
-  const rows = speciesRows(parseQe(text, { cards: cardsOf('pw') }));
+  const doc = parsed ?? parseQe(text, { cards: cardsOf('pw') });
+  const rows = speciesRows(doc);
   if (!rows.length) return undefined;
-  const dir = await pseudoDir(input, text);
+  const dir = await pseudoDir(input, doc);
   if (!dir) return undefined;
   const lookup: PseudoLookup = new Map();
   await Promise.all(

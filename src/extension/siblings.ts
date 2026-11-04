@@ -3,17 +3,20 @@
 import * as vscode from 'vscode';
 import { cardsOf, detectProgram, parseQe, type QeDoc } from '../core';
 
-const cache = new Map<string, { mtime: number; text: string }>();
+/** Files by modification time, with the parsed pw.x input (undefined for files that are not pw.x inputs). */
+const cache = new Map<string, { mtime: number; doc: QeDoc | undefined }>();
 
-async function readCached(uri: vscode.Uri): Promise<string | undefined> {
+/** The parsed pw.x input in `uri`, or undefined if it is not one; kept by modification time. */
+async function readPw(uri: vscode.Uri): Promise<QeDoc | undefined> {
   try {
     const { mtime, size } = await vscode.workspace.fs.stat(uri);
     if (size > 200_000) return undefined;
     const hit = cache.get(uri.toString());
-    if (hit?.mtime === mtime) return hit.text;
+    if (hit?.mtime === mtime) return hit.doc;
     const text = new TextDecoder().decode(await vscode.workspace.fs.readFile(uri));
-    cache.set(uri.toString(), { mtime, text });
-    return text;
+    const doc = detectProgram(text) === 'pw' ? parseQe(text, { cards: cardsOf('pw') }) : undefined;
+    cache.set(uri.toString(), { mtime, doc });
+    return doc;
   } catch {
     return undefined;
   }
@@ -39,15 +42,15 @@ export async function findPwInput(input: vscode.Uri, text: string): Promise<QeDo
   }
   const prefixOf = (doc: QeDoc, fallback: string) => doc.namelists.flatMap((n) => n.entries).find((e) => e.name === 'prefix')?.items[0]?.text.replace(/^['"]|['"]$/g, '') ?? fallback;
   const wanted = prefixOf(parseQe(text, { cards: cardsOf(program) }), 'pwscf');
-  const found: { doc: QeDoc; rank: number; same: boolean }[] = [];
-  for (const name of names.slice(0, 40)) {
-    const content = await readCached(vscode.Uri.joinPath(dir, name));
-    if (!content || detectProgram(content) !== 'pw') continue;
-    const doc = parseQe(content, { cards: cardsOf('pw') });
-    const calc = doc.namelists.find((n) => n.name === 'CONTROL')?.entries.find((e) => e.name === 'calculation')?.items[0]?.text.replace(/^['"]|['"]$/g, '').toLowerCase() ?? 'scf';
-    const rank = PREFERRED[program].indexOf(calc);
-    found.push({ doc, rank: rank < 0 ? 99 : rank, same: prefixOf(doc, 'pwscf') === wanted });
-  }
+  // The candidates are read in parallel (each is cached by modification time).
+  const docs = await Promise.all(names.slice(0, 40).map((name) => readPw(vscode.Uri.joinPath(dir, name))));
+  const found = docs
+    .filter((doc): doc is QeDoc => !!doc)
+    .map((doc) => {
+      const calc = doc.namelists.find((n) => n.name === 'CONTROL')?.entries.find((e) => e.name === 'calculation')?.items[0]?.text.replace(/^['"]|['"]$/g, '').toLowerCase() ?? 'scf';
+      const rank = PREFERRED[program].indexOf(calc);
+      return { doc, rank: rank < 0 ? 99 : rank, same: prefixOf(doc, 'pwscf') === wanted };
+    });
   const best = found.filter((f) => f.same).sort((a, b) => a.rank - b.rank)[0];
   return best?.doc ?? (found.length === 1 ? found[0].doc : undefined);
 }

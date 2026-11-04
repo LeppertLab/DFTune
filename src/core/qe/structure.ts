@@ -137,7 +137,7 @@ export function qeCell(doc: QeDoc): { lattice: Cell3; volume: number; alat: numb
   const r = new Reader(doc);
   const ibrav = r.num('SYSTEM', 'ibrav');
   if (ibrav === undefined || !IBRAV_VALUES.includes(ibrav)) return undefined;
-  const celldm = [1, 2, 3, 4, 5, 6].map((i) => r.num('SYSTEM', 'celldm', String(i)) ?? 0);
+  const celldm = [1, 2, 3, 4, 5, 6].map((i) => r.elemNum('SYSTEM', 'celldm', i) ?? 0);
   const abc = ['a', 'b', 'c', 'cosab', 'cosac', 'cosbc'].map((n) => r.num('SYSTEM', n));
   const useAbc = abc[0] !== undefined && celldm[0] === 0;
   const dm = useAbc ? abc2celldm(ibrav, abc[0]!, abc[1] ?? 0, abc[2] ?? 0, abc[3] ?? 0, abc[4] ?? 0, abc[5] ?? 0) : celldm;

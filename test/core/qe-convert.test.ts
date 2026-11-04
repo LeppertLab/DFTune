@@ -52,6 +52,7 @@ describe('POSCAR → pw.x', () => {
     expect(validateQe(parse(text), 'pw').filter((d) => d.severity === 'error')).toEqual([]);
     expect(formatQe(text)).toBe(text);
     expect(text).toMatch(/&CONTROL\n {2}calculation = 'scf'/);
+    expect(text).toMatch(/ecutwfc = 40 +! placeholder: set it from the recommended cutoff/);
     expect(text).toMatch(/ATOMIC_SPECIES\n {2}Fe {2}55\.845 {2}Fe\.UPF\n {2}O {3}15\.999 {2}O\.UPF/);
     expect(text).toMatch(/CELL_PARAMETERS \{angstrom\}/);
     expect(text).toMatch(/K_POINTS \{automatic\}\n {2}\d+ \d+ \d+ 0 0 0\n$/);
@@ -66,7 +67,7 @@ describe('POSCAR → pw.x', () => {
     expect(vc).toContain('&CELL\n/');
     expect(vc).toContain('Fe.pbe-kjpaw.UPF');
     expect(vc).toContain("pseudo_dir  = '/pp'");
-    expect(vc).toMatch(/ecutwfc +=\s*50\n/);
+    expect(vc).toMatch(/ecutwfc +=\s*50 +! suggested by the pseudopotentials\n/);
     expect(vc).toMatch(/ecutrho +=\s*400/);
     expect(validateQe(parse(vc), 'pw').filter((d) => d.severity === 'error')).toEqual([]);
   });

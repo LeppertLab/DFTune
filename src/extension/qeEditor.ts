@@ -23,9 +23,13 @@ export class QeEditorProvider implements vscode.CustomTextEditorProvider {
     panel.webview.options = { enableScripts: true, localResourceRoots: [dist] };
     panel.webview.html = builderHtml(panel.webview, dist, 'Quantum ESPRESSO Builder', 'qe');
 
+    // The pseudopotential lookup awaits the file system: a later post must not be overtaken by an earlier one.
+    let latest = 0;
     const post = async () => {
+      const mine = ++latest;
       const text = document.getText();
       const pseudos = await findPseudos(document.uri, text);
+      if (mine !== latest) return;
       const message: ToWebviewQe = { type: 'update-qe', text, fileName: vscode.workspace.asRelativePath(document.uri), pseudos: pseudos && [...pseudos] };
       panel.webview.postMessage(message);
     };

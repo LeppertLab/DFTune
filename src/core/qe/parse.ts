@@ -41,6 +41,8 @@ export interface QeNamelist {
   entries: QeEntry[];
   /** Ended with `/` or `&END` (not by the next namelist/card or the end of the file). */
   closed: boolean;
+  /** The closing `/` or `&END` token, when closed. */
+  closeSpan?: Span;
   /** From `&` to the closing `/`, or to the last token. */
   span: Span;
 }
@@ -99,6 +101,10 @@ export function parseQe(text: string, options: QeParseOptions = {}): QeDoc {
     if (!current) return;
     current.nl.closed = closed;
     current.nl.span.end = endAt;
+    if (closed) {
+      const last = current.tokens[current.tokens.length - 1];
+      current.nl.closeSpan = { start: last.start, end: last.end };
+    }
     buildEntries(current.nl, current.tokens, text, issue);
     if (!closed) issue('error', 'qe-unterminated', `Namelist &${current.nl.name} is not closed: end it with a line containing only "/".`, current.nl.nameSpan);
     current = undefined;
@@ -162,7 +168,7 @@ function stripComment(line: Line<'text'>): Line<'text'> {
 
 /** `ATOMIC_POSITIONS (bohr)`, `K_POINTS {automatic}`, `K_POINTS automatic` → name and option. */
 function cardKeyword(line: Line, cards: ReadonlySet<string>): { name: string; nameSpan: Span; option?: string; optionSpan?: Span } | undefined {
-  const m = line.text.match(/^(\s*)([A-Za-z_]+)\s*(?:[({]\s*)?([A-Za-z_0-9-]*)\s*[)}]?\s*(?:[!#].*)?$/);
+  const m = line.text.match(/^(\s*)([A-Za-z_]+)\s*(?:[({]\s*)?([A-Za-z_0-9./^-]*)\s*[)}]?\s*(?:[!#].*)?$/);
   if (!m || !cards.has(m[2].toUpperCase())) return undefined;
   const nameStart = line.start + m[1].length;
   const result: ReturnType<typeof cardKeyword> = { name: m[2].toUpperCase(), nameSpan: { start: nameStart, end: nameStart + m[2].length } };

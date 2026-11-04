@@ -46,7 +46,7 @@ export function poscarToQe(s: Structure, comment: string, o: ToQeOptions): strin
   lines.push(`! ${o.name}: converted from POSCAR${comment ? ` (${comment})` : ''} by DFTune`);
   lines.push('&CONTROL', `calculation = '${o.calculation}'`, `prefix = '${o.name.replace(/[^\w.-]+/g, '_')}'`, "outdir = './tmp'", `pseudo_dir = '${o.pseudoDir ?? './pseudo'}'`, '/');
   const wfc = o.ecutwfc ?? 40;
-  lines.push('&SYSTEM', 'ibrav = 0', `nat = ${s.nions}`, `ntyp = ${groups.length}`, `ecutwfc = ${wfc}${o.ecutwfc ? '' : '  ! set from the recommended cutoff of the pseudopotentials'}`);
+  lines.push('&SYSTEM', 'ibrav = 0', `nat = ${s.nions}`, `ntyp = ${groups.length}`, `ecutwfc = ${wfc}  ! ${o.ecutwfc ? 'suggested by the pseudopotentials' : 'placeholder: set it from the recommended cutoff of your pseudopotentials'}`);
   if (o.ecutrho) lines.push(`ecutrho = ${o.ecutrho}`);
   lines.push('/', '&ELECTRONS', 'conv_thr = 1.0d-8', '/');
   if (o.calculation !== 'scf') lines.push('&IONS', '/');

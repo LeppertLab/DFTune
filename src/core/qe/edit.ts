@@ -84,16 +84,16 @@ function insertIntoNamelist(text: string, nl: QeNamelist, line: string, eol: str
     const lead = text.slice(lastLineStart, last.span.start);
     const indent = lead.trim() === '' ? lead : '  ';
     // Entries sharing the line of the closing slash: put the new variable before the slash instead.
-    const slashLineStart = nl.closed ? text.lastIndexOf('\n', nl.span.end - 1) + 1 : -1;
+    const slashLineStart = nl.closed ? text.lastIndexOf('\n', nl.closeSpan!.start) + 1 : -1;
     if (nl.closed && slashLineStart === text.lastIndexOf('\n', last.span.end - 1) + 1) {
-      const slash = nl.span.end - 1;
+      const slash = nl.closeSpan!.start;
       return { start: slash, end: slash, text: `${eol}${indent || '  '}${line}${eol}` };
     }
     return { start: end, end, text: `${eol}${indent || '  '}${line}` };
   }
   // Empty namelist: before the closing slash, on its own line.
   if (nl.closed) {
-    const slash = nl.span.end - 1;
+    const slash = nl.closeSpan!.start;
     const lineStart = text.lastIndexOf('\n', slash - 1) + 1;
     if (text.slice(lineStart, slash).trim() === '') return { start: lineStart, end: lineStart, text: `  ${line}${eol}` };
     return { start: slash, end: slash, text: `${eol}  ${line}${eol}` };

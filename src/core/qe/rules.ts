@@ -118,7 +118,7 @@ function checkCell(r: Reader, report: Report) {
   const cellCard = r.card('CELL_PARAMETERS');
   const hasCelldm = r.has('SYSTEM', 'celldm');
   const abc = ['a', 'b', 'c', 'cosab', 'cosac', 'cosbc'].map((n) => r.entry('SYSTEM', n)).filter((e): e is QeEntry => !!e);
-  const celldm1 = r.has('SYSTEM', 'celldm', '1') || (r.entry('SYSTEM', 'celldm') !== undefined && !r.entry('SYSTEM', 'celldm')?.index);
+  const celldm1 = r.elem('SYSTEM', 'celldm', 1) !== undefined;
   const lattice = celldm1 || r.has('SYSTEM', 'a');
 
   if (ibravEntry && ibrav !== undefined) {
@@ -138,7 +138,7 @@ function checkCell(r: Reader, report: Report) {
       report('error', 'qe-lattice-parameter', `ibrav = ${ibrav} needs the lattice parameter: celldm(1) (bohr) or A (Å).`, ibravEntry?.valueSpan ?? START);
     } else if (celldm1) {
       for (const k of CELLDM_NEEDED[ibrav]) {
-        if (!r.has('SYSTEM', 'celldm', String(k))) report('error', 'qe-celldm-missing', `ibrav = ${ibrav} also needs celldm(${k}).`, ibravEntry?.valueSpan ?? START);
+        if (r.elem('SYSTEM', 'celldm', k) === undefined) report('error', 'qe-celldm-missing', `ibrav = ${ibrav} also needs celldm(${k}).`, ibravEntry?.valueSpan ?? START);
       }
     }
   }
@@ -321,7 +321,7 @@ function setEntries(r: Reader, nl: QeNamelist, assignments: [string, string][], 
     return { title, edit: { start: replacing.span.start, end: replacing.span.end, text } };
   }
   if (!fresh.length) return undefined;
-  // The namelist span ends right after the closing "/".
-  const close = nl.span.end - 1;
+  // Before the closing "/" (or "&END").
+  const close = nl.closeSpan!.start;
   return { title, edit: { start: close, end: close, text: fresh.map(([n, v]) => `${indent}${n} = ${v}\n`).join('') } };
 }

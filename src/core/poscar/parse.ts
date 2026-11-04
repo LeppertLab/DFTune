@@ -320,12 +320,10 @@ function checkDistances(s: Structure, warn: (message: string, span: Span) => voi
 export function findCloseAtoms(s: AtomsInput, warn: (message: string, span: Span) => void) {
   if (s.frac.length > MAX_ATOMS_DISTANCE_CHECK) return;
   const L = s.lattice;
-  const label = s.label;
-  const nions = s.frac.length;
   const r2 = MIN_DISTANCE * MIN_DISTANCE;
   // r·|b_k|/2π, with b_k the reciprocal vectors: |b_k|/2π = |a_i × a_j| / V.
   const reach = [cross(L[1], L[2]), cross(L[2], L[0]), cross(L[0], L[1])].map((v) => (MIN_DISTANCE * norm(v)) / s.volume);
-  const n = nions;
+  const n = s.frac.length;
   const fx = new Float64Array(n);
   const fy = new Float64Array(n);
   const fz = new Float64Array(n);
@@ -372,10 +370,10 @@ export function findCloseAtoms(s: AtomsInput, warn: (message: string, span: Span
       }
       if (best < r2) {
         const dist = Math.sqrt(best);
-                const message =
+        const message =
           i === j
-            ? `Atom ${i + 1} (${label(i)}) is only ${dist.toFixed(2)} Å from its own periodic image: the cell is too small.`
-            : `Atoms ${i + 1} (${label(i)}) and ${j + 1} (${label(j)}) are only ${dist.toFixed(2)} Å apart${dist < 0.01 ? ' (duplicate position?)' : ''}.`;
+            ? `Atom ${i + 1} (${s.label(i)}) is only ${dist.toFixed(2)} Å from its own periodic image: the cell is too small.`
+            : `Atoms ${i + 1} (${s.label(i)}) and ${j + 1} (${s.label(j)}) are only ${dist.toFixed(2)} Å apart${dist < 0.01 ? ' (duplicate position?)' : ''}.`;
         warn(message, s.span(j));
         reported++;
       }

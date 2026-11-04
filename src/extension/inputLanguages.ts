@@ -55,7 +55,7 @@ async function lintQe(text: string, uri: vscode.Uri): Promise<Diagnostic[]> {
   const program = detectProgram(text);
   const doc = parseQe(text, { cards: program ? cardsOf(program) : [] });
   if (!program || !QE_CHECKED.includes(program)) return doc.issues;
-  const [pseudos, pw] = await Promise.all([findPseudos(uri, text), findPwInput(uri, text)]);
+  const [pseudos, pw] = await Promise.all([findPseudos(uri, text, doc), findPwInput(uri, text)]);
   return validateQe(doc, program, { pseudos, pw });
 }
 

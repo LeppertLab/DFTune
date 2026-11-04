@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.0.1 (2026-11-04)
 
 ### Added
 - VASP builder: a SYSTEM field right under the file header, to set the title of the calculation. Titles with `;`, `!` or `#` are written in quotes, so VASP reads them whole.

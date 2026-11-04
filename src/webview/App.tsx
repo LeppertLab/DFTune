@@ -5,6 +5,7 @@ import { Diagnostics } from './components/Diagnostics';
 import { GroupCard } from './components/GroupCard';
 import { HubbardCard } from './components/HubbardCard';
 import { IntentCard } from './components/IntentCard';
+import { SystemField } from './components/SystemField';
 import { TagTable } from './components/TagTable';
 import { vscode } from './vscode';
 
@@ -58,6 +59,8 @@ export function App() {
           Show text
         </button>
       </header>
+
+      <SystemField value={doc.tags.get('SYSTEM')?.value} onChange={(v) => apply({ SYSTEM: v })} />
 
       <Diagnostics diagnostics={diagnostics} onReveal={reveal} onFix={(edit) => vscode.postMessage({ type: 'applyEdit', edit, text: state.text })} />
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- VASP builder: a SYSTEM field right under the file header, to set the title of the calculation. Titles with `;`, `!` or `#` are written in quotes, so VASP reads them whole.
+
 ## 2.0.0 (2026-11-04)
 
 Quantum ESPRESSO is complete: pw.x, ph.x, dos.x, projwfc.x, bands.x, pp.x, plotband.x and plotrho.x inputs (1.1.0–1.9.0), on top of the VASP support. This release hardens all of it after a full code review.

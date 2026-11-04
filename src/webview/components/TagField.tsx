@@ -8,11 +8,13 @@ interface Props {
   value: string | undefined;
   /** Called with the new raw value, or null to remove the tag. */
   onChange(value: string | null): void;
+  /** Shown in an empty text field instead of the tag's default. */
+  placeholder?: string;
 }
 
 /** Typed editor for one tag. Free-text inputs commit on Enter or blur, not on every keystroke. */
-export function TagField({ def, name, value, onChange }: Props) {
-  const placeholder = def?.default ?? def?.defaultNote ?? '';
+export function TagField({ def, name, value, onChange, placeholder: hint }: Props) {
+  const placeholder = hint ?? def?.default ?? def?.defaultNote ?? '';
 
   if (def?.type === 'bool') {
     return (

@@ -60,3 +60,5 @@ export * from './qe/upf';
 export * from './qe/pseudos';
 export * from './qe/structure';
 export * from './qe/kpoints';
+export * from './qe/convert';
+export * from './poscar/masses';

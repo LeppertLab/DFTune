@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.0 (2026-11-04)
+
+### Added
+- *Create Quantum ESPRESSO Input from POSCAR…*: a formatted pw.x input (scf, relax or vc-relax) for a POSCAR or CONTCAR, with the cell, positions (selective dynamics as `if_pos`), standard atomic masses, a k-point grid at a chosen density, the namelists the calculation needs, and pseudopotentials and cutoffs taken from `$ESPRESSO_PSEUDO` when it exists.
+- *Create POSCAR from Quantum ESPRESSO Input*: the structure of a pw.x input as a POSCAR (atoms grouped by species, `if_pos` as selective dynamics).
+- A table of standard atomic weights (H–Pu), checked for plausibility in the tests.
+
 ## 1.4.0 (2026-11-04)
 
 ### Added

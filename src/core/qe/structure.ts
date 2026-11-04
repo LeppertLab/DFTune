@@ -128,6 +128,8 @@ export interface QeStructure {
   frac: Vec3[];
   labels: string[];
   spans: Span[];
+  /** The if_pos flags ("0"/"1") of each atom; empty for atoms without them. */
+  flags: string[][];
 }
 
 /** The cell alone (no atoms needed), or the reason it cannot be built. */
@@ -180,6 +182,7 @@ export function qeStructure(doc: QeDoc): QeStructure | undefined {
   const frac: Vec3[] = [];
   const labels: string[] = [];
   const spans: Span[] = [];
+  const flags: string[][] = [];
   for (const l of card.lines.filter((x) => x.text.trim())) {
     if (l.tokens.length < 4 || !l.tokens.slice(1, 4).every((t) => isReal(t.text))) return undefined;
     const v = l.tokens.slice(1, 4).map((t) => toReal(t.text)) as Vec3;
@@ -190,8 +193,9 @@ export function qeStructure(doc: QeDoc): QeStructure | undefined {
     }
     labels.push(l.tokens[0].text);
     spans.push({ start: l.start, end: l.end });
+    flags.push(l.tokens.length >= 7 ? l.tokens.slice(4, 7).map((t) => t.text) : []);
   }
-  return { lattice, volume: cell.volume, alat, frac, labels, spans };
+  return { lattice, volume: cell.volume, alat, frac, labels, spans, flags };
 }
 
 function invert(m: Cell3): Cell3 {

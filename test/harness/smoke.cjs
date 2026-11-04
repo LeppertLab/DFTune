@@ -3,7 +3,7 @@
 // (wrong language id, provider not registered, crash on activation) that unit tests can't see.
 // Run with `npm run smoke` after `npm run build`.
 const Module = require('node:module');
-const { copyFileSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } = require('node:fs');
+const { copyFileSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } = require('node:fs');
 const { tmpdir } = require('node:os');
 const { join, posix } = require('node:path');
 
@@ -60,6 +60,7 @@ const vscode = {
     fs: {
       readFile: async (u) => readFileSync(u.path),
       writeFile: async (u, data) => writeFileSync(u.path, data),
+      readDirectory: async (u) => readdirSync(u.path).map((n) => [n, 1]),
       stat: async (u) => { const st = statSync(u.path); return { mtime: st.mtimeMs, type: st.isDirectory() ? 2 : 1 }; },
     },
     asRelativePath: (u) => u.path,
@@ -189,6 +190,17 @@ function format(lang, text, name) {
     copyFileSync(join(fixtures, 'CONTCAR.slab'), join(dir, 'CONTCAR'));
     await commands['dftune.generateKpoints'](uri(join(dir, 'CONTCAR')));
     const fromContcar = readFileSync(join(dir, 'KPOINTS'), 'utf8').split('\n')[3];
+    // POSCAR → pw.x input (relax, standard density) → POSCAR again.
+    copyFileSync(join(fixtures, 'POSCAR'), join(dir, 'POSCAR'));
+    await commands['dftune.poscarToQe'](uri(join(dir, 'POSCAR')));
+    const converted = readFileSync(join(dir, 'relax.in'), 'utf8');
+    check(/calculation = 'relax'/.test(converted) && /&IONS/.test(converted) && /ATOMIC_POSITIONS \{crystal\}/.test(converted), 'POSCAR converted to a QE input');
+    const original = readFileSync(join(dir, 'POSCAR'), 'utf8');
+    await commands['dftune.qeToPoscar'](uri(join(dir, 'relax.in')));
+    const back = readFileSync(join(dir, 'POSCAR'), 'utf8');
+    check(back !== original && /Fe +O/.test(back) && /6 +8/.test(back) && back.includes('Direct'), `QE input converted back to a POSCAR: ${back.split('\n')[5]} / ${back.split('\n')[6]}`);
+    rmSync(join(dir, 'POSCAR'), { force: true });
+
     // A QE input: the K_POINTS card is replaced by a grid for its cell (fcc Si, 0.3 Å⁻¹).
     copyFileSync(join(fixtures, 'qe', 'si.scf.in'), join(dir, 'scf.in'));
     appliedEdits.length = 0;

@@ -60,6 +60,11 @@ Files are recognized by name (`*.pwi`, `scf.in`, `relax.in`, `vc-relax.in`, `ban
 
 - **Pseudopotentials**: the files named in `ATOMIC_SPECIES` are looked up in `pseudo_dir` (relative to the input's folder; else `$ESPRESSO_PSEUDO`, else `~/espresso/pseudo`) and their UPF headers read (UPF 1 and 2; the potential itself is not read). Hovering a species line shows element, type (norm-conserving, ultrasoft, PAW), functional, valence electrons and the cutoffs the generator suggests. Checks: a file that is not there, a pseudopotential for another element than the species label, pseudopotentials generated with different functionals (without `input_dft`), `ecutwfc`/`ecutrho` below the generator's suggested minimum (the default `ecutrho = 4 × ecutwfc` is often too low for ultrasoft and PAW), `lspinorb` without spin–orbit pseudopotentials, and the number of valence electrons against `nbnd` ("too few bands") and against fixed occupations (an odd number of electrons is a metal).
 
+### Conversion between POSCAR and Quantum ESPRESSO
+
+- **Create Quantum ESPRESSO Input from POSCAR…** (right-click a POSCAR or CONTCAR): pick scf, relax or vc-relax and a k-point density, and get `scf.in` / `relax.in` / `vc-relax.in` next to it: `ibrav = 0` with `CELL_PARAMETERS {angstrom}`, `ATOMIC_POSITIONS {crystal}` (selective dynamics become `if_pos` flags), the standard atomic masses, a k-point grid for the cell, the namelists a relaxation needs, and the input formatted. Pseudopotentials are picked from `$ESPRESSO_PSEUDO` (or `~/espresso/pseudo`) when it exists (a PBE file if there is one), and the cutoffs they suggest are used.
+- **Create POSCAR from Quantum ESPRESSO Input** (right-click a pw.x input): writes `POSCAR` next to it, atoms grouped by species, `if_pos = 0` becoming selective dynamics. Both ask before replacing a file.
+
 ### Files that belong together
 
 The files of one calculation are found in the same folder: `POSCAR.relax` for `INCAR.relax` (or `KPOINTS.relax`), otherwise `POSCAR`; likewise for KPOINTS and POTCAR. Open files are rechecked when one of their neighbours changes on disk. Only folders with an open input file are watched, which keeps the extension light on large cluster file systems.

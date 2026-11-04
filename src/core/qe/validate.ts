@@ -8,7 +8,9 @@ import type { Diagnostic, Fix } from '../validation/rules';
 import { editDistance } from '../validation/rules';
 import type { QeDoc, QeEntry } from './parse';
 import { allVarNames, cardsOf, lookupVar, namelistsDefining, namelistsOf, type QeProgram, type QeVar } from './tags';
+import { automaticGrid, kpointsCard, setKpointsCard } from './kpoints';
 import { checkPseudos, type QeContext } from './pseudos';
+import { qeCell } from './structure';
 import { checkPw } from './rules';
 import { checkItem, isInteger, isQuoted, unquote, valueItems } from './values';
 
@@ -203,6 +205,14 @@ function checkString(e: QeEntry, v: QeVar, label: string, items: string[], repor
   report('warning', 'qe-option', `${label}: '${unquote(items[0])}' is not one of ${choices.map((c) => `'${c}'`).join(', ')}.`, e.valueSpan, near ? { title: `Change to '${near}'`, edit: { start: e.valueSpan.start, end: e.valueSpan.end, text: `'${near}'` } } : undefined);
 }
 
+/** A K_POINTS card for a spacing of 0.3 Å⁻¹ when the cell is known, else 4 × 4 × 4. */
+function missingKpointsFix(doc: QeDoc): Fix {
+  const cell = qeCell(doc);
+  const known = cell && !('error' in cell);
+  const grid = known ? automaticGrid(cell, 0.3) : ([4, 4, 4] as [number, number, number]);
+  return { title: `Add K_POINTS {automatic} ${grid.join(' ')}${known ? ' (spacing 0.3 Å⁻¹)' : ''}`, edit: setKpointsCard(doc, kpointsCard(grid)) };
+}
+
 function checkCards(doc: QeDoc, program: QeProgram, report: Report) {
   const known = new Set(cardsOf(program));
   const seen = new Set<string>();
@@ -212,7 +222,9 @@ function checkCards(doc: QeDoc, program: QeProgram, report: Report) {
     seen.add(card.name);
   }
   for (const required of REQUIRED_CARDS[program] ?? []) {
-    if (!seen.has(required) && doc.namelists.length) report('error', 'qe-card-missing', `Card ${required} is missing.`, START);
+    if (!seen.has(required) && doc.namelists.length) {
+      report('error', 'qe-card-missing', `Card ${required} is missing.`, START, required === 'K_POINTS' ? missingKpointsFix(doc) : undefined);
+    }
   }
 }
 

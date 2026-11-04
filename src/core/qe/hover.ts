@@ -1,7 +1,9 @@
 // Hover text and completions for QE inputs, independent of VS Code.
 
 import type { QeDoc } from './parse';
+import { assessGrid } from './kpoints';
 import { speciesRows, type PseudoFile, type QeContext } from './pseudos';
+import { describeCell, qeCell } from './structure';
 import { cardsOf, lookupVar, namelistsOf, varsOf, qeDocsUrl, type QeProgram, type QeVar } from './tags';
 
 /** Markdown describing a variable. `current` highlights the option in use. */
@@ -52,6 +54,10 @@ export function qeHover(doc: QeDoc, program: QeProgram, offset: number, ctx: QeC
     }
   }
   if (program === 'pw') {
+    const cellHover = hoverCell(doc, offset);
+    if (cellHover) return cellHover;
+    const gridHover = hoverGrid(doc, offset);
+    if (gridHover) return gridHover;
     for (const row of speciesRows(doc)) {
       if (offset < row.lineSpan.start || offset > row.lineSpan.end) continue;
       const found = ctx.pseudos?.get(row.file);
@@ -59,6 +65,41 @@ export function qeHover(doc: QeDoc, program: QeProgram, offset: number, ctx: QeC
     }
   }
   return undefined;
+}
+
+type HoverResult = { markdown: string; start: number; end: number };
+
+const CELL_VARIABLES = new Set(['ibrav', 'celldm', 'a', 'b', 'c', 'cosab', 'cosac', 'cosbc']);
+
+/** The cell on hover over the value of ibrav, celldm, A, B, C…, or the CELL_PARAMETERS keyword. */
+function hoverCell(doc: QeDoc, offset: number): HoverResult | undefined {
+  const system = doc.namelists.find((n) => n.name === 'SYSTEM');
+  const entry = system?.entries.find((e) => CELL_VARIABLES.has(e.name) && offset >= e.valueSpan.start && offset <= e.valueSpan.end && e.valueSpan.end > e.valueSpan.start);
+  const card = doc.cards.find((c) => c.name === 'CELL_PARAMETERS' && offset >= c.nameSpan.start && offset <= c.nameSpan.end);
+  const span = entry?.valueSpan ?? card?.nameSpan;
+  if (!span) return undefined;
+  const cell = qeCell(doc);
+  if (!cell) return undefined;
+  const markdown = 'error' in cell ? `**Cell**: cannot be built: ${cell.error}` : `**Cell** · ${describeCell(cell.lattice, cell.volume)}`;
+  return { markdown, start: span.start, end: span.end };
+}
+
+/** The grid of K_POINTS {automatic}: number of points and spacing. */
+function hoverGrid(doc: QeDoc, offset: number): HoverResult | undefined {
+  const card = doc.cards.find((c) => c.name === 'K_POINTS' && c.option === 'automatic');
+  const row = card?.lines.find((l) => l.text.trim());
+  if (!row || offset < row.start || offset > row.end || row.tokens.length < 6) return undefined;
+  const n = row.tokens.slice(0, 6).map((t) => Number(t.text));
+  if (!n.every(Number.isInteger) || n.slice(0, 3).some((x) => x <= 0)) return undefined;
+  const total = n[0] * n[1] * n[2];
+  const shifted = n.slice(3).some((x) => x !== 0);
+  let text = `**${shifted ? 'Shifted' : 'Γ-centred'} ${n[0]} × ${n[1]} × ${n[2]} grid**: ${total} k points before symmetry reduction.`;
+  const cell = qeCell(doc);
+  if (cell && !('error' in cell)) {
+    const { spacing } = assessGrid(cell, n.slice(0, 3) as [number, number, number], n.slice(3) as [number, number, number]);
+    text += `\n\nSpacing ${spacing.map((x) => Number(x.toFixed(3))).join(' × ')} Å⁻¹ along b1 × b2 × b3 (2π included).`;
+  }
+  return { markdown: text, start: row.start, end: row.end };
 }
 
 export interface QeCompletion {

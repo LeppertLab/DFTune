@@ -107,30 +107,30 @@ describe('pw.x rules', () => {
     const cards = (species: string, positions: string, kp = 'K_POINTS {gamma}\n') => `ATOMIC_SPECIES\n${species}\nATOMIC_POSITIONS ${positions}\n${kp}`;
     it('compares nat and ntyp with the cards', () => {
       expect(codes(make({ cards: cards('Si 28 Si.UPF', '{alat}\nSi 0 0 0') }))).toEqual(['qe-nat']);
-      expect(codes(make({ cards: cards('Si 28 Si.UPF\nGe 72 Ge.UPF', '{alat}\nSi 0 0 0\nSi 1 1 1') }))).toEqual(['qe-ntyp']);
+      expect(codes(make({ cards: cards('Si 28 Si.UPF\nGe 72 Ge.UPF', '{alat}\nSi 0 0 0\nSi 0.25 0.25 0.25') }))).toEqual(['qe-ntyp']);
       expect(codes(make({ system: 'ibrav = 2, celldm(1) = 10, nat = 2, ntyp = 1, ecutwfc = 25, space_group = 227', cards: cards('Si 28 Si.UPF', '{crystal_sg}\nSi 8a') }))).toEqual([]);
     });
 
     it('checks the lines of the cards', () => {
-      expect(codes(make({ cards: cards('Si 28', '{alat}\nSi 0 0 0\nSi 1 1 1') }))).toEqual(['qe-card-line']);
-      expect(codes(make({ cards: cards('Si abc Si.UPF', '{alat}\nSi 0 0 0\nSi 1 1 1') }))).toEqual(['qe-card-line']);
-      expect(codes(make({ cards: cards('Si 28 Si.UPF', '{alat}\nSi 0 0\nSi 1 1 1') }))).toEqual(['qe-card-line']);
-      expect(codes(make({ cards: cards('Si 28 Si.UPF', '{alat}\nSi 0 0 0 1\nSi 1 1 1') }))).toEqual(['qe-card-line']);
-      expect(codes(make({ cards: cards('Si 28 Si.UPF', '{alat}\nSi 0 0 0 0 1 1\nSi 1 1 1 1 1 1') }))).toEqual([]);
+      expect(codes(make({ cards: cards('Si 28', '{alat}\nSi 0 0 0\nSi 0.25 0.25 0.25') }))).toEqual(['qe-card-line']);
+      expect(codes(make({ cards: cards('Si abc Si.UPF', '{alat}\nSi 0 0 0\nSi 0.25 0.25 0.25') }))).toEqual(['qe-card-line']);
+      expect(codes(make({ cards: cards('Si 28 Si.UPF', '{alat}\nSi 0 0\nSi 0.25 0.25 0.25') }))).toEqual(['qe-card-line']);
+      expect(codes(make({ cards: cards('Si 28 Si.UPF', '{alat}\nSi 0 0 0 1\nSi 0.25 0.25 0.25') }))).toEqual(['qe-card-line']);
+      expect(codes(make({ cards: cards('Si 28 Si.UPF', '{alat}\nSi 0 0 0 0 1 1\nSi 0.25 0.25 0.25 1 1 1') }))).toEqual([]);
     });
 
     it('checks species labels (case-sensitive) and units', () => {
       const wrongCase = check(make({ cards: cards('Si 28 Si.UPF', '{alat}\nSi 0 0 0\nsi 1 1 1') })).find((d) => d.code === 'qe-species-label')!;
       expect(wrongCase.message).toMatch(/case-sensitive: Si/);
       expect(wrongCase.fix?.edit.text).toBe('Si');
-      expect(codes(make({ cards: cards('Si 28 Si.UPF', '{alat}\nSi 0 0 0\nGe 1 1 1') }))).toEqual(['qe-species-label']);
-      expect(codes(make({ cards: cards('Si 28 Si.UPF', '\nSi 0 0 0\nSi 1 1 1') }))).toEqual(['qe-units-missing']);
-      expect(codes(make({ cards: cards('Si 28 Si.UPF', '{inches}\nSi 0 0 0\nSi 1 1 1') }))).toEqual(['qe-card-option']);
+      expect(codes(make({ cards: cards('Si 28 Si.UPF', '{alat}\nSi 0 0 0\nGe 0.25 0.25 0.25') }))).toEqual(['qe-species-label']);
+      expect(codes(make({ cards: cards('Si 28 Si.UPF', '\nSi 0 0 0\nSi 0.25 0.25 0.25') }))).toEqual(['qe-units-missing']);
+      expect(codes(make({ cards: cards('Si 28 Si.UPF', '{inches}\nSi 0 0 0\nSi 0.25 0.25 0.25') }))).toEqual(['qe-card-option']);
     });
   });
 
   describe('k points', () => {
-    const kp = (card: string) => make({ cards: `ATOMIC_SPECIES\nSi 28 Si.UPF\nATOMIC_POSITIONS {alat}\nSi 0 0 0\nSi 1 1 1\n${card}` });
+    const kp = (card: string) => make({ cards: `ATOMIC_SPECIES\nSi 28 Si.UPF\nATOMIC_POSITIONS {alat}\nSi 0 0 0\nSi 0.25 0.25 0.25\n${card}` });
     it('checks the automatic grid', () => {
       expect(codes(kp('K_POINTS {automatic}\n4 4 4 0 0 0\n'))).toEqual([]);
       expect(codes(kp('K_POINTS {automatic}\n4 4 4\n'))).toEqual(['qe-card-line']);
@@ -178,7 +178,7 @@ describe('pw.x rules', () => {
     });
 
     it('needs an automatic grid for tetrahedra', () => {
-      const list = 'ATOMIC_SPECIES\nSi 28 Si.UPF\nATOMIC_POSITIONS {alat}\nSi 0 0 0\nSi 1 1 1\nK_POINTS {crystal}\n1\n0 0 0 1\n';
+      const list = 'ATOMIC_SPECIES\nSi 28 Si.UPF\nATOMIC_POSITIONS {alat}\nSi 0 0 0\nSi 0.25 0.25 0.25\nK_POINTS {crystal}\n1\n0 0 0 1\n';
       expect(codes(make({ system: sys("occupations = 'tetrahedra_opt'"), cards: list }))).toEqual(['qe-tetra-kpoints']);
       expect(codes(make({ system: sys("occupations = 'tetrahedra_opt'") }))).toEqual([]);
     });
@@ -200,5 +200,68 @@ describe('pw.x rules', () => {
       expect(codes(make({ system: sys("occupations = 'from_input'") }))).toEqual(['qe-card-missing']);
       expect(codes(make({ cards: make().split('&ELECTRONS')[1].split('/\n')[1] + 'OCCUPATIONS\n2 2\n' }))).toEqual(['qe-card-ignored']);
     });
+  });
+});
+
+describe('structure checks', () => {
+  const si = (positions: string, system = 'ibrav = 2, celldm(1) = 10.2, nat = 2, ntyp = 1, ecutwfc = 25') =>
+    make({ system, cards: `ATOMIC_SPECIES\nSi 28 Si.UPF\nATOMIC_POSITIONS {alat}\n${positions}\nK_POINTS {automatic}\n4 4 4 0 0 0\n` });
+
+  it('finds atoms that are too close, also across the cell boundary', () => {
+    expect(codes(si('Si 0 0 0\nSi 0.25 0.25 0.25'))).toEqual([]);
+    const d = check(si('Si 0 0 0\nSi 0 0 0.02')).find((x) => x.code === 'qe-close-atoms')!;
+    expect(d.message).toMatch(/Atoms 1 \(Si\) and 2 \(Si\) are only 0\.\d\d Å apart/);
+    expect(codes(si('Si 0 0 0\nSi 1 1 1'))).toEqual(['qe-close-atoms']); // a lattice point: the same atom again
+    // Crystal coordinates 0.01 and 0.99 are 0.02 of a lattice vector apart through the boundary.
+    const crystal = make({ cards: 'ATOMIC_SPECIES\nSi 28 Si.UPF\nATOMIC_POSITIONS {crystal}\nSi 0.01 0 0\nSi 0.99 0 0\nK_POINTS {automatic}\n4 4 4 0 0 0\n' });
+    expect(codes(crystal)).toEqual(['qe-close-atoms']);
+  });
+
+  it('reports a cell that cannot be built', () => {
+    expect(codes(make({ system: 'ibrav = 14, celldm(1) = 5, celldm(2) = 1, celldm(3) = 1, celldm(4) = 0.9, celldm(5) = 0.9, celldm(6) = -0.9, nat = 2, ntyp = 1, ecutwfc = 25' }))).toEqual(['qe-cell']);
+    // A missing celldm is reported by the simpler rule, not twice.
+    expect(codes(make({ system: 'ibrav = 4, celldm(1) = 5, nat = 2, ntyp = 1, ecutwfc = 25' }))).toEqual(['qe-celldm-missing']);
+  });
+
+  const slab = (grid: string) =>
+    make({
+      system: 'ibrav = 6, celldm(1) = 6, celldm(3) = 8, nat = 1, ntyp = 1, ecutwfc = 25',
+      cards: `ATOMIC_SPECIES\nSi 28 Si.UPF\nATOMIC_POSITIONS {crystal}\nSi 0 0 0\nK_POINTS {automatic}\n${grid}\n`,
+    });
+  const hex = (grid: string) =>
+    make({
+      system: 'ibrav = 4, celldm(1) = 6, celldm(3) = 1.6, nat = 1, ntyp = 1, ecutwfc = 25',
+      cards: `ATOMIC_SPECIES\nSi 28 Si.UPF\nATOMIC_POSITIONS {crystal}\nSi 0 0 0\nK_POINTS {automatic}\n${grid}\n`,
+    });
+
+  it('notes an uneven grid, with a balanced one as fix', () => {
+    expect(codes(slab('6 6 1 0 0 0'))).toEqual([]);
+    const uneven = slab('6 6 6 0 0 0');
+    expect(codes(uneven)).toEqual(['qe-kgrid-uneven']);
+    expect(check(uneven)[0].message).toMatch(/6 × 6 × 6.*|about the same accuracy/);
+    const fixed = apply(uneven, 'qe-kgrid-uneven');
+    expect(fixed).toContain('\n6 6 1 0 0 0\n');
+    expect(codes(fixed)).toEqual([]);
+  });
+
+  it('warns about a shifted grid on a hexagonal cell', () => {
+    expect(codes(hex('8 8 5 0 0 0'))).toEqual([]);
+    expect(codes(hex('8 8 5 1 1 0'))).toEqual(['qe-kgrid-shift']);
+    expect(codes(hex('8 8 5 0 0 1'))).toEqual([]); // the shift along the c axis is harmless
+    expect(apply(hex('8 8 5 1 1 1'), 'qe-kgrid-shift')).toContain('\n8 8 5 0 0 1\n');
+    // A cubic cell is fine shifted (a Monkhorst–Pack grid).
+    expect(codes(si2('4 4 4 1 1 1'))).toEqual([]);
+  });
+
+  function si2(grid: string) {
+    return make({ cards: `ATOMIC_SPECIES\nSi 28 Si.UPF\nATOMIC_POSITIONS {alat}\nSi 0 0 0\nSi 0.25 0.25 0.25\nK_POINTS {automatic}\n${grid}\n` });
+  }
+
+  it('offers to add a missing K_POINTS card, with a grid for the cell', () => {
+    const text = make({ cards: 'ATOMIC_SPECIES\nSi 28 Si.UPF\nATOMIC_POSITIONS {alat}\nSi 0 0 0\nSi 0.25 0.25 0.25\n' });
+    const fixed = apply(text, 'qe-card-missing');
+    expect(fixed).toMatch(/K_POINTS \{automatic\}\n {2}\d+ \d+ \d+ 0 0 0\n$/);
+    expect(check(text).find((d) => d.code === 'qe-card-missing')?.fix?.title).toMatch(/spacing 0\.3/);
+    expect(codes(fixed)).toEqual([]);
   });
 });

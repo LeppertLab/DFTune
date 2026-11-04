@@ -7,40 +7,18 @@
 import type { Span } from '../incar/parse';
 import type { Line } from '../lines';
 import type { Diagnostic, Fix } from '../validation/rules';
-import type { QeCard, QeDoc, QeEntry, QeNamelist } from './parse';
-import { isInteger, isReal, parseLogical, toReal, unquote, valueItems } from './values';
+import type { QeDoc, QeEntry, QeNamelist } from './parse';
+import { findCloseAtoms, type Vec3 } from '../poscar/parse';
+import { assessGrid } from './kpoints';
+import { Reader } from './reader';
+import { qeCell, qeStructure } from './structure';
+import { isInteger, isReal, toReal } from './values';
+
+export { Reader };
 
 export type Report = (severity: Diagnostic['severity'], code: string, message: string, span: Span, fix?: Fix) => void;
 
 const START: Span = { start: 0, end: 0 };
-
-/** Typed access to the entries of a parsed input. */
-export class Reader {
-  constructor(readonly doc: QeDoc) {}
-  namelist = (name: string): QeNamelist | undefined => this.doc.namelists.find((n) => n.name === name);
-  card = (name: string): QeCard | undefined => this.doc.cards.find((c) => c.name === name);
-  /** The last entry of `name` (QE uses the last assignment); with `index`, that array element. */
-  entry(namelist: string, name: string, index?: string): QeEntry | undefined {
-    const list = this.namelist(namelist)?.entries.filter((e) => e.name === name && (index === undefined || e.index?.trim() === index));
-    return list?.[list.length - 1];
-  }
-  has = (namelist: string, name: string, index?: string) => this.entry(namelist, name, index) !== undefined;
-  /** First item of the value, unquoted and lower-cased. */
-  str(namelist: string, name: string): string | undefined {
-    const e = this.entry(namelist, name);
-    return e && e.value ? unquote(valueItems(e.value)[0] ?? '').toLowerCase() : undefined;
-  }
-  num(namelist: string, name: string, index?: string): number | undefined {
-    const e = this.entry(namelist, name, index);
-    const item = e && valueItems(e.value)[0];
-    return item !== undefined && isReal(item) ? toReal(item) : undefined;
-  }
-  bool(namelist: string, name: string): boolean | undefined {
-    const e = this.entry(namelist, name);
-    const item = e && valueItems(e.value)[0];
-    return item === undefined ? undefined : parseLogical(item);
-  }
-}
 
 /** What each Bravais-lattice index needs besides celldm(1) (latgen.f90). */
 const CELLDM_NEEDED: Record<number, number[]> = {
@@ -54,11 +32,57 @@ const CELL_UNITS = ['alat', 'bohr', 'angstrom'];
 
 export function checkPw(doc: QeDoc, report: Report) {
   const r = new Reader(doc);
-  checkNamelistPresence(r, report);
-  checkCell(r, report);
-  checkSpeciesAndPositions(r, report);
-  checkKpoints(r, report);
-  checkElectrons(r, report);
+  const seen = new Set<string>();
+  const noted: Report = (severity, code, message, span, fix) => {
+    seen.add(code);
+    report(severity, code, message, span, fix);
+  };
+  checkNamelistPresence(r, noted);
+  checkCell(r, noted);
+  checkSpeciesAndPositions(r, noted);
+  checkKpoints(r, noted);
+  checkElectrons(r, noted);
+  // The cell and atoms as QE builds them, once the input is otherwise sound.
+  checkStructure(r, doc, seen, noted);
+}
+
+/** Impossible cells, atoms on top of each other, and k-point grids that do not suit the cell. */
+function checkStructure(r: Reader, doc: QeDoc, seen: Set<string>, report: Report) {
+  const cell = qeCell(doc);
+  if (cell && 'error' in cell) {
+    // The simple cases (a missing celldm) are reported already, with better wording.
+    if (!['qe-celldm-missing', 'qe-lattice-parameter', 'qe-ibrav', 'qe-cell-card-missing'].some((c) => seen.has(c))) {
+      report('error', 'qe-cell', `The cell cannot be built: ${cell.error}.`, r.entry('SYSTEM', 'ibrav')?.valueSpan ?? START);
+    }
+    return;
+  }
+  if (!cell) return;
+  const s = qeStructure(doc);
+  if (s) {
+    findCloseAtoms({ lattice: s.lattice, volume: s.volume, frac: s.frac, label: (i) => s.labels[i], span: (i) => s.spans[i] }, (message, span) => report('warning', 'qe-close-atoms', message, span));
+  }
+  // An automatic grid against the cell.
+  const kp = r.card('K_POINTS');
+  const row = kp?.option === 'automatic' ? kp.lines.find((l) => l.text.trim()) : undefined;
+  if (!row || row.tokens.length < 6) return;
+  const nums = row.tokens.slice(0, 6).map((t) => Number(t.text));
+  if (!nums.every(Number.isInteger) || nums.slice(0, 3).some((n) => n <= 0)) return;
+  const grid = nums.slice(0, 3) as Vec3;
+  const offsets = nums.slice(3) as Vec3;
+  const a = assessGrid(cell, grid, offsets);
+  const f = (x: number) => Number(x.toFixed(3));
+  if (a.balanced) {
+    report('info', 'qe-kgrid-uneven', `Uneven k-point density: spacing ${a.spacing.map(f).join(' × ')} Å⁻¹ along b1 × b2 × b3. A ${a.balanced.join(' × ')} grid would have about the same accuracy at lower cost (or refine the other directions).`, { start: row.tokens[0].start, end: row.tokens[2].end }, {
+      title: `Use a ${a.balanced.join(' × ')} grid`,
+      edit: { start: row.tokens[0].start, end: row.tokens[2].end, text: a.balanced.join(' ') },
+    });
+  }
+  if (a.unshifted) {
+    report('warning', 'qe-kgrid-shift', 'A shifted k-point grid on a hexagonal cell breaks the hexagonal symmetry in the plane and converges slowly. Use offsets 0 there (a Γ-centred grid).', { start: row.tokens[3].start, end: row.tokens[5].end }, {
+      title: 'Use a Γ-centred grid (offsets 0 in the hexagonal plane)',
+      edit: { start: row.tokens[3].start, end: row.tokens[5].end, text: a.unshifted.join(' ') },
+    });
+  }
 }
 
 /** Text that adds `namelist` after the last namelist that precedes it in the input, or undefined if that cannot be told. */

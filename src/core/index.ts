@@ -58,3 +58,5 @@ export * from './qe/hover';
 export * from './qe/format';
 export * from './qe/upf';
 export * from './qe/pseudos';
+export * from './qe/structure';
+export * from './qe/kpoints';

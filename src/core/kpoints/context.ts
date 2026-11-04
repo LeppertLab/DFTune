@@ -9,7 +9,7 @@ import { parseKpoints, type KpointsDoc } from './parse';
 type Cell = Pick<Structure, 'lattice' | 'volume'>;
 
 /** A finer mesh than this many times the coarsest direction is reported as uneven. */
-const UNEVEN_RATIO = 2.5;
+export const UNEVEN_RATIO = 2.5;
 const f = (x: number, d = 3) => Number(x.toFixed(d)).toString();
 
 /** The subdivisions of a Gamma/Monkhorst–Pack file, when they could be read. */

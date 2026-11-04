@@ -8,7 +8,8 @@ import type { Span } from '../incar/parse';
 import { elementOf } from '../poscar/elements';
 import type { Fix } from '../validation/rules';
 import type { QeDoc } from './parse';
-import { Reader, type Report } from './rules';
+import { Reader } from './reader';
+import type { Report } from './rules';
 import { functionalKey, type UpfInfo } from './upf';
 
 export interface PseudoFile {

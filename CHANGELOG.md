@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.4.0 (2026-11-04)
+
+### Added
+- pw.x: the structure. The cell is built as QE builds it (a port of `latgen` for every `ibrav`, with `celldm`, `A…` or `CELL_PARAMETERS`; each lattice is tested against its textbook volume) and the atoms are read from `ATOMIC_POSITIONS` in any unit.
+- Hover on the value of `ibrav`/`celldm`/`A` or on `CELL_PARAMETERS`: lengths, angles, volume. Hover on an automatic `K_POINTS` grid: number of k points and spacing in Å⁻¹.
+- Checks: atoms closer than 0.5 Å (also across the cell boundary), a cell that cannot be built, an uneven automatic grid (with a balanced one as fix), a shifted grid on a hexagonal cell (fix: offsets 0).
+- A missing `K_POINTS` card gets a quick fix with a grid for the cell (0.3 Å⁻¹).
+- *Generate k-point Mesh…* works on Quantum ESPRESSO inputs: it replaces or adds the `K_POINTS {automatic}` card at a chosen density.
+
+### Changed
+- The command is called *Generate k-point Mesh…* now (it was *Generate KPOINTS Mesh…*).
+
 ## 1.3.0 (2026-11-04)
 
 ### Added

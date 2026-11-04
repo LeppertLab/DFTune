@@ -295,19 +295,37 @@ export function parsePoscar(text: string, options: ParseOptions = {}): PoscarDoc
   return doc;
 }
 
+/** What the close-atoms check needs of a structure, from any input format. */
+export interface AtomsInput {
+  /** Lattice vectors in Å (rows). */
+  lattice: [Vec3, Vec3, Vec3];
+  volume: number;
+  /** Fractional coordinates of every atom. */
+  frac: Vec3[];
+  /** Name of atom `i` (for messages) and where to point at it. */
+  label(i: number): string;
+  span(i: number): Span;
+}
+
+function checkDistances(s: Structure, warn: (message: string, span: Span) => void) {
+  const label = speciesLabeler(s);
+  findCloseAtoms({ lattice: s.lattice, volume: s.volume, frac: s.frac, label, span: (i) => ({ start: s.atomLines[i].start, end: s.atomLines[i].end }) }, warn);
+}
+
 /**
  * Pairs of atoms (and atoms and their own images) closer than MIN_DISTANCE. Exact for any cell
  * shape: a distance ≤ r bounds the fractional separation along axis k by r·|b_k|/2π, so only the
  * integer image shifts inside that bound are tried (usually one, often none).
  */
-function checkDistances(s: Structure, warn: (message: string, span: Span) => void) {
-  if (s.nions > MAX_ATOMS_DISTANCE_CHECK) return;
+export function findCloseAtoms(s: AtomsInput, warn: (message: string, span: Span) => void) {
+  if (s.frac.length > MAX_ATOMS_DISTANCE_CHECK) return;
   const L = s.lattice;
-  const label = speciesLabeler(s);
+  const label = s.label;
+  const nions = s.frac.length;
   const r2 = MIN_DISTANCE * MIN_DISTANCE;
   // r·|b_k|/2π, with b_k the reciprocal vectors: |b_k|/2π = |a_i × a_j| / V.
   const reach = [cross(L[1], L[2]), cross(L[2], L[0]), cross(L[0], L[1])].map((v) => (MIN_DISTANCE * norm(v)) / s.volume);
-  const n = s.nions;
+  const n = nions;
   const fx = new Float64Array(n);
   const fy = new Float64Array(n);
   const fz = new Float64Array(n);
@@ -354,12 +372,11 @@ function checkDistances(s: Structure, warn: (message: string, span: Span) => voi
       }
       if (best < r2) {
         const dist = Math.sqrt(best);
-        const line = s.atomLines[j];
-        const message =
+                const message =
           i === j
             ? `Atom ${i + 1} (${label(i)}) is only ${dist.toFixed(2)} Å from its own periodic image: the cell is too small.`
             : `Atoms ${i + 1} (${label(i)}) and ${j + 1} (${label(j)}) are only ${dist.toFixed(2)} Å apart${dist < 0.01 ? ' (duplicate position?)' : ''}.`;
-        warn(message, { start: line.start, end: line.end });
+        warn(message, s.span(j));
         reported++;
       }
     }

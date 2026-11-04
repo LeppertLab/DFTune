@@ -7,6 +7,7 @@ const { copyFileSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync
 const { tmpdir } = require('node:os');
 const { join, posix } = require('node:path');
 
+const appliedEdits = [];
 const providers = { hover: {}, format: {}, completion: {}, actions: {} };
 const commands = {};
 const collections = {};
@@ -49,6 +50,9 @@ const vscode = {
   },
   workspace: {
     textDocuments: [],
+    // Opens a file as a document (its language: qe when it starts with &control, else plaintext) and records edits.
+    openTextDocument: async (u) => { const t = readFileSync(u.path, 'utf8'); return doc(/^\s*&control/im.test(t) ? 'qe' : 'plaintext', t, u.path.split('/').pop()); },
+    applyEdit: async (we) => { appliedEdits.push(...we.edits); return true; },
     onDidOpenTextDocument: event, onDidChangeTextDocument: event, onDidCloseTextDocument: event,
     getConfiguration: () => ({ get: (_k, d) => d }),
     createFileSystemWatcher: () => ({ onDidChange() {}, onDidCreate() {}, onDidDelete() {}, dispose() {} }),
@@ -185,6 +189,11 @@ function format(lang, text, name) {
     copyFileSync(join(fixtures, 'CONTCAR.slab'), join(dir, 'CONTCAR'));
     await commands['dftune.generateKpoints'](uri(join(dir, 'CONTCAR')));
     const fromContcar = readFileSync(join(dir, 'KPOINTS'), 'utf8').split('\n')[3];
+    // A QE input: the K_POINTS card is replaced by a grid for its cell (fcc Si, 0.3 Å⁻¹).
+    copyFileSync(join(fixtures, 'qe', 'si.scf.in'), join(dir, 'scf.in'));
+    appliedEdits.length = 0;
+    await commands['dftune.generateKpoints'](uri(join(dir, 'scf.in')));
+    check(appliedEdits.length === 1 && appliedEdits[0].newText === 'K_POINTS {automatic}\n  7 7 7 0 0 0', `K_POINTS generated for a QE input: ${JSON.stringify(appliedEdits[0] && appliedEdits[0].newText)}`);
     check(fromContcar === '5 5 2', `KPOINTS generated from a CONTCAR: ${fromContcar}`);
   } finally {
     rmSync(dir, { recursive: true, force: true });

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { INTENTS, KPOINT_DENSITIES, kspacingMesh, meshKpoints, newIncar, readPoscar, type PoscarInfo } from '../core';
+import { INTENTS, KPOINT_DENSITIES, automaticGrid, cardsOf, kpointsCard, kspacingMesh, meshKpoints, newIncar, parseQe, qeCell, readPoscar, setKpointsCard, type PoscarInfo } from '../core';
 import { VIEW_TYPE } from './incarEditor';
 import { findPoscar, siblingName } from './inputs';
 
@@ -81,8 +81,8 @@ async function pickKpointsSetup(poscar: PoscarInfo | undefined, hasKpoints: bool
 }
 
 /** A k-point spacing, with the resulting mesh for the POSCAR when it is known. */
-async function pickDensity(poscar: PoscarInfo | undefined, title: string): Promise<number | undefined> {
-  const cell = poscar?.lattice && poscar.volume ? { lattice: poscar.lattice, volume: poscar.volume } : undefined;
+async function pickDensity(source: { lattice?: PoscarInfo['lattice']; volume?: number } | undefined, title: string): Promise<number | undefined> {
+  const cell = source?.lattice && source.volume ? { lattice: source.lattice, volume: source.volume } : undefined;
   const pick = await vscode.window.showQuickPick(
     KPOINT_DENSITIES.map((d) => {
       const mesh = cell && kspacingMesh(cell, d.spacing);
@@ -116,10 +116,14 @@ async function writeKpoints(target: vscode.Uri, text: string, alreadyConfirmed =
 async function generateKpoints(uri?: vscode.Uri) {
   const source = uri ?? vscode.window.activeTextEditor?.document.uri;
   if (!source) {
-    vscode.window.showInformationMessage('Open a POSCAR, INCAR or KPOINTS file (or pick a folder) first.');
+    vscode.window.showInformationMessage('Open a POSCAR, INCAR, KPOINTS or Quantum ESPRESSO input (or pick a folder) first.');
     return;
   }
   const isFolder = (await vscode.workspace.fs.stat(source)).type === vscode.FileType.Directory;
+  if (!isFolder) {
+    const document = await vscode.workspace.openTextDocument(source);
+    if (document.languageId === 'qe') return generateQeKpoints(document);
+  }
   const anchor = isFolder ? vscode.Uri.joinPath(source, 'INCAR') : source;
   // Run on a structure file (CONTCAR, Si.vasp, POSCAR.relax): use that file itself.
   const poscar = (isStructureFile(anchor) ? await readStructure(anchor) : undefined) ?? (await findPoscar(anchor));
@@ -131,6 +135,22 @@ async function generateKpoints(uri?: vscode.Uri) {
   if (spacing === undefined) return;
   const target = vscode.Uri.joinPath(anchor, '..', siblingName(anchor, 'KPOINTS'));
   await writeKpoints(target, meshKpoints({ lattice: poscar.info.lattice, volume: poscar.info.volume }, spacing));
+}
+
+/** Puts a K_POINTS {automatic} card for the cell of a pw.x input into it, at a density the user picks. */
+async function generateQeKpoints(document: vscode.TextDocument) {
+  const qe = parseQe(document.getText(), { cards: cardsOf('pw') });
+  const cell = qeCell(qe);
+  if (!cell || 'error' in cell) {
+    vscode.window.showWarningMessage(cell ? `The cell of this input cannot be built: ${cell.error}.` : 'The cell of this input could not be read: set ibrav (and celldm or A, or CELL_PARAMETERS) first.');
+    return;
+  }
+  const spacing = await pickDensity(cell, `K_POINTS for ${vscode.workspace.asRelativePath(document.uri)}`);
+  if (spacing === undefined) return;
+  const edit = setKpointsCard(qe, kpointsCard(automaticGrid(cell, spacing)));
+  const workspaceEdit = new vscode.WorkspaceEdit();
+  workspaceEdit.replace(document.uri, new vscode.Range(document.positionAt(edit.start), document.positionAt(edit.end)), edit.text);
+  await vscode.workspace.applyEdit(workspaceEdit);
 }
 
 function isStructureFile(uri: vscode.Uri): boolean {

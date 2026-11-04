@@ -47,6 +47,8 @@ The POTCAR itself is never shown or changed; only its header lines (`TITEL`, `EN
 
 ### Quantum ESPRESSO (pw.x)
 
+- **Quantum ESPRESSO Builder** (the gear in the editor title bar of a QE input, or *Open Quantum ESPRESSO Builder*): the same idea as the INCAR builder. *Setup* cards pick the calculation (scf, relax, vc-relax, md, nscf, bands), occupations (insulator, metal with smearing, tetrahedra), magnetism (non-magnetic, collinear, noncollinear, spin–orbit), functional, van der Waals correction and SCF convergence, and show which variables each writes; the current input is read back into these choices, and anything that fits no preset shows as *Custom* and is never overwritten silently. *All variables* lists every documented variable of every namelist with a typed field (logicals and fixed options as drop-downs, strings quoted for you), its description, and a jump to the text. The header shows atoms, cell, k points and pseudopotentials; problems come with their fix buttons. Edits are minimal text edits: comments, layout and order survive, and a missing `&IONS` or `&CELL` is added in the right place.
+
 Files are recognized by name (`*.pwi`, `scf.in`, `relax.in`, `vc-relax.in`, `bands.in`, `pw.*.in`, …) or by content: a plain-text file that starts with `&CONTROL` is switched to the *Quantum ESPRESSO* language automatically.
 
 - **Highlighting** of namelists, variables, cards, strings, logicals and numbers.
@@ -88,7 +90,7 @@ npm run package     # build a .vsix
 ```
 
 - **F5** in VS Code launches an Extension Development Host with `test/fixtures` open.
-- `node test/harness/serve.mjs` serves the builder webview in a normal browser at http://localhost:5173/test/harness/, with the fixture INCAR standing in for VS Code. Add `?incar=INCAR.mlff_train` to load another fixture.
+- `node test/harness/serve.mjs` serves the builder webview in a normal browser at http://localhost:5173/test/harness/, with the fixture INCAR standing in for VS Code. Add `?incar=INCAR.mlff_train` to load another fixture, or `?app=qe&input=fe.relax.in` for the Quantum ESPRESSO builder.
 
 ### Layout
 

@@ -1,11 +1,13 @@
 import * as vscode from 'vscode';
 import { INTENTS, KPOINT_DENSITIES, automaticGrid, cardsOf, kpointsCard, kspacingMesh, meshKpoints, newIncar, parseQe, qeCell, readPoscar, setKpointsCard, type PoscarInfo } from '../core';
 import { VIEW_TYPE } from './incarEditor';
+import { QE_VIEW_TYPE } from './qeEditor';
 import { findPoscar, siblingName } from './inputs';
 
 export function registerCommands(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand('dftune.openBuilder', openBuilder),
+    vscode.commands.registerCommand('dftune.openQeBuilder', openQeBuilder),
     vscode.commands.registerCommand('dftune.newCalculation', newCalculation),
     vscode.commands.registerCommand('dftune.generateKpoints', generateKpoints),
   );
@@ -18,6 +20,15 @@ async function openBuilder(uri?: vscode.Uri) {
     return;
   }
   await vscode.commands.executeCommand('vscode.openWith', target, VIEW_TYPE, vscode.ViewColumn.Beside);
+}
+
+async function openQeBuilder(uri?: vscode.Uri) {
+  const target = uri ?? vscode.window.activeTextEditor?.document.uri;
+  if (!target) {
+    vscode.window.showInformationMessage('Open a Quantum ESPRESSO input first.');
+    return;
+  }
+  await vscode.commands.executeCommand('vscode.openWith', target, QE_VIEW_TYPE, vscode.ViewColumn.Beside);
 }
 
 /** Asks for the main intents and writes a commented INCAR into the chosen folder. */

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.6.0 (2026-11-04)
+
+### Added
+- Quantum ESPRESSO Builder for pw.x inputs (*Open Quantum ESPRESSO Builder*, or the gear in the title bar of a QE input; also offered as an alternative editor for `*.pwi`, `scf.in`, `relax.in`, …). Setup cards for calculation, occupations, magnetism, functional, van der Waals and SCF convergence (each choice is detected again when the input is read back), a table of all documented variables per namelist with typed fields, a header with the structure and pseudopotentials, and the checks with fix buttons.
+- Text edits of namelist variables that keep comments, layout and order (set, remove, add to a namelist, create a missing namelist in the order QE reads them), also used by the builder.
+- `?app=qe&input=<fixture>` in the browser harness shows the builder without VS Code.
+
 ## 1.5.0 (2026-11-04)
 
 ### Added

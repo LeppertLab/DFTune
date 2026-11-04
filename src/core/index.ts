@@ -62,3 +62,6 @@ export * from './qe/structure';
 export * from './qe/kpoints';
 export * from './qe/convert';
 export * from './poscar/masses';
+export * from './qe/edit';
+export * from './qe/intents';
+export * from './qe/reader';

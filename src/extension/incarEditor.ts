@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { minimalEdit, setTags } from '../core';
 import type { FromWebview, ToWebview } from './messages';
+import { builderHtml } from './builderHtml';
 import { findInputs, watchInputs } from './inputs';
 
 export const VIEW_TYPE = 'dftune.incarBuilder';
@@ -21,7 +22,7 @@ export class IncarEditorProvider implements vscode.CustomTextEditorProvider {
   async resolveCustomTextEditor(document: vscode.TextDocument, panel: vscode.WebviewPanel): Promise<void> {
     const dist = vscode.Uri.joinPath(this.context.extensionUri, 'dist');
     panel.webview.options = { enableScripts: true, localResourceRoots: [dist] };
-    panel.webview.html = this.html(panel.webview, dist);
+    panel.webview.html = builderHtml(panel.webview, dist, 'INCAR Builder');
 
     const post = async () => {
       const { poscar, kpoints, potcar } = await findInputs(document.uri);
@@ -77,33 +78,13 @@ export class IncarEditorProvider implements vscode.CustomTextEditorProvider {
       }
     }
   }
-
-  private html(webview: vscode.Webview, dist: vscode.Uri): string {
-    const nonce = Array.from({ length: 32 }, () => Math.floor(Math.random() * 36).toString(36)).join('');
-    const script = webview.asWebviewUri(vscode.Uri.joinPath(dist, 'webview.js'));
-    const style = webview.asWebviewUri(vscode.Uri.joinPath(dist, 'webview.css'));
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="${style}" rel="stylesheet">
-  <title>INCAR Builder</title>
-</head>
-<body>
-  <div id="root"></div>
-  <script nonce="${nonce}" src="${script}"></script>
-</body>
-</html>`;
-  }
 }
 
 /**
  * Where to show the INCAR text: the editor group that already has it open (a visible one first),
  * so jumping from the builder reuses that editor instead of opening a new split every time.
  */
-function textColumn(uri: vscode.Uri): vscode.ViewColumn {
+export function textColumn(uri: vscode.Uri): vscode.ViewColumn {
   const same = (other: vscode.Uri) => other.toString() === uri.toString();
   const visible = vscode.window.visibleTextEditors.find((e) => same(e.document.uri) && e.viewColumn !== undefined);
   if (visible?.viewColumn) return visible.viewColumn;

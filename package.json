@@ -2,7 +2,7 @@
   "name": "dftune",
   "displayName": "DFTune: DFT Input Builder",
   "description": "Set up DFT calculations by physical intent instead of raw input tags. VASP: INCAR builder, plus checks, hovers, quick fixes and formatting for INCAR, KPOINTS and POSCAR. Quantum ESPRESSO: checks, hovers and completion for pw.x inputs. Works on remote HPC files over Remote-SSH.",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "publisher": "DaanHolleman",
   "icon": "images/icon.png",
   "license": "MIT",
@@ -162,6 +162,34 @@
           }
         ],
         "priority": "option"
+      },
+      {
+        "viewType": "dftune.qeBuilder",
+        "displayName": "Quantum ESPRESSO Builder",
+        "selector": [
+          {
+            "filenamePattern": "*.pwi"
+          },
+          {
+            "filenamePattern": "*.pw.in"
+          },
+          {
+            "filenamePattern": "pw.*.in"
+          },
+          {
+            "filenamePattern": "scf.in"
+          },
+          {
+            "filenamePattern": "nscf.in"
+          },
+          {
+            "filenamePattern": "relax.in"
+          },
+          {
+            "filenamePattern": "vc-relax.in"
+          }
+        ],
+        "priority": "option"
       }
     ],
     "commands": [
@@ -169,6 +197,12 @@
         "command": "dftune.openBuilder",
         "title": "Open INCAR Builder",
         "category": "VASP",
+        "icon": "$(settings)"
+      },
+      {
+        "command": "dftune.openQeBuilder",
+        "title": "Open Quantum ESPRESSO Builder",
+        "category": "DFTune",
         "icon": "$(settings)"
       },
       {
@@ -237,6 +271,11 @@
         {
           "command": "dftune.openBuilder",
           "when": "editorLangId == incar",
+          "group": "navigation"
+        },
+        {
+          "command": "dftune.openQeBuilder",
+          "when": "editorLangId == qe",
           "group": "navigation"
         }
       ],

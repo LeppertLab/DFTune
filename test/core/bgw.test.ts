@@ -164,7 +164,7 @@ describe('validateBgw: problems', () => {
     expect(codes('sigma', sigma + 'begin diag\n  1.5\nend\n')).toEqual(['bgw-block-row']);
     expect(codes('sigma', sigma + 'begin offdiag\n  1 2 3\nend\n')).toEqual([]);
     expect(codes('sigma', sigma + 'begin offdiag\n  1 2\nend\n')).toEqual(['bgw-block-row']);
-    expect(codes('sigma', sigma + 'begin qpoints\n  0 0 0 1 1\nend\n')).toEqual([]);
+    expect(codes('sigma', sigma + 'begin qpoints\n  0 0 0 1 1\nend\n')).toEqual(['bgw-sig-qpoints']); // only used for Hartree–Fock
   });
 
   it('says that a block keyword needs begin … end', () => {

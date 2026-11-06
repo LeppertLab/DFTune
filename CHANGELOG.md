@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.3.0 (2026-11-06)
+
+### Added
+- sigma.inp: checks for the conditions `Sigma/inread.f90` refuses: `frequency_dependence` and `frequency_dependence_method` values, `cd_integration_method`, Hartree–Fock without a `qpoints` block, `qgrid` or a q→0 point, `occ_broadening` without full-frequency contour deformation or `fermi_level_absolute`, `number_diag`/`number_offdiag` larger than their blocks, `sigma_matrix` out of range, `exact_static_ch`, `full_ch_conv_log`, spin indices, `frequency_grid_shift` (and `init_frequency_eval`/`number_frequency_eval` left on the default shift), `dont_symmetrize` without `no_symmetries_q_grid`. Warnings for a `qpoints` block outside Hartree–Fock and for the deprecated `number_kpoints`/`number_qpoints`. All 33 sigma inputs of the testsuite pass without a false alarm.
+
+### Changed
+- `band_index_min`/`band_index_max` are no longer required when a `begin diag` block lists the bands.
+
 ## 2.2.0 (2026-11-06)
 
 ### Added

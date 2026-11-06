@@ -6,6 +6,7 @@ import { isInteger, isNumber } from '../lines';
 import type { Diagnostic, Fix } from '../validation/rules';
 import { editDistance } from '../validation/rules';
 import { checkEpsilon } from './epsilon';
+import { checkSigma } from './sigma';
 import type { BgwBlock, BgwDoc, BgwEntry } from './parse';
 import { allKeywordNames, isAcceptedUndocumented, lookupKeyword, type BgwProgram } from './tags';
 
@@ -82,10 +83,14 @@ export function validateBgw(doc: BgwDoc, program: BgwProgram): Diagnostic[] {
   }
 
   if (program === 'epsilon') checkEpsilon(doc, report);
+  if (program === 'sigma') checkSigma(doc, report);
 
   // The keywords and blocks the documentation marks as required.
   const blocks = new Set(doc.blocks.map((b) => b.name));
+  // sigma.inp: the bands may come from a `begin diag` block instead of band_index_min/max.
+  const diagBands = program === 'sigma' && doc.blocks.some((b) => b.name === 'diag' && b.rows.length);
   for (const k of requiredOf(program)) {
+    if (diagBands && (k.name === 'band_index_min' || k.name === 'band_index_max')) continue;
     const present = k.kind === 'block' ? blocks.has(k.name) : seen.has(k.name);
     if (!present) report('error', 'bgw-required', `${k.kind === 'block' ? `begin ${k.name} … end` : k.name} is required in ${file}.`, { start: 0, end: 0 });
   }

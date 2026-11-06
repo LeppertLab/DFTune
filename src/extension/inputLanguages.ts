@@ -4,8 +4,12 @@
 
 import * as vscode from 'vscode';
 import {
+  bgwCompletions,
+  bgwHover,
   cardsOf,
+  detectBgwProgram,
   detectProgram,
+  formatBgw,
   formatKpoints,
   formatPoscar,
   formatQe,
@@ -15,14 +19,17 @@ import {
   minimalEdit,
   parsePoscar,
   lintPlotInput,
+  parseBgw,
   parseQe,
   plotHover,
   plotProgramOf,
   poscarHover,
   qeCompletions,
   qeHover,
+  validateBgw,
   validateQe,
   type Diagnostic,
+  type BgwCompletion,
   type QeCompletion,
   type QeProgram,
 } from '../core';
@@ -43,7 +50,7 @@ interface InputLanguage {
   /** Not every language has a formatter yet. */
   format?: (text: string) => string | undefined;
   hover: (text: string, offset: number, uri: vscode.Uri) => Promise<HoverResult>;
-  complete?: (text: string, offset: number) => QeCompletion[];
+  complete?: (text: string, offset: number, uri: vscode.Uri) => (QeCompletion | BgwCompletion)[];
   /** Characters that start a completion. */
   triggers?: string[];
 }
@@ -66,6 +73,25 @@ async function cellNear(uri: vscode.Uri) {
 }
 
 const LANGUAGES: InputLanguage[] = [
+  {
+    // BerkeleyGW keyword inputs: the program comes from the file name (epsilon.inp, sig_GPP.inp, …).
+    id: 'bgw',
+    label: 'BerkeleyGW',
+    lint: async (text, uri) => {
+      const doc = parseBgw(text);
+      const program = detectBgwProgram(uri.path, text);
+      return program ? validateBgw(doc, program) : doc.issues;
+    },
+    format: formatBgw,
+    hover: async (text, offset, uri) => {
+      const program = detectBgwProgram(uri.path, text);
+      return program ? bgwHover(parseBgw(text), program, offset) : undefined;
+    },
+    complete: (text, offset, uri) => {
+      const program = detectBgwProgram(uri.path, text);
+      return program ? bgwCompletions(parseBgw(text), program, offset) : [];
+    },
+  },
   {
     // plotband.x and plotrho.x read answers to prompts, one per line: no namelist to recognize them by, so by file name.
     id: 'qe-plot',
@@ -201,19 +227,21 @@ function registerFormatter(id: string, label: string, format: (text: string) => 
   });
 }
 
-const COMPLETION_KINDS: Record<QeCompletion['kind'], vscode.CompletionItemKind> = {
+const COMPLETION_KINDS: Record<(QeCompletion | BgwCompletion)['kind'], vscode.CompletionItemKind> = {
+  keyword: vscode.CompletionItemKind.Property,
+  block: vscode.CompletionItemKind.Module,
   variable: vscode.CompletionItemKind.Property,
   value: vscode.CompletionItemKind.EnumMember,
   namelist: vscode.CompletionItemKind.Module,
   card: vscode.CompletionItemKind.Keyword,
 };
 
-function registerCompletion(id: string, complete: (text: string, offset: number) => QeCompletion[], triggers: string[]): vscode.Disposable {
+function registerCompletion(id: string, complete: (text: string, offset: number, uri: vscode.Uri) => (QeCompletion | BgwCompletion)[], triggers: string[]): vscode.Disposable {
   return vscode.languages.registerCompletionItemProvider(
     id,
     {
       provideCompletionItems(doc, position) {
-        return complete(doc.getText(), doc.offsetAt(position)).map((c) => {
+        return complete(doc.getText(), doc.offsetAt(position), doc.uri).map((c) => {
           const item = new vscode.CompletionItem(c.label, COMPLETION_KINDS[c.kind]);
           item.detail = c.detail;
           if (c.documentation) item.documentation = new vscode.MarkdownString(c.documentation);

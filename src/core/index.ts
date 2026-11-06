@@ -68,3 +68,8 @@ export * from './qe/reader';
 export * from './qe/phRules';
 export * from './qe/postRules';
 export * from './qe/plot';
+export * from './bgw/tags';
+export * from './bgw/parse';
+export * from './bgw/validate';
+export * from './bgw/hover';
+export * from './bgw/format';

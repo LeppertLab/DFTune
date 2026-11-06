@@ -1,0 +1,22 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "BerkeleyGW input",
+  "scopeName": "source.bgw",
+  "patterns": [
+    { "name": "comment.line.number-sign.bgw", "match": "^#.*$" },
+    {
+      "match": "^(begin)(\\s+)(\\w+)",
+      "captures": {
+        "1": { "name": "keyword.control.block.begin.bgw" },
+        "3": { "name": "entity.name.section.bgw" }
+      }
+    },
+    { "name": "keyword.control.block.end.bgw", "match": "^end\\s*$" },
+    { "name": "variable.other.keyword.bgw", "match": "^[A-Za-z_][A-Za-z0-9_]*" },
+    { "name": "comment.line.trailing.bgw", "match": "\\s#.*$" },
+    {
+      "name": "constant.numeric.bgw",
+      "match": "(?<![\\w.])[+-]?(?:\\d+\\.?\\d*|\\.\\d+)(?:[eEdD][+-]?\\d+)?(?![\\w.])"
+    }
+  ]
+}

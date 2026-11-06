@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.1.0 (2026-11-06)
+
+First BerkeleyGW release: the keyword inputs of epsilon, sigma, kernel, absorption and inteqp.
+
+### Added
+- New *BerkeleyGW* language for `epsilon.inp`, `sigma.inp`, `kernel.inp`, `absorption.inp`, `inteqp.inp` (and the testsuite spellings `eps_*.inp`, `sig_*.inp`, `absp_*.inp`; other names by distinctive keywords), with highlighting, hover, completion, quick fixes and Format Document.
+- Tables of the 332 documented keywords and blocks, generated from the BerkeleyGW 4.0 documentation by `scripts/fetch-bgw-keywords.mjs` (identical to the published manual for all five programs), plus the keywords the Fortran readers accept without documenting them.
+- Checks that follow the readers: unknown keywords and blocks, indented keywords and comments, unterminated blocks, blank lines and comments inside blocks, block rows, `do_rpa` order, values of the wrong type, required keywords. 119 real inputs from the BerkeleyGW testsuite validate without any false alarm.
+- The documentation excerpts and testsuite fixtures keep the BerkeleyGW license notice (`LICENSES/BerkeleyGW.txt`).
+
 ## 2.0.1 (2026-11-04)
 
 ### Added

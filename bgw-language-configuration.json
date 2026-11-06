@@ -1,0 +1,6 @@
+{
+  "comments": {
+    "lineComment": { "comment": "#", "noIndent": true }
+  },
+  "wordPattern": "[A-Za-z0-9_.+\\-*]+"
+}

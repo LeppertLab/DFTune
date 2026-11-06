@@ -115,6 +115,8 @@ vscode.workspace.textDocuments.push(
   doc('qe', readFileSync(join(fixtures, 'qe', 'ph.in'), 'utf8'), 'qe/ph.in'),
   doc('qe', readFileSync(join(fixtures, 'qe', 'dos.in'), 'utf8'), 'qe/dos.in'),
   doc('qe-plot', '-6 10\nb.xmgr\nb.ps\nfermi\n2 0\n', 'plotband.in'),
+  doc('bgw', 'epsilon_cutof 10.0\nnumber_bands 20\nbegin qpoints\n 0 0 0.001 1 1\nend\n', 'bgw/bad/epsilon.inp'),
+  doc('bgw', readFileSync(join(fixtures, 'bgw', 'graphene', 'sigma.inp'), 'utf8'), 'bgw/graphene/sigma.inp'),
   doc('qe', readFileSync(join(fixtures, 'qe', 'pp.in'), 'utf8').replace('iflag = 2', 'iflag = 9'), 'qe/pp.bad.in'),
   doc('qe', readFileSync(join(fixtures, 'qe', 'bands.pp.in'), 'utf8').replace("prefix = 'si'", "prefix = 'ge'"), 'qe/bands.pp.in'),
 );
@@ -171,6 +173,19 @@ function format(lang, text, name) {
   const qpd = doc('qe', QE_PSEUDO, 'scf.pseudo.in');
   const ph2 = await providers.hover.qe.provideHover(qpd, qpd.positionAt(QE_PSEUDO.indexOf(' Si 28.086') + 3));
   check(ph2 && /element: \*\*Si\*\* · type: ultrasoft/.test(ph2.contents.value), 'QE hover on an ATOMIC_SPECIES line describes the UPF file');
+
+  // BerkeleyGW.
+  for (const id of ['hover', 'completion', 'actions', 'format']) check(!!providers[id].bgw, `BerkeleyGW ${id} registered`);
+  const bgwText = 'epsilon_cutoff 10.0\nnum';
+  const bd = doc('bgw', bgwText, 'bgw/x/epsilon.inp');
+  const bh = await providers.hover.bgw.provideHover(bd, bd.positionAt(4));
+  check(bh && bh.contents.value.includes('**epsilon_cutoff** · epsilon.inp · float (Ry)'), 'BerkeleyGW hover describes the keyword');
+  const bc = await providers.completion.bgw.provideCompletionItems(bd, new Position(1, 3));
+  check(bc.some((c) => c.label === 'number_bands'), 'BerkeleyGW completes keywords');
+  check(format('bgw', 'number_bands   5   \nepsilon_cutoff 2\n\n\n\n# c\n', 'bgw/x/epsilon.inp') === 'number_bands   5\nepsilon_cutoff 2\n\n# c\n', 'BerkeleyGW Format Document aligns and tidies');
+  const bgwTypo = doc('bgw', 'epsilon_cutof 10.0\n', 'bgw/typo/epsilon.inp');
+  const bacts = await providers.actions.bgw.provideCodeActions(bgwTypo, new Range(new Position(0, 2), new Position(0, 2)), { diagnostics: [] });
+  check(bacts.length === 1 && bacts[0].edit.edits[0].newText === 'epsilon_cutoff', `BerkeleyGW quick fix: ${bacts.map((a) => a.title)}`);
 
   // Quick fixes, through the code-action provider.
   for (const id of ['incar', 'kpoints', 'poscar']) check(!!providers.actions[id], `quick fixes registered for ${id}`);
@@ -240,6 +255,9 @@ function format(lang, text, name) {
   check(plotProblems.length === 1 && /Fermi energy: expected 1 number/.test(plotProblems[0]), `plotband.x input checked by file name: ${plotProblems}`);
   const ppProblems = get('qe', 'qe/pp.bad.in').map((d) => d.message);
   check(ppProblems.length === 1 && /iflag = 9 is not implemented/.test(ppProblems[0]), `pp.x input checked: ${ppProblems}`);
+  const bgwBad = get('bgw', 'bgw/bad/epsilon.inp').map((d) => d.message);
+  check(bgwBad.length === 2 && bgwBad.some((m) => /Did you mean epsilon_cutoff\?/.test(m)) && bgwBad.some((m) => /is required/.test(m)), `BerkeleyGW diagnostics: ${bgwBad.length} problems`);
+  check(get('bgw', 'bgw/graphene/sigma.inp').length === 0, 'a real BerkeleyGW input has no problems');
   const incar = get('incar', 'INCAR.headers');
   check(incar.some((d) => /below the largest ENMAX/.test(d.message)), 'INCAR ENCUT checked against the POTCAR');
   process.exit(failed ? 1 : 0);

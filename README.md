@@ -2,11 +2,11 @@
 
 # DFTune
 
-A VS Code extension for setting up DFT calculations by **physical intent** (calculation type, functional, magnetism, smearing, accuracy, DFT+U) instead of remembering tags and magic numbers, and for catching the mistakes the codes themselves don't complain about (or only complain about after a day in the queue). It covers **VASP** (INCAR, KPOINTS, POSCAR, POTCAR) and **Quantum ESPRESSO** (pw.x, ph.x, dos.x, projwfc.x, bands.x, pp.x, plotband.x, plotrho.x): builders, checks, hovers, completion, quick fixes, formatting, and conversion between POSCAR and pw.x inputs.
+A VS Code extension for setting up DFT calculations by **physical intent** (calculation type, functional, magnetism, smearing, accuracy, DFT+U) instead of remembering tags and magic numbers, and for catching the mistakes the codes themselves don't complain about (or only complain about after a day in the queue). It covers **VASP** (INCAR, KPOINTS, POSCAR, POTCAR), **Quantum ESPRESSO** (pw.x, ph.x, dos.x, projwfc.x, bands.x, pp.x, plotband.x, plotrho.x) and **BerkeleyGW** (epsilon, sigma, kernel, absorption, inteqp): builders, checks, hovers, completion, quick fixes, formatting, and conversion between POSCAR and pw.x inputs.
 
 It is built for the usual HPC workflow: VS Code connected to a cluster with **Remote-SSH**. The extension runs on the cluster (`extensionKind: workspace`) and edits the files in place, so nothing is copied back and forth. The builder UIs are bundled locally and need no internet access.
 
-Every check that says "QE stops" or "VASP refuses" was taken from the code or its documentation: for Quantum ESPRESSO from the 7.4 source, for VASP from the wiki. Where a code only prints a message, DFTune only warns.
+Every check that says "QE stops", "BerkeleyGW stops" or "VASP refuses" was taken from the code or its documentation: for Quantum ESPRESSO and BerkeleyGW from the 7.4 and 4.0 sources, for VASP from the wiki. Where a code only prints a message, DFTune only warns.
 
 ## VASP
 
@@ -96,6 +96,18 @@ Inputs that start with `&DOS`, `&PROJWFC` or `&BANDS` get highlighting, hover an
 - **pp.x** (`&INPUTPP` + `&PLOT`) gets highlighting, hover, completion, Format Document, builder cards (what to extract, how to plot it) and checks from `postproc.f90` and `chdens_module.f90`: valid `plot_num` values, `spin_component` for what is plotted, `emin <= emax`, `iflag` and `output_format` both set (otherwise pp.x exits without a plot), valid output formats, the vectors `e1`/`e2`/`e3` (present, orthogonal) and `nx`/`ny` for each `iflag`, and the 3D formats for `iflag = 3`.
 - **plotband.x and plotrho.x** have no namelist: they read their answers to prompts from standard input, one value per line (`plotband.x < plotband.in`). Files named `plotband.in`, `plotrho.in`, `*.plotband` or `*.plotrho` get a hover that says which prompt each line answers and checks of the sequence: the energy range, the output files (a blank PostScript name stops the program), the Fermi energy and tics, and for plotrho.x the logarithmic-scale answer and the contour levels. Other file names: pick the language *QE plotband/plotrho input* in the status bar.
 
+## BerkeleyGW
+
+### epsilon.inp, sigma.inp, kernel.inp, absorption.inp, inteqp.inp
+
+BerkeleyGW reads a fixed file name per program, so the program is taken from the file name (`epsilon.inp`, `sigma.inp`, `kernel.inp`, `absorption.inp`, `inteqp.inp`, and the testsuite spellings `eps_cd.inp`, `sig_GPP.inp`, `absp_haydock.inp`, …); a file with another name is recognized by keywords only one program has (`epsilon_cutoff`, `band_index_min`, `number_val_bands_fine`, …). The inputs of BerkeleyGW's other tools are never guessed.
+
+- **Highlighting, hover and completion** for the 332 documented keywords of the five programs (type, unit, required, documentation and the allowed values, taken from the BerkeleyGW 4.0 manual), including the `begin … end` blocks.
+- **Checks that follow the Fortran readers**, which are strict: an unknown keyword stops BerkeleyGW (with *did you mean*; keywords are case-sensitive, `RPA_insulator`), a keyword or a `#` comment that does not start in the first column is read as a keyword with an empty name and stops it (with a fix), a block ends only at a line that is exactly `end`, blank lines and comments inside a block are read as rows, block rows need their numbers (`qpoints`, `kpoints`, `diag`, `offdiag`), `do_rpa` must come before `begin qpoints`, absorption/kernel/inteqp inputs have no blocks, values of the wrong type, and the keywords the documentation marks as required. Keywords BerkeleyGW reads without documenting them are accepted.
+- **Format Document** is deliberately conservative: it aligns the values of keyword lines, trims whitespace and collapses blank lines, and leaves comments, block rows, ordering and values exactly as written.
+
+The tables are generated from a BerkeleyGW distribution with `node scripts/fetch-bgw-keywords.mjs <BerkeleyGW-4.0 directory>`; 119 real inputs of its testsuite validate without a single false alarm.
+
 ## Development
 
 ```bash
@@ -113,7 +125,7 @@ npm run package     # build a .vsix
 
 | Path | What |
 | --- | --- |
-| `src/core/` | Pure TypeScript, no VS Code dependency: lossless INCAR parser/editor, tag knowledge base, intent layer, validation; KPOINTS and POSCAR parsers, formatters and hovers; POTCAR header reader; Quantum ESPRESSO input parser, tag table and checks (`qe/`) |
+| `src/core/` | Pure TypeScript, no VS Code dependency: lossless INCAR parser/editor, tag knowledge base, intent layer, validation; KPOINTS and POSCAR parsers, formatters and hovers; POTCAR header reader; Quantum ESPRESSO input parser, tag table and checks (`qe/`); BerkeleyGW keyword-input parser, tables and checks (`bgw/`) |
 | `src/extension/` | VS Code glue: custom editor, language features, commands |
 | `src/webview/` | React UI of the builder |
 | `test/` | vitest suites, fixtures, browser harness, smoke test of the bundle |
@@ -130,7 +142,8 @@ Releases are published by pushing a `vX.Y.Z` tag that matches `package.json`: CI
 
 ## License
 
-MIT, see [LICENSE](LICENSE). There are two exceptions:
+MIT, see [LICENSE](LICENSE). There are three exceptions:
 
 - The tag descriptions in `src/core/tags/wikiTags.generated.ts` are excerpts from the [VASP Wiki](https://vasp.at/wiki), © VASP Software GmbH and the VASP Wiki authors, and are distributed under the [GNU Free Documentation License 1.2](LICENSES/GFDL-1.2.txt).
+- The keyword descriptions in `src/core/bgw/keywords.generated.ts` and the testsuite inputs in `test/fixtures/bgw` are from the documentation and testsuite of [BerkeleyGW](https://berkeleygw.org), distributed under a [modified BSD license](LICENSES/BerkeleyGW.txt), whose notice they keep.
 - The variable descriptions in `src/core/qe/tags.generated.ts` are excerpts from the input documentation of [Quantum ESPRESSO](https://www.quantum-espresso.org), which is distributed under the [GNU General Public License, version 2 or later](LICENSES/GPL-2.0.txt); the excerpts keep that licence.

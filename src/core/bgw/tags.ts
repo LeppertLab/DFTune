@@ -25,6 +25,8 @@ export interface BgwKeyword {
   options: { value: string; note: string }[];
   /** An example value from the documentation (not a default). */
   example: string;
+  /** Column labels of a block's rows. */
+  cols: string[];
 }
 
 const toKeyword = (program: BgwProgram, name: string, r: BgwKeywordRow): BgwKeyword => ({
@@ -38,6 +40,7 @@ const toKeyword = (program: BgwProgram, name: string, r: BgwKeywordRow): BgwKeyw
   doc: r[5],
   options: r[6].map(([value, note]) => ({ value, note })),
   example: r[8],
+  cols: r[7],
 });
 
 const cache = new Map<BgwProgram, Map<string, BgwKeyword>>();

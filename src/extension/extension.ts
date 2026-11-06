@@ -3,6 +3,7 @@ import { registerCommands } from './commands';
 import { registerConvertCommands } from './convert';
 import { IncarEditorProvider } from './incarEditor';
 import { registerInputLanguages } from './inputLanguages';
+import { BgwEditorProvider } from './bgwEditor';
 import { QeEditorProvider } from './qeEditor';
 import { registerLanguageFeatures } from './language';
 
@@ -11,7 +12,7 @@ export function activate(context: vscode.ExtensionContext) {
   registerInputLanguages(context);
   registerCommands(context);
   registerConvertCommands(context);
-  context.subscriptions.push(IncarEditorProvider.register(context), QeEditorProvider.register(context));
+  context.subscriptions.push(IncarEditorProvider.register(context), QeEditorProvider.register(context), BgwEditorProvider.register(context));
 }
 
 export function deactivate() {}

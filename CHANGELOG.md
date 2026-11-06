@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.6.0 (2026-11-06)
+
+### Added
+- BerkeleyGW Builder (*Open BerkeleyGW Builder*, or right-click → Open With in the epsilon/sigma/kernel/absorption/inteqp inputs): every keyword and block of the program with its documentation, a control that fits the keyword (checkbox for flags, a list for keywords with listed values, a field, a text area for the rows of a block), search, "Set only", and the problems of the checks above the list. Changes are minimal edits of the text, so undo, git and the text editor stay in sync; comments and unrelated lines are left alone.
+- `setBgwKeywords` in the core: set, flag or remove keywords and write or remove blocks.
+
 ## 2.5.0 (2026-11-06)
 
 ### Added

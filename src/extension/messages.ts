@@ -2,7 +2,7 @@
 // The INCAR text is the single source of truth: the webview never edits it directly,
 // it asks the extension to apply tag changes, and then receives the new text.
 
-import type { KpointsInfo, PoscarInfo, PotcarEntry, PseudoFile, QeChange, TagChanges, TextEdit } from '../core';
+import type { BgwChange, KpointsInfo, PoscarInfo, PotcarEntry, PseudoFile, QeChange, TagChanges, TextEdit } from '../core';
 
 export type ToWebview = {
   type: 'update';
@@ -24,10 +24,14 @@ export type ToWebviewQe = {
   pseudos?: [string, PseudoFile][];
 };
 
+/** The BerkeleyGW builder: the input text (the program is found from the file name and keywords). */
+export type ToWebviewBgw = { type: 'update-bgw'; text: string; fileName: string };
+
 export type FromWebview =
   | { type: 'ready' }
   | { type: 'setTags'; changes: TagChanges; label?: string }
   | { type: 'qeSet'; changes: QeChange[] }
+  | { type: 'bgwSet'; changes: BgwChange[] }
   | { type: 'reveal'; offset: number; end?: number }
   /** A quick fix, computed by the webview on the text it last received. */
   | { type: 'applyEdit'; edit: TextEdit; text: string };

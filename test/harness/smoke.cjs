@@ -199,7 +199,7 @@ function format(lang, text, name) {
 
   // Generate KPOINTS in a scratch folder with a copy of the POSCAR.
   check(!!commands['dftune.generateKpoints'], 'generate-KPOINTS command registered');
-  for (const id of ['dftune.openQeBuilder', 'dftune.poscarToQe', 'dftune.qeToPoscar']) check(!!commands[id], `${id} registered`);
+  for (const id of ['dftune.openQeBuilder', 'dftune.openBgwBuilder', 'dftune.poscarToQe', 'dftune.qeToPoscar']) check(!!commands[id], `${id} registered`);
   const dir = mkdtempSync(join(tmpdir(), 'dftune-smoke-'));
   try {
     copyFileSync(join(fixtures, 'POSCAR'), join(dir, 'POSCAR'));

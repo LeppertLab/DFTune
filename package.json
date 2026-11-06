@@ -2,7 +2,7 @@
   "name": "dftune",
   "displayName": "DFTune: DFT Input Builder",
   "description": "Set up DFT calculations by physical intent instead of raw input tags. VASP: INCAR builder, plus checks, hovers, quick fixes and formatting for INCAR, KPOINTS and POSCAR. Quantum ESPRESSO: builder, checks, hovers, completion, formatting and conversion for pw.x, ph.x, dos.x, projwfc.x, bands.x and pp.x inputs. Works on remote HPC files over Remote-SSH.",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "publisher": "DaanHolleman",
   "icon": "images/icon.png",
   "license": "MIT",
@@ -238,6 +238,21 @@
           }
         ],
         "priority": "option"
+      },
+      {
+        "viewType": "dftune.bgwBuilder",
+        "displayName": "BerkeleyGW Builder",
+        "selector": [
+          { "filenamePattern": "epsilon.inp" },
+          { "filenamePattern": "sigma.inp" },
+          { "filenamePattern": "kernel.inp" },
+          { "filenamePattern": "absorption.inp" },
+          { "filenamePattern": "inteqp.inp" },
+          { "filenamePattern": "eps_*.inp" },
+          { "filenamePattern": "sig_*.inp" },
+          { "filenamePattern": "absp_*.inp" }
+        ],
+        "priority": "option"
       }
     ],
     "commands": [
@@ -250,6 +265,12 @@
       {
         "command": "dftune.openQeBuilder",
         "title": "Open Quantum ESPRESSO Builder",
+        "category": "DFTune",
+        "icon": "$(settings)"
+      },
+      {
+        "command": "dftune.openBgwBuilder",
+        "title": "Open BerkeleyGW Builder",
         "category": "DFTune",
         "icon": "$(settings)"
       },
@@ -324,6 +345,11 @@
         {
           "command": "dftune.openQeBuilder",
           "when": "editorLangId == qe",
+          "group": "navigation"
+        },
+        {
+          "command": "dftune.openBgwBuilder",
+          "when": "editorLangId == bgw",
           "group": "navigation"
         }
       ],

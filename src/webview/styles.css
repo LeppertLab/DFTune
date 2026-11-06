@@ -418,3 +418,15 @@ table.hubbard input {
     padding: 6px;
   }
 }
+
+.block-rows {
+  width: 100%;
+  min-width: 14rem;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 0.9em;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border, transparent);
+  padding: 0.25rem 0.4rem;
+  resize: vertical;
+}

@@ -20,6 +20,7 @@ const PROGRAMS = {
   dos: 'PP/Doc/INPUT_DOS.def',
   bands: 'PP/Doc/INPUT_BANDS.def',
   pp: 'PP/Doc/INPUT_PP.def',
+  pw2bgw: 'PP/Doc/INPUT_pw2bgw.def',
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -94,7 +95,7 @@ const OVERRIDES = {
 /** REQUIRED in the definition, but only when an optional feature is on (said in prose, not in the structure). */
 const CONDITIONALLY_REQUIRED = new Set(['gcscf_mu', 'fcp_mu', 'nsolv', 'ahc_nbnd']);
 
-const TYPES = { INTEGER: 'I', REAL: 'R', LOGICAL: 'L', CHARACTER: 'C' };
+const TYPES = { INTEGER: 'I', REAL: 'R', LOGICAL: 'L', CHARACTER: 'C', STRING: 'C' };
 const flags = (head) => Object.fromEntries([...head.matchAll(/-(\w+)\s+(\S+)/g)].map((m) => [m[1], m[2]]));
 
 /**
@@ -131,7 +132,7 @@ function variable(names, head, body, shared = {}) {
   for (const it of body) {
     const w = it.head.split(/\s+/)[0];
     if (w === 'default' && it.body !== null) info.default = plain(it.body).replace(/^'(.*)'$/s, '$1').replace(/\s+/g, ' ');
-    else if (w === 'status') info.required = /REQUIRED/.test(it.body ?? '') && !CONDITIONALLY_REQUIRED.has(names[0]);
+    else if (w === 'status') info.required = /REQUIRED|MANDATORY/.test(it.body ?? '') && !CONDITIONALLY_REQUIRED.has(names[0]);
     else if (w === 'info' && it.body !== null) info.summary = brief(plain(it.body), 320);
     else if (w === 'options' && it.body !== null) {
       const { options, intro } = parseOptions(it.body);
@@ -222,6 +223,7 @@ const SOURCES = {
   dos: ['PP/src/dos.f90'],
   bands: ['PP/src/bands.f90'],
   pp: ['PP/src/postproc.f90', 'PP/src/chdens_module.f90'],
+  pw2bgw: ['PP/src/pw2bgw.f90'],
 };
 /** Names the input reader warns about ("The input parameter X is obsolete"). */
 const OBSOLETE_SOURCE = 'Modules/read_namelists.f90';

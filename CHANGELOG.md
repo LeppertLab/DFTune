@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.5.0 (2026-11-06)
+
+### Added
+- pw2bgw.x (`&INPUT_PW2BGW`, files named `pw2bgw.in`/`pw2bgw.inp`) is a Quantum ESPRESSO program of its own: highlighting, hover, completion, Format Document, tables generated from `INPUT_pw2bgw.def` and `pw2bgw.f90` of QE 7.4 (including the `kih_*`, `vxc_hybrid_*` and `vhub_*` variables only the source declares).
+- Checks from `pw2bgw.f90`: `real_or_complex` and `vxc_integral` values, `wfng_kgrid` without a positive grid, `vxc_*_nmin` above `vxc_*_nmax`, off-diagonal Vxc with the real flavor, nothing requested. Against the pw.x input next to it: Γ-only k-points, the real flavor with noncollinear, an scf run, Vxc bands above `nbnd`, wavefunctions not saved, prefix and outdir.
+
+### Changed
+- `scripts/fetch-qe-tags.mjs` reads `MANDATORY` as required and maps `STRING` to character.
+
 ## 2.4.0 (2026-11-06)
 
 ### Added

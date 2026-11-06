@@ -96,6 +96,10 @@ Inputs that start with `&DOS`, `&PROJWFC` or `&BANDS` get highlighting, hover an
 - **pp.x** (`&INPUTPP` + `&PLOT`) gets highlighting, hover, completion, Format Document, builder cards (what to extract, how to plot it) and checks from `postproc.f90` and `chdens_module.f90`: valid `plot_num` values, `spin_component` for what is plotted, `emin <= emax`, `iflag` and `output_format` both set (otherwise pp.x exits without a plot), valid output formats, the vectors `e1`/`e2`/`e3` (present, orthogonal) and `nx`/`ny` for each `iflag`, and the 3D formats for `iflag = 3`.
 - **plotband.x and plotrho.x** have no namelist: they read their answers to prompts from standard input, one value per line (`plotband.x < plotband.in`). Files named `plotband.in`, `plotrho.in`, `*.plotband` or `*.plotrho` get a hover that says which prompt each line answers and checks of the sequence: the energy range, the output files (a blank PostScript name stops the program), the Fermi energy and tics, and for plotrho.x the logarithmic-scale answer and the contour levels. Other file names: pick the language *QE plotband/plotrho input* in the status bar.
 
+### pw2bgw.x
+
+The converter from a pw.x run to BerkeleyGW's `WFN`, `RHO` and `vxc.dat` (`&INPUT_PW2BGW`, also named `pw2bgw.in`) gets highlighting, hover, completion, Format Document and checks from `PP/src/pw2bgw.f90`: the variables of QE 7.4 (46, including `kih_*`, `vxc_hybrid_*` and `vhub_*`, which the source reads but the documentation omits), `real_or_complex` and `vxc_integral` values, a `wfng_kgrid` without positive `wfng_nk1..3`, `vxc_*nmin` above `vxc_*nmax`, off-diagonal Vxc with the real flavor, and a run that requests no output. Against the pw.x input next to it (a `bands` or `nscf` run): `K_POINTS gamma` (BerkeleyGW cannot use it), the real flavor with a noncollinear run, an scf run, Vxc bands above `nbnd`, and wavefunctions not saved.
+
 ## BerkeleyGW
 
 ### epsilon.inp, sigma.inp, kernel.inp, absorption.inp, inteqp.inp

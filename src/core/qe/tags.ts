@@ -4,7 +4,7 @@ import { QE_DEFS, QE_VERSION, type QeVarRow } from './tags.generated';
 
 export { QE_VERSION };
 
-export type QeProgram = 'pw' | 'ph' | 'projwfc' | 'dos' | 'bands' | 'pp';
+export type QeProgram = 'pw' | 'ph' | 'projwfc' | 'dos' | 'bands' | 'pp' | 'pw2bgw';
 export type QeType = 'integer' | 'real' | 'logical' | 'character';
 
 export interface QeVar {
@@ -91,6 +91,8 @@ export function detectProgram(text: string): QeProgram | undefined {
       return 'dos';
     case 'BANDS':
       return 'bands';
+    case 'INPUT_PW2BGW':
+      return 'pw2bgw';
     case 'INPUTPP':
     case 'PLOT':
       return 'pp';
@@ -99,4 +101,4 @@ export function detectProgram(text: string): QeProgram | undefined {
 }
 
 export const qeDocsUrl = (program: QeProgram) =>
-  `https://www.quantum-espresso.org/Doc/INPUT_${program === 'pw' ? 'PW' : program === 'ph' ? 'PH' : program.toUpperCase()}.html`;
+  `https://www.quantum-espresso.org/Doc/INPUT_${program === 'pw' ? 'PW' : program === 'ph' ? 'PH' : program === 'pw2bgw' ? 'pw2bgw' : program.toUpperCase()}.html`;

@@ -56,7 +56,7 @@ interface InputLanguage {
 }
 
 /** Programs whose inputs are checked in depth; for the others only the syntax is. */
-const QE_CHECKED: QeProgram[] = ['pw', 'ph', 'dos', 'projwfc', 'bands', 'pp'];
+const QE_CHECKED: QeProgram[] = ['pw', 'ph', 'dos', 'projwfc', 'bands', 'pp', 'pw2bgw'];
 
 async function lintQe(text: string, uri: vscode.Uri): Promise<Diagnostic[]> {
   const program = detectProgram(text);
@@ -151,7 +151,7 @@ function registerQeDetection(context: vscode.ExtensionContext) {
     if (doc.languageId !== 'plaintext' || !NAME.test(doc.uri.path) || doc.lineCount > 20000) return;
     // First non-comment line decides, like the firstLine rule of the language contribution.
     const head = doc.getText().slice(0, 4000);
-    if (detectProgram(head) && /^\s*&\s*(control|inputph|projwfc|dos|bands|inputpp|plot)\b/im.test(head)) {
+    if (detectProgram(head) && /^\s*&\s*(control|inputph|projwfc|dos|bands|inputpp|plot|input_pw2bgw)\b/im.test(head)) {
       vscode.languages.setTextDocumentLanguage(doc, 'qe');
     }
   };

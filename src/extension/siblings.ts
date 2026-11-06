@@ -23,7 +23,7 @@ async function readPw(uri: vscode.Uri): Promise<QeDoc | undefined> {
 }
 
 /** Which pw.x calculation a program continues, best first: phonons the scf run, dos.x and projwfc.x the nscf (or scf), bands.x the bands run. */
-const PREFERRED: Record<string, string[]> = { ph: ['scf'], dos: ['nscf', 'scf'], projwfc: ['nscf', 'scf'], bands: ['bands', 'nscf'] };
+const PREFERRED: Record<string, string[]> = { ph: ['scf'], dos: ['nscf', 'scf'], projwfc: ['nscf', 'scf'], bands: ['bands', 'nscf'], pw2bgw: ['bands', 'nscf'] };
 
 /**
  * The pw.x input in the folder of `input` (a ph.x, dos.x, projwfc.x or bands.x input) with the

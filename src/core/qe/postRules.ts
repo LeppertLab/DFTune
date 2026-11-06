@@ -5,9 +5,10 @@
 import type { QeDoc } from './parse';
 import { Reader } from './reader';
 import type { Report } from './rules';
+import { checkPw2bgwAgainstPw } from './pw2bgwRules';
 import type { QeProgram } from './tags';
 
-const NAMELIST: Partial<Record<QeProgram, string>> = { dos: 'DOS', projwfc: 'PROJWFC', bands: 'BANDS', ph: 'INPUTPH' };
+const NAMELIST: Partial<Record<QeProgram, string>> = { dos: 'DOS', projwfc: 'PROJWFC', bands: 'BANDS', ph: 'INPUTPH', pw2bgw: 'INPUT_PW2BGW' };
 
 /** Directory spellings that mean the same: "./tmp/", "tmp" . */
 const dir = (d: string | undefined) => (d ?? '.').replace(/\/+$/, '').replace(/^\.\//, '') || '.';
@@ -57,6 +58,10 @@ export function checkPostAgainstPw(post: QeDoc, program: QeProgram, pw: QeDoc, r
   const w = new Reader(pw);
   if (!p.namelist(namelist)) return;
   checkSamePrefixAndOutdir(p, w, namelist, program, report);
+  if (program === 'pw2bgw') {
+    checkPw2bgwAgainstPw(p, w, report);
+    return;
+  }
 
   const kpoints = w.card('K_POINTS');
   const kType = kpoints?.option ?? 'tpiba';

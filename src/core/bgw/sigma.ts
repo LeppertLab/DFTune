@@ -82,6 +82,21 @@ export function checkSigma(doc: BgwDoc, report: Report) {
     if (loff !== 0 && offdiag) report('warning', 'bgw-sig-matrix', 'Both an offdiag block and sigma_matrix are given: sigma_matrix overrides the block.', offdiag.nameSpan);
   }
 
+  // The cutoffs and the band sum: the screened cutoff cannot exceed the bare one, and the bands
+  // computed cannot lie beyond the bands summed over.
+  const ecuts = r.num('screened_coulomb_cutoff');
+  const ecutb = r.num('bare_coulomb_cutoff');
+  if (ecuts !== undefined && ecutb !== undefined && ecuts > ecutb) {
+    report('error', 'bgw-sig-cutoff', `screened_coulomb_cutoff (${ecuts}) is larger than bare_coulomb_cutoff (${ecutb}): Sigma stops with "The screened_coulomb_cutoff cannot be greater than the bare_coulomb_cutoff".`, valueAt('screened_coulomb_cutoff'));
+  }
+  const nbands = r.num('number_bands');
+  if (nbands !== undefined && !r.has('for_EXX')) {
+    const top = Math.max(nmax, ...(diag?.rows.map((l) => (isInteger(l.tokens[0]?.text ?? '') ? Number(l.tokens[0].text) : 0)) ?? [0]));
+    if (top > nbands) {
+      report('error', 'bgw-sig-bands', `Band ${top} is computed but number_bands is ${nbands}: Sigma stops with "band_index_max cannot be greater than number_bands".`, r.has('band_index_max') && nmax === top ? valueAt('band_index_max') : valueAt('number_bands'));
+    }
+  }
+
   // The remaining ranges.
   const ch = r.num('exact_static_ch');
   if (ch !== undefined && freq !== -1 && ![0, 1].includes(ch)) report('error', 'bgw-sig-range', 'exact_static_ch must be 0 or 1: Sigma stops with "Illegal value for exact_static_ch".', valueAt('exact_static_ch'));

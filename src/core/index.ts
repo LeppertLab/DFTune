@@ -75,3 +75,4 @@ export * from './bgw/hover';
 export * from './bgw/format';
 export * from './bgw/reader';
 export * from './bgw/edit';
+export * from './bgw/workflow';

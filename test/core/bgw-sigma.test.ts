@@ -68,3 +68,15 @@ describe('sigma.inp', () => {
     expect(codes(BASE + 'number_kpoints 1')).toEqual(['bgw-deprecated']);
   });
 });
+
+describe('sigma.inp: cutoffs and band sums', () => {
+  it('refuses a screened cutoff above the bare cutoff', () => {
+    expect(codes(BASE + 'screened_coulomb_cutoff 20\nbare_coulomb_cutoff 30')).toEqual([]);
+    expect(codes(BASE + 'screened_coulomb_cutoff 40\nbare_coulomb_cutoff 30')).toEqual(['bgw-sig-cutoff']);
+  });
+  it('refuses computing bands beyond number_bands', () => {
+    expect(codes(BASE + 'number_bands 8')).toEqual([]);
+    expect(codes(BASE + 'number_bands 6')).toEqual(['bgw-sig-bands']);
+    expect(codes(BASE + 'number_bands 6\nfor_EXX')).toEqual([]);
+  });
+});

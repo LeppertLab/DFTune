@@ -8,6 +8,7 @@ import { editDistance } from '../validation/rules';
 import { checkEpsilon } from './epsilon';
 import { checkBse } from './bse';
 import { checkSigma } from './sigma';
+import { checkWorkflow, type BgwNeighbor } from './workflow';
 import type { BgwBlock, BgwDoc, BgwEntry } from './parse';
 import { allKeywordNames, isAcceptedUndocumented, lookupKeyword, type BgwProgram } from './tags';
 
@@ -47,7 +48,12 @@ export function closestKeyword(program: BgwProgram, name: string): string | unde
 
 const rename = (to: string, span: Span): Fix => ({ title: `Change to ${to}`, edit: { start: span.start, end: span.end, text: to } });
 
-export function validateBgw(doc: BgwDoc, program: BgwProgram): Diagnostic[] {
+export interface BgwContext {
+  /** The neighbouring inputs of the same workflow (epsilon ↔ sigma, kernel ↔ absorption), when found. */
+  neighbors?: BgwNeighbor[];
+}
+
+export function validateBgw(doc: BgwDoc, program: BgwProgram, ctx: BgwContext = {}): Diagnostic[] {
   const out: Diagnostic[] = [...doc.issues];
   const report: Report = (severity, code, message, span, fix) => out.push({ severity, code, message, span, ...(fix && { fix }) });
   const file = `${program}.inp`;
@@ -86,6 +92,7 @@ export function validateBgw(doc: BgwDoc, program: BgwProgram): Diagnostic[] {
   if (program === 'epsilon') checkEpsilon(doc, report);
   if (program === 'sigma') checkSigma(doc, report);
   if (program === 'absorption' || program === 'inteqp') checkBse(doc, program, report);
+  if (ctx.neighbors?.length) checkWorkflow(program, doc, ctx.neighbors, report);
 
   // The keywords and blocks the documentation marks as required.
   const blocks = new Set(doc.blocks.map((b) => b.name));

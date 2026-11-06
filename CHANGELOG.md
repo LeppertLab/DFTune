@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.7.0 (2026-11-06)
+
+### Added
+- Workflow checks across the inputs in one folder (epsilon ↔ sigma, kernel ↔ absorption), each file reporting on its own side: a `screened_coulomb_cutoff` above `epsilon_cutoff` (sigma and kernel), a Sigma `frequency_dependence` that does not match the dielectric matrix (static for 0 and 1, full frequency for 2, Godby–Needs for 3), absorption coarse bands different from the kernel's, different coarse-grid symmetry flags, `extended_kernel`/`full_bse` without an extended kernel (and the reverse), and different `exciton_Q_shift`. Files are paired by the run suffix (`eps_cd.inp` ↔ `sig_cd.inp`), or as the only two of their programs in the folder; a folder with several runs of each is left alone. 98 pairings in the BerkeleyGW testsuite give no false alarm.
+- sigma.inp: `screened_coulomb_cutoff` above `bare_coulomb_cutoff`, and computing bands beyond `number_bands` (not with `for_EXX`).
+
 ## 2.6.0 (2026-11-06)
 
 ### Added

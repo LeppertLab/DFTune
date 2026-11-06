@@ -35,6 +35,7 @@ import {
 } from '../core';
 import { FolderWatch, findPoscar, findPotcar } from './inputs';
 import { findPseudos } from './pseudos';
+import { findBgwNeighbors } from './bgwSiblings';
 import { findPwInput } from './siblings';
 import { toVscodeDiagnostics } from './language';
 import { LintCache } from './lintCache';
@@ -80,7 +81,7 @@ const LANGUAGES: InputLanguage[] = [
     lint: async (text, uri) => {
       const doc = parseBgw(text);
       const program = detectBgwProgram(uri.path, text);
-      return program ? validateBgw(doc, program) : doc.issues;
+      return program ? validateBgw(doc, program, { neighbors: await findBgwNeighbors(uri) }) : doc.issues;
     },
     format: formatBgw,
     hover: async (text, offset, uri) => {

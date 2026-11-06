@@ -1,5 +1,20 @@
 # Changelog
 
+## 3.0.0 (2026-11-06)
+
+BerkeleyGW support is complete: keyword inputs of epsilon, sigma, kernel, absorption and inteqp (2.1–2.4), pw2bgw.x (2.5), the builder (2.6) and checks across the workflow files (2.7). This release is the independent review of the whole series.
+
+### Fixed
+- A tab between a keyword and its value is reported (BerkeleyGW cuts the keyword at the first space and stops), with a quick fix; Format Document no longer drops the value of such a line.
+- The builder adds new keywords before the first block, so `do_rpa` precedes `begin qpoints`, and leaves `#` comments out of block rows (BerkeleyGW reads them as data).
+- The quick fix that removes a blank or comment row inside a block removes the whole line break of CRLF files.
+- A kernel input with an unrecognized file name is no longer taken for sigma because of the shared `screened_coulomb_cutoff`.
+- The builder shows the cross-file workflow checks too, like the Problems panel.
+- Neighbour discovery reads up to 500 inputs per folder and keeps its cache bounded.
+
+### Changed
+- The semantic checks share one `Report` type and the span helpers of `BgwReader`.
+
 ## 2.7.0 (2026-11-06)
 
 ### Added

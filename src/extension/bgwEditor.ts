@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { minimalEdit, setBgwKeywords } from '../core';
+import { findBgwNeighbors } from './bgwSiblings';
 import { builderHtml } from './builderHtml';
 import { textColumn } from './incarEditor';
 import type { FromWebview, ToWebviewBgw } from './messages';
@@ -22,8 +23,14 @@ export class BgwEditorProvider implements vscode.CustomTextEditorProvider {
     panel.webview.options = { enableScripts: true, localResourceRoots: [dist] };
     panel.webview.html = builderHtml(panel.webview, dist, 'BerkeleyGW Builder', 'bgw');
 
-    const post = () => {
-      const message: ToWebviewBgw = { type: 'update-bgw', text: document.getText(), fileName: vscode.workspace.asRelativePath(document.uri) };
+    // Finding the neighbours awaits the file system: a later post must not be overtaken by an earlier one.
+    let latest = 0;
+    const post = async () => {
+      const mine = ++latest;
+      const text = document.getText();
+      const neighbors = (await findBgwNeighbors(document.uri)).map((n) => ({ program: n.program, fileName: n.fileName, text: n.doc.text }));
+      if (mine !== latest) return;
+      const message: ToWebviewBgw = { type: 'update-bgw', text, fileName: vscode.workspace.asRelativePath(document.uri), neighbors };
       panel.webview.postMessage(message);
     };
     const disposables = [
@@ -35,7 +42,7 @@ export class BgwEditorProvider implements vscode.CustomTextEditorProvider {
     panel.onDidDispose(() => disposables.forEach((d) => d.dispose()));
   }
 
-  private async handle(document: vscode.TextDocument, msg: FromWebview, post: () => void) {
+  private async handle(document: vscode.TextDocument, msg: FromWebview, post: () => void | Promise<void>) {
     const replace = async (start: number, end: number, text: string) => {
       const edit = new vscode.WorkspaceEdit();
       edit.replace(document.uri, new vscode.Range(document.positionAt(start), document.positionAt(end)), text);

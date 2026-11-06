@@ -83,7 +83,7 @@ export function validateBgw(doc: BgwDoc, program: BgwProgram, ctx: BgwContext = 
   // do_rpa changes the q-point rows, so it has to come first.
   const rpa = doc.entries.find((e) => e.keyword === 'do_rpa');
   for (const b of doc.blocks) {
-    checkBlock(b, program, file, !!rpa, report);
+    checkBlock(b, program, file, !!rpa, report, doc.text);
     if (rpa && b.name === 'qpoints' && rpa.span.start > b.span.start) {
       report('error', 'bgw-rpa-order', 'do_rpa must be set before `begin qpoints`: it adds a weight to every q-point row.', rpa.keySpan);
     }
@@ -138,7 +138,7 @@ function checkValue(e: BgwEntry, type: string, example: string, options: string[
   }
 }
 
-function checkBlock(b: BgwBlock, program: BgwProgram, file: string, rpa: boolean, report: Report) {
+function checkBlock(b: BgwBlock, program: BgwProgram, file: string, rpa: boolean, report: Report, text: string) {
   const spec = BLOCKS[program]?.[b.name];
   if (!spec) {
     const known = Object.keys(BLOCKS[program] ?? {});
@@ -154,7 +154,7 @@ function checkBlock(b: BgwBlock, program: BgwProgram, file: string, rpa: boolean
     if (t === '' || row.text[0] === '#') {
       report('error', 'bgw-block-row', `${t === '' ? 'A blank line' : 'A comment'} inside a block is read as a row: BerkeleyGW stops ("Unexpected characters or missing value while reading elements of the ${b.name} block").`, row.start === row.end ? { start: row.start, end: row.start } : { start: row.start, end: row.end }, {
         title: t === '' ? 'Remove the blank line' : 'Remove the comment line',
-        edit: { start: row.start, end: row.end + 1, text: "" },
+        edit: { start: row.start, end: row.end + (text.startsWith('\r\n', row.end) ? 2 : 1), text: '' },
       });
       continue;
     }

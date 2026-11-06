@@ -35,7 +35,8 @@ export function BgwBuilder({ state }: { state: State }) {
   const derived = useMemo(() => {
     const program = detectBgwProgram(state.fileName, state.text);
     const doc = parseBgw(state.text);
-    return { program, doc, diagnostics: program ? validateBgw(doc, program) : doc.issues };
+    const neighbors = (state.neighbors ?? []).map((n) => ({ program: n.program as BgwProgram, fileName: n.fileName, doc: parseBgw(n.text) }));
+    return { program, doc, diagnostics: program ? validateBgw(doc, program, { neighbors }) : doc.issues };
   }, [state]);
   const { program, doc, diagnostics } = derived;
 

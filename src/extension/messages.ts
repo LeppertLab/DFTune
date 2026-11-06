@@ -25,7 +25,13 @@ export type ToWebviewQe = {
 };
 
 /** The BerkeleyGW builder: the input text (the program is found from the file name and keywords). */
-export type ToWebviewBgw = { type: 'update-bgw'; text: string; fileName: string };
+export type ToWebviewBgw = {
+  type: 'update-bgw';
+  text: string;
+  fileName: string;
+  /** The inputs of the same workflow found in the folder, for the cross-file checks. */
+  neighbors?: { program: string; fileName: string; text: string }[];
+};
 
 export type FromWebview =
   | { type: 'ready' }

@@ -41,7 +41,10 @@ function setKeyword(text: string, keyword: string, value: string | null): string
 
   const eol = eolOf(text);
   // New keywords go after the last one; without any, after the leading comment header (before the first block).
-  const anchor = doc.entries[doc.entries.length - 1];
+  // Keywords before the first block (do_rpa has to precede `begin qpoints`), else after the header.
+  const firstBlock = doc.blocks[0]?.span.start ?? Infinity;
+  const before = doc.entries.filter((e) => e.span.start < firstBlock);
+  const anchor = before[before.length - 1];
   if (anchor) {
     const at = anchor.line.end;
     return splice(text, at, at, eol + line);
@@ -62,7 +65,8 @@ function setBlock(text: string, name: string, rows: string[] | null): string {
   if (rows === null) {
     return block ? splice(text, block.span.start, afterBreak(text, block.span.end), '') : text;
   }
-  const body = rows.map((r) => r.trimEnd()).filter((r) => r.trim() !== '');
+  // Blank lines and # comments inside a block would be read as rows by BerkeleyGW.
+  const body = rows.map((r) => r.trimEnd()).filter((r) => r.trim() !== '' && !r.trimStart().startsWith('#'));
   const written = [`begin ${name}`, ...body.map((r) => (r.startsWith(' ') ? r : `  ${r}`)), 'end'].join(eol);
   if (block) return splice(text, block.span.start, block.span.end, written);
   const sep = text === '' || text.endsWith('\n') ? '' : eol;

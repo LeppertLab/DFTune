@@ -5,12 +5,9 @@
 // `kernel`", the cutoff limits, the frequency dependence of the dielectric matrix).
 
 import type { Span } from '../incar/parse';
-import type { Diagnostic } from '../validation/rules';
 import type { BgwDoc } from './parse';
-import { BgwReader } from './reader';
+import { BgwReader, type Report } from './reader';
 import { detectBgwProgram, type BgwProgram } from './tags';
-
-type Report = (severity: Diagnostic['severity'], code: string, message: string, span: Span) => void;
 
 export interface BgwNeighbor {
   program: BgwProgram;

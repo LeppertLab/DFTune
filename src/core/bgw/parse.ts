@@ -72,9 +72,16 @@ export function parseBgw(text: string): BgwDoc {
 
     const tokens = tokenize(line.text, line.start);
     const key = tokens[0];
-    const firstSpace = line.text.indexOf(' ');
-    const rest = firstSpace < 0 ? '' : line.text.slice(firstSpace + 1).trim();
     const args = tokens.slice(1);
+    const rest = args.length ? line.text.slice(args[0].start - line.start).trim() : '';
+    // BerkeleyGW cuts the keyword at the first space: a tab after it becomes part of the keyword.
+    const tab = line.text.slice(key.end - line.start).match(/^\t+/);
+    if (tab && key.text !== 'begin') {
+      issue('error', 'bgw-tab', `${key.text} is followed by a tab: BerkeleyGW takes the text up to the first space as the keyword, so it stops with "Unexpected keyword". Separate the value with a space.`, { start: key.end, end: key.end + tab[0].length }, {
+        title: 'Replace the tab with a space',
+        edit: { start: key.end, end: key.end + tab[0].length, text: ' ' },
+      });
+    }
 
     if (key.text === 'begin') {
       const name = args[0];

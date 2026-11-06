@@ -16,7 +16,7 @@ export async function findBgwNeighbors(uri: vscode.Uri): Promise<BgwNeighbor[]> 
   } catch {
     return [];
   }
-  const pairs = pairBgwFiles(self, names.slice(0, 80));
+  const pairs = pairBgwFiles(self, names.slice(0, 500));
   const found = await Promise.all(
     Object.entries(pairs).map(async ([program, name]): Promise<BgwNeighbor | undefined> => {
       const file = vscode.Uri.joinPath(dir, name!);
@@ -27,6 +27,7 @@ export async function findBgwNeighbors(uri: vscode.Uri): Promise<BgwNeighbor[]> 
         if (hit?.mtime === mtime) return hit.neighbor;
         const doc = parseBgw(new TextDecoder().decode(await vscode.workspace.fs.readFile(file)));
         const neighbor: BgwNeighbor = { program: program as BgwNeighbor['program'], fileName: name!, doc };
+        if (cache.size > 100) cache.clear(); // neighbours of closed folders
         cache.set(file.toString(), { mtime, neighbor });
         return neighbor;
       } catch {

@@ -2,7 +2,12 @@
 // of a keyword, and so does this.
 
 import { isNumber, toNumber } from '../lines';
+import type { Span } from '../incar/parse';
+import type { Diagnostic } from '../validation/rules';
 import type { BgwBlock, BgwDoc, BgwEntry } from './parse';
+
+/** How the semantic checks report a problem. */
+export type Report = (severity: Diagnostic['severity'], code: string, message: string, span: Span) => void;
 
 export class BgwReader {
   constructor(readonly doc: BgwDoc) {}
@@ -10,6 +15,13 @@ export class BgwReader {
   entry(name: string): BgwEntry | undefined {
     const all = this.doc.entries.filter((e) => e.keyword === name);
     return all[all.length - 1];
+  }
+  /** Where the keyword is written (its last entry). */
+  keyAt = (name: string): Span => this.entry(name)!.keySpan;
+  /** Where its value is: the value, or the keyword itself for a flag. */
+  valueAt(name: string): Span {
+    const e = this.entry(name)!;
+    return e.args.length ? e.valueSpan : e.keySpan;
   }
   has = (name: string) => this.entry(name) !== undefined;
   block(name: string): BgwBlock | undefined {

@@ -2,21 +2,14 @@
 // (call die). inteqp.f90 uses the same reader, so the band-count rules apply to both; the rest
 // belongs to absorption only (the reader skips it when `is_absorption` is false).
 
-import type { Span } from '../incar/parse';
 import { isNumber } from '../lines';
-import type { Diagnostic } from '../validation/rules';
 import type { BgwDoc } from './parse';
-import { BgwReader } from './reader';
-
-type Report = (severity: Diagnostic['severity'], code: string, message: string, span: Span) => void;
+import { BgwReader, type Report } from './reader';
 
 export function checkBse(doc: BgwDoc, program: 'absorption' | 'inteqp', report: Report) {
   const r = new BgwReader(doc);
-  const at = (name: string): Span => r.entry(name)!.keySpan;
-  const valueAt = (name: string): Span => {
-    const e = r.entry(name)!;
-    return e.args.length ? e.valueSpan : e.keySpan;
-  };
+  const at = (name: string) => r.keyAt(name);
+  const valueAt = (name: string) => r.valueAt(name);
 
   // The fine-grid bands are a subset of the coarse-grid bands.
   for (const kind of ['val', 'cond']) {

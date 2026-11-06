@@ -2,7 +2,7 @@
 
 # DFTune
 
-A VS Code extension for setting up DFT calculations by **physical intent** (calculation type, functional, magnetism, smearing, accuracy, DFT+U) instead of remembering tags and magic numbers, and for catching the mistakes the codes themselves don't complain about (or only complain about after a day in the queue). It covers **VASP** (INCAR, KPOINTS, POSCAR, POTCAR), **Quantum ESPRESSO** (pw.x, ph.x, dos.x, projwfc.x, bands.x, pp.x, plotband.x, plotrho.x) and **BerkeleyGW** (epsilon, sigma, kernel, absorption, inteqp): builders, checks, hovers, completion, quick fixes, formatting, and conversion between POSCAR and pw.x inputs.
+A VS Code extension for setting up DFT calculations by **physical intent** (calculation type, functional, magnetism, smearing, accuracy, DFT+U) instead of remembering tags and magic numbers, and for catching the mistakes the codes themselves don't complain about (or only complain about after a day in the queue). It covers **VASP** (INCAR, KPOINTS, POSCAR, POTCAR), **Quantum ESPRESSO** (pw.x, ph.x, dos.x, projwfc.x, bands.x, pp.x, plotband.x, plotrho.x, pw2bgw.x) and **BerkeleyGW** (epsilon, sigma, kernel, absorption, inteqp): builders, checks, hovers, completion, quick fixes, formatting, and conversion between POSCAR and pw.x inputs.
 
 It is built for the usual HPC workflow: VS Code connected to a cluster with **Remote-SSH**. The extension runs on the cluster (`extensionKind: workspace`) and edits the files in place, so nothing is copied back and forth. The builder UIs are bundled locally and need no internet access.
 

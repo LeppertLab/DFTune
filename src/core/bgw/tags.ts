@@ -83,7 +83,8 @@ export function detectBgwProgram(fileName: string, text = ''): BgwProgram | unde
   // Inputs of other BerkeleyGW tools share keywords with these programs: never guess for them.
   if (OTHER_TOOLS.test(name)) return undefined;
   if (/^epsilon_cutoff\b/m.test(text)) return 'epsilon';
-  if (/^(band_index_min|screened_coulomb_cutoff)\b/m.test(text)) return 'sigma';
+  // screened_coulomb_cutoff is shared by sigma and kernel: it decides nothing.
+  if (/^(band_index_min|band_index_max)\b/m.test(text)) return 'sigma';
   if (/^number_(val|cond)_bands_(coarse|fine)\b/m.test(text)) return 'absorption';
   if (/^number_(val|cond)_bands\b/m.test(text)) return 'kernel';
   return undefined;

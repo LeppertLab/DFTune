@@ -1,21 +1,14 @@
 // Checks for sigma.inp beyond the syntax: combinations of keywords that Sigma/inread.f90 refuses
 // (call die) or warns about. Every rule is a condition from that file.
 
-import type { Span } from '../incar/parse';
 import { isInteger, isNumber } from '../lines';
-import type { Diagnostic } from '../validation/rules';
 import type { BgwDoc } from './parse';
-import { BgwReader } from './reader';
-
-type Report = (severity: Diagnostic['severity'], code: string, message: string, span: Span) => void;
+import { BgwReader, type Report } from './reader';
 
 export function checkSigma(doc: BgwDoc, report: Report) {
   const r = new BgwReader(doc);
-  const at = (name: string): Span => r.entry(name)!.keySpan;
-  const valueAt = (name: string): Span => {
-    const e = r.entry(name)!;
-    return e.args.length ? e.valueSpan : e.keySpan;
-  };
+  const at = (name: string) => r.keyAt(name);
+  const valueAt = (name: string) => r.valueAt(name);
 
   // Defaults of the reader: GPP (1), contour deformation as the full-frequency method (2).
   const freq = r.num('frequency_dependence') ?? 1;

@@ -73,3 +73,4 @@ export * from './bgw/parse';
 export * from './bgw/validate';
 export * from './bgw/hover';
 export * from './bgw/format';
+export * from './bgw/reader';

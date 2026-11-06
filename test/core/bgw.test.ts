@@ -115,7 +115,8 @@ describe('validateBgw: problems', () => {
     expect(codes('epsilon', EPS.replace('10.0', 'ten'))).toEqual(['bgw-value']);
     expect(codes('epsilon', EPS.replace('number_bands 20', 'number_bands'))).toEqual(['bgw-value']);
     expect(codes('epsilon', EPS.replace('10.0', '1.0d1'))).toEqual([]);
-    expect(codes('epsilon', EPS + 'frequency_dependence 1\n')).toEqual(['bgw-option']);
+    expect(codes('epsilon', EPS + 'frequency_dependence 1\n')).toEqual(['bgw-eps-frequency']); // the specific rule replaces the generic note
+    expect(codes('epsilon', EPS + 'number_bands 5\n')).toEqual(['bgw-duplicate']);
     expect(codes('epsilon', EPS + 'frequency_dependence 2\n')).toEqual([]);
     expect(codes('epsilon', EPS + 'cvfit 0.0 0.0 0.0\n')).toEqual(['bgw-value']);
     expect(codes('epsilon', EPS + 'cvfit 0.0 0.0 0.0 0.0 0.0 0.0\n')).toEqual([]);

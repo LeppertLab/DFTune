@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.2.0 (2026-11-06)
+
+### Added
+- epsilon.inp: checks for the combinations `Epsilon/inread.f90` refuses: `frequency_dependence` other than 0, 2 or 3 (and a method other than 0, 1, 2), `delta_frequency = 0` with full frequency, `occ_broadening` without `fermi_level_absolute` (the later of the absolute/relative switches wins), several q→0 points (unless `subsample`) or mixed `is_q0` values, `skip_epsilon` with `skip_chi`, `full_chi_conv_log` out of range, a negative `do_rpa` weight, and a warning for the deprecated `number_qpoints`. All 20 epsilon inputs of the testsuite pass without a false alarm.
+
+### Changed
+- Where a specific rule explains a value, the generic "not a documented value" note is dropped.
+
 ## 2.1.0 (2026-11-06)
 
 First BerkeleyGW release: the keyword inputs of epsilon, sigma, kernel, absorption and inteqp.

@@ -5,6 +5,7 @@ import type { Span } from '../incar/parse';
 import { isInteger, isNumber } from '../lines';
 import type { Diagnostic, Fix } from '../validation/rules';
 import { editDistance } from '../validation/rules';
+import { checkEpsilon } from './epsilon';
 import type { BgwBlock, BgwDoc, BgwEntry } from './parse';
 import { allKeywordNames, isAcceptedUndocumented, lookupKeyword, type BgwProgram } from './tags';
 
@@ -80,13 +81,16 @@ export function validateBgw(doc: BgwDoc, program: BgwProgram): Diagnostic[] {
     }
   }
 
+  if (program === 'epsilon') checkEpsilon(doc, report);
+
   // The keywords and blocks the documentation marks as required.
   const blocks = new Set(doc.blocks.map((b) => b.name));
   for (const k of requiredOf(program)) {
     const present = k.kind === 'block' ? blocks.has(k.name) : seen.has(k.name);
     if (!present) report('error', 'bgw-required', `${k.kind === 'block' ? `begin ${k.name} … end` : k.name} is required in ${file}.`, { start: 0, end: 0 });
   }
-  return out;
+  // The generic "not a documented value" note is dropped where a specific rule explains the same value.
+  return out.filter((d) => !(d.code === 'bgw-option' && out.some((o) => o !== d && o.code !== 'bgw-option' && o.span?.start === d.span?.start)));
 }
 
 function requiredOf(program: BgwProgram) {

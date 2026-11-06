@@ -16,3 +16,4 @@ scripts/**
 images/*.af
 images/*.svg
 demo/**
+docs/**

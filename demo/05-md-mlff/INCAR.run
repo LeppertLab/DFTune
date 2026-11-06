@@ -1,0 +1,15 @@
+SYSTEM = CsPbI3 production MD with the trained force field
+
+ML_LMLFF = .TRUE.
+ML_MODE  = run
+
+IBRION = 0
+MDALGO = 2               # Nose-Hoover NVT
+SMASS  = 0
+NSW    = 200000
+POTIM  = 2.0
+ISYM   = 0
+
+ENCUT  = 500
+ISMEAR = 0 ; SIGMA = 0.05
+LWAVE  = .FALSE. ; LCHARG = .FALSE.

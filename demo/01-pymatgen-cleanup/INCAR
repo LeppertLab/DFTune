@@ -1,0 +1,27 @@
+ALGO = Fast
+EDIFF = 1e-05
+EDIFFG = -0.02
+ENCUT = 520
+IBRION = 2
+ISIF = 3
+ISMEAR = 0
+ISPIN = 2
+LASPH = True
+LDAU = True
+LDAUJ = 0 0
+LDAUL = 2 0
+LDAUPRINT = 1
+LDAUTYPE = 2
+LDAUU = 6.2 0
+LMAXMIX = 4
+LORBIT = 11
+LREAL = Auto
+LWAVE = False
+lcharg = .true.
+MAGMOM = 5.0 -5.0 0.6 0.6
+NELM = 100
+NSW = 99
+PREC = Accurate
+SIGMA = 0.05
+SYSTEM = NiO AFM-II, written by pymatgen MPRelaxSet
+ncore = 8; kpar = 2

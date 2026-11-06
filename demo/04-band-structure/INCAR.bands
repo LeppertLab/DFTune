@@ -1,0 +1,11 @@
+SYSTEM = Si, step 2: band structure along G-X-W-L-G
+! copied from INCAR.scf and edited; forgot something?
+
+PREC   = Accurate
+ENCUT  = 400
+EDIFF  = 1E-7
+ISMEAR = 0 ; SIGMA = 0.01
+LORBIT = 11
+NBANDS = 16
+LCHARG = .FALSE.
+LWAVE  = .FALSE.

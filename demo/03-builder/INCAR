@@ -1,0 +1,24 @@
+SYSTEM = SrTiO3 cubic, ground state     ! a good first example
+
+# Basis set and precision
+PREC   = Accurate
+ENCUT  = 520            # 1.3 x ENMAX of the Ti_sv POTCAR
+EDIFF  = 1E-6
+LASPH  = .TRUE.
+
+# Electronic minimization
+ALGO   = Normal
+NELM   = 120
+
+# Occupations: SrTiO3 is a band insulator
+ISMEAR = 0
+SIGMA  = 0.05
+
+# Output
+LWAVE  = .FALSE.
+LCHARG = .TRUE.
+LORBIT = 11
+
+# Parallelization (Snellius rome node, 128 cores)
+NCORE  = 16
+KPAR   = 4

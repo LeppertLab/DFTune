@@ -1,0 +1,36 @@
+SYSTEM = BaTiO3 relaxation  ! copied from an old project, "it worked last time"
+
+# Basis and convergence
+ENCTU  = 520               # typo: VASP silently falls back to the POTCAR default
+EDIFF  = 1E-6
+PREC   = Accurate
+EDIFF  = 1E-5              # set twice
+
+# Ionic relaxation
+NSW    = 50                # but no IBRION ...
+ISIF   = 3
+
+# Occupations
+ISMEAR = gaussian          # not a valid value
+SIGMA  = 0.05
+
+# Functional
+METAGGA  = R2SCAN          # meta-GGA without LASPH
+HFSCREEN = 0.2             # hybrid parameter, but LHFCALC is not set
+LVDW     = .TRUE.          # old name of IVDW
+
+# Magnetism (POSCAR has 5 atoms)
+ISPIN  = 2
+MAGMOM = 3*0.6
+
+# DFT+U on Ti-d (POSCAR has 3 species: Ba Ti O)
+LDAU   = .TRUE.
+LDAUL  = 2 -1
+LDAUU  = 4.0 0
+
+# k points (there is also a KPOINTS file here)
+KSPACING = 0.25
+
+# Parallelization
+NCORE  = 8
+NPAR   = 4

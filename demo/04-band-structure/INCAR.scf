@@ -1,0 +1,8 @@
+SYSTEM = Si, step 1: self-consistent density
+
+PREC   = Accurate
+ENCUT  = 400
+EDIFF  = 1E-7
+ISMEAR = 0 ; SIGMA = 0.01
+LCHARG = .TRUE.          # the band and DOS runs read this CHGCAR
+LWAVE  = .FALSE.

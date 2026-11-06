@@ -1,0 +1,11 @@
+SYSTEM = Si, step 3: density of states
+
+ICHARG = 11              # non-self-consistent, read CHGCAR
+PREC   = Accurate
+ENCUT  = 400
+ISMEAR = -5              # tetrahedron method with Bloechl corrections
+LORBIT = 11
+NEDOS  = 3001
+EMIN   = -15 ; EMAX = 10
+LCHARG = .FALSE.
+LWAVE  = .FALSE.

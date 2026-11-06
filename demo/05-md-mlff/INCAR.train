@@ -1,0 +1,25 @@
+SYSTEM = CsPbI3 on-the-fly MLFF training, NpT heating run
+
+# Machine-learned force field
+ML_LMLFF = .TRUE.
+ML_MODE  = train
+
+# Molecular dynamics: Langevin NpT
+IBRION = 0
+MDALGO = 3
+ISIF   = 3
+NSW    = 20000
+POTIM  = 2.0             # fs
+TEBEG  = 300 ; TEEND = 600
+LANGEVIN_GAMMA   = 10.0 10.0 10.0 10.0   # one per species?
+LANGEVIN_GAMMA_L = 10.0
+PMASS  = 1000
+
+# Electronic structure
+ENCUT  = 500
+ISMEAR = 0 ; SIGMA = 0.05
+LREAL  = Auto
+ISYM   = 0
+IVDW   = 12
+
+LWAVE  = .FALSE. ; LCHARG = .FALSE.

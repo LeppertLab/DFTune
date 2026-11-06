@@ -6,6 +6,7 @@ import { isInteger, isNumber } from '../lines';
 import type { Diagnostic, Fix } from '../validation/rules';
 import { editDistance } from '../validation/rules';
 import { checkEpsilon } from './epsilon';
+import { checkBse } from './bse';
 import { checkSigma } from './sigma';
 import type { BgwBlock, BgwDoc, BgwEntry } from './parse';
 import { allKeywordNames, isAcceptedUndocumented, lookupKeyword, type BgwProgram } from './tags';
@@ -84,6 +85,7 @@ export function validateBgw(doc: BgwDoc, program: BgwProgram): Diagnostic[] {
 
   if (program === 'epsilon') checkEpsilon(doc, report);
   if (program === 'sigma') checkSigma(doc, report);
+  if (program === 'absorption' || program === 'inteqp') checkBse(doc, program, report);
 
   // The keywords and blocks the documentation marks as required.
   const blocks = new Set(doc.blocks.map((b) => b.name));

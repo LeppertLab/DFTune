@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.4.0 (2026-11-06)
+
+### Added
+- absorption.inp: checks for what `BSE/inread.f90` refuses: no operator (`use_momentum`, `use_velocity` or `use_dos`; absorption has no default), a zero or missing polarization for the momentum operator with Haydock, fine bands exceeding coarse bands (also for inteqp.inp), `number_iterations` below 1, `diagonalization_primme` without `number_eigenvalues` or with `full_bse`, `skip_interpolation` with `use_velocity`/`eqp_co_corrections`/`read_dtmat`, `read_dtmat` with `eqp_co_corrections`, `eqp_co_corrections` with `noeh_only`, an adjusted Fermi level with only one of `eqp_corrections`/`eqp_co_corrections`, `use_symmetries_fine_grid` with `use_velocity`, `energy_resolution 0`, Voigt broadening without sigma/gamma, `subsample_line` conflicts, and dumping and reading the BSE Hamiltonian in one run. All 26 absorption, 5 inteqp and 10 kernel inputs of the testsuite pass without a false alarm.
+
+### Fixed
+- inteqp.inp no longer accepts keywords that only absorption reads (`eqp_corrections`, `energy_resolution`, truncation and screening keywords, …): BerkeleyGW stops on them.
+
 ## 2.3.0 (2026-11-06)
 
 ### Added

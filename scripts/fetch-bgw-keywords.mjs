@@ -50,11 +50,23 @@ const READERS = {
 };
 const COMMON_READERS = ['Common/inread_common.f90', 'Common/scissors.f90', 'Common/algos_common.f90'];
 
-/** String literals compared with `keyword` in a Fortran reader. */
-function acceptedKeywords(files) {
+/**
+ * String literals compared with `keyword` in a Fortran reader. With `skipAbsorptionOnly`, the inteqp
+ * view: BSE/inread.f90 reads inteqp.inp too, but a block guarded by `xct%is_absorption` (and the
+ * truncation and screening keywords it hands to Common/inread_common.f90) is not available to it.
+ */
+function acceptedKeywords(files, skipAbsorptionOnly = false) {
   const out = new Set();
   for (const file of files) {
+    let skipping = false;
     for (const line of readFileSync(join(root, file), 'utf8').split('\n')) {
+      if (skipAbsorptionOnly) {
+        if (/unknown_keyword\s*\.and\.\s*xct%is_absorption/i.test(line)) skipping = true;
+        else if (/end\s*if\s*!\s*xct%is_absorption/i.test(line)) skipping = false;
+        else if (/function\s+try_inread_(truncation|screening)/i.test(line) && !/end/i.test(line)) skipping = true;
+        else if (/end\s+function\s+try_inread_(truncation|screening)/i.test(line)) skipping = false;
+        if (skipping) continue;
+      }
       if (!/keyword/i.test(line) || line.trim().startsWith('!')) continue;
       for (const m of line.matchAll(/'([A-Za-z][A-Za-z0-9_]*)'/g)) out.add(m[1]);
     }
@@ -204,7 +216,7 @@ out += '};\n\n';
 out += '/** Keywords the Fortran reader accepts but the documentation does not list (BerkeleyGW does not die on them). */\nexport const BGW_ACCEPTED: Record<string, string[]> = {\n';
 for (const [id, files] of Object.entries(READERS)) {
   const documented = new Set(parse(PROGRAMS[id]).map((k) => k.name));
-  const extra = [...acceptedKeywords([...files, ...COMMON_READERS])].filter((k) => !documented.has(k)).sort();
+  const extra = [...acceptedKeywords([...files, ...COMMON_READERS], id === 'inteqp')].filter((k) => !documented.has(k)).sort();
   console.log(`${id}: accepted but undocumented: ${extra.join(' ')}`);
   out += `  ${id}: ${JSON.stringify(extra)},\n`;
 }

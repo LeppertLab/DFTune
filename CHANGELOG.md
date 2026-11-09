@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.0.1 (2026-11-09)
+
+### Changed
+- Shorter README (also the Marketplace page): an overview of what DFTune supports, installing and licensing. The full list of features and checks per file type is in [docs/features.md](https://github.com/LeppertLab/DFTune/blob/main/docs/features.md).
+
 ## 3.0.0 (2026-11-06)
 
 BerkeleyGW support is complete: keyword inputs of epsilon, sigma, kernel, absorption and inteqp (2.1–2.4), pw2bgw.x (2.5), the builder (2.6) and checks across the workflow files (2.7). This release is the independent review of the whole series.

@@ -44,12 +44,21 @@ export class StructureViewerProvider implements vscode.CustomTextEditorProvider 
       const message: ToWebviewStructure = { type: 'update-structure', text: document.getText(), fileName: vscode.workspace.asRelativePath(document.uri), format, speciesHint };
       panel.webview.postMessage(message);
     };
+    const select = (offset: number) => panel.webview.postMessage({ type: 'select-structure', offset } satisfies ToWebviewStructure);
+    const same = (d: vscode.TextDocument) => d.uri.toString() === document.uri.toString();
     const disposables = [
       vscode.workspace.onDidChangeTextDocument((e) => {
         if (e.document.uri.toString() === document.uri.toString() && e.contentChanges.length) post();
       }),
+      vscode.window.onDidChangeTextEditorSelection((e) => {
+        if (same(e.textEditor.document) && e.selections.length) select(document.offsetAt(e.selections[0].active));
+      }),
       panel.webview.onDidReceiveMessage(async (msg: FromWebview) => {
-        if (msg.type === 'ready') post();
+        if (msg.type === 'ready') {
+          await post();
+          const editor = vscode.window.visibleTextEditors.find((x) => same(x.document));
+          if (editor) select(document.offsetAt(editor.selection.active));
+        }
         if (msg.type === 'reveal') {
           const editor = await vscode.window.showTextDocument(document, { viewColumn: textColumn(document.uri), preserveFocus: false });
           const range = new vscode.Range(document.positionAt(msg.offset), document.positionAt(msg.end ?? msg.offset));

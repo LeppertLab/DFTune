@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.2.0 (2026-11-10)
+
+### Added
+- Structure viewer: putting the text cursor on an atom's line makes that atom the centre of rotation, marked with a wireframe shell. The camera glides over to it without changing the viewing angle or zoom; edits to the file and moving the cursor off the atom lines leave the camera where it is. Clicking an atom selects its line, so it also centres on it.
+
 ## 3.1.1 (2026-11-10)
 
 ### Fixed

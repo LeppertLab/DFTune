@@ -2,7 +2,7 @@
   "name": "dftune",
   "displayName": "DFTune: DFT Input Builder",
   "description": "Set up DFT calculations by physical intent instead of raw input tags. VASP: INCAR builder, plus checks, hovers, quick fixes and formatting for INCAR, KPOINTS and POSCAR. Quantum ESPRESSO: builder, checks, hovers, completion, formatting and conversion for pw.x, ph.x, dos.x, projwfc.x, bands.x and pp.x inputs. 3D structure viewer for POSCAR, CONTCAR and pw.x inputs. Works on remote HPC files over Remote-SSH.",
-  "version": "3.1.1",
+  "version": "3.2.0",
   "publisher": "DaanHolleman",
   "icon": "images/icon.png",
   "license": "MIT",

@@ -20,20 +20,27 @@ interface UiState {
 
 const DEFAULT_UI: UiState = { bonds: true, boundary: true, cell: true, repeat: [1, 1, 1], atomScale: 1 };
 
+type Update = Extract<ToWebviewStructure, { type: 'update-structure' }>;
+
 const fmt = (x: number, d = 4) => Number(x.toFixed(d)).toString();
 
 export function ViewerApp() {
-  const [message, setMessage] = useState<ToWebviewStructure>();
+  const [message, setMessage] = useState<Update>();
+  /** Offset of the cursor in the text editor. */
+  const [cursor, setCursor] = useState<number>();
   const [ui, setUi] = useState<UiState>(() => loadUiState(DEFAULT_UI));
   const [hover, setHover] = useState<{ index: number; x: number; y: number }>();
   const host = useRef<HTMLDivElement>(null);
   const renderer = useRef<StructureRenderer>();
   const fitted = useRef<string>();
   const down = useRef<{ x: number; y: number }>();
+  /** The atom rotation was last centred on. */
+  const focused = useRef<number>();
 
   useEffect(() => {
     const onMessage = (e: MessageEvent<ToWebviewStructure>) => {
       if (e.data?.type === 'update-structure') setMessage(e.data);
+      else if (e.data?.type === 'select-structure') setCursor(e.data.offset);
     };
     window.addEventListener('message', onMessage);
     vscode.postMessage({ type: 'ready' });
@@ -61,10 +68,31 @@ export function ViewerApp() {
     if (!ok || !scene || !renderer.current) return;
     // Refit when the supercell changes; keep the view while the file is edited.
     const fitKey = ui.repeat.join('x');
-    renderer.current.set(ok, scene, { repeat: ui.repeat, cell: ui.cell, atomScale: ui.atomScale }, fitted.current !== fitKey);
+    const refit = fitted.current !== fitKey;
+    renderer.current.set(ok, scene, { repeat: ui.repeat, cell: ui.cell, atomScale: ui.atomScale }, refit);
+    if (refit) focused.current = undefined; // centre on the selected atom again below
     fitted.current = fitKey;
     setHover(undefined);
   }, [ok, scene, ui.cell, ui.atomScale, ui.repeat]);
+
+  // The atom on the cursor's line, and its copy in the first cell of the scene.
+  const selected = useMemo(() => {
+    const i = cursor === undefined || !ok ? -1 : ok.atoms.findIndex((a) => cursor >= a.start && cursor <= a.end);
+    return i < 0 ? undefined : i;
+  }, [ok, cursor]);
+  const selectedIndex = scene && selected !== undefined ? scene.atoms.findIndex((a) => a.atom === selected && !a.image) : -1;
+
+  useEffect(() => {
+    renderer.current?.setSelected(selectedIndex < 0 ? undefined : selectedIndex, ui.atomScale);
+  }, [scene, selectedIndex, ui.atomScale]);
+
+  // Moving the cursor to another atom centres rotation on it; the angle and zoom stay as they are.
+  // Edits to the file keep the centre where it is.
+  useEffect(() => {
+    if (selected === focused.current) return;
+    focused.current = selected;
+    if (selectedIndex >= 0 && scene) renderer.current?.focusOn(scene.atoms[selectedIndex].cart);
+  }, [selected, selectedIndex, scene]);
 
   if (!message) return <div className="loading">Loading…</div>;
   const set = <K extends keyof UiState>(key: K, value: UiState[K]) => setUi((u) => ({ ...u, [key]: value }));
@@ -169,7 +197,7 @@ export function ViewerApp() {
               {element}
             </span>
           ))}
-          <span className="muted">Drag to rotate, right-drag to pan, scroll to zoom; click an atom to go to its line.</span>
+          <span className="muted">Drag to rotate, right-drag to pan, scroll to zoom. Click an atom to go to its line; the atom on the cursor's line is the centre of rotation.</span>
         </div>
       )}
     </div>

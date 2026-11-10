@@ -24,15 +24,18 @@ export type ToWebviewQe = {
   pseudos?: [string, PseudoFile][];
 };
 
-/** The structure viewer: the file's text; the webview reads the structure itself. */
-export type ToWebviewStructure = {
-  type: 'update-structure';
-  text: string;
-  fileName: string;
-  format: StructureFormat;
-  /** Species from the POTCAR next to a VASP 4 POSCAR, which names none itself. */
-  speciesHint?: string[];
-};
+/** The structure viewer: the file's text (the webview reads the structure itself), and the text cursor. */
+export type ToWebviewStructure =
+  | {
+      type: 'update-structure';
+      text: string;
+      fileName: string;
+      format: StructureFormat;
+      /** Species from the POTCAR next to a VASP 4 POSCAR, which names none itself. */
+      speciesHint?: string[];
+    }
+  /** The cursor moved in the text editor: the viewer centres rotation on the atom of that line. */
+  | { type: 'select-structure'; offset: number };
 
 /** The BerkeleyGW builder: the input text (the program is found from the file name and keywords). */
 export type ToWebviewBgw = {

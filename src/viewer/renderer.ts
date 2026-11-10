@@ -32,6 +32,9 @@ export class StructureRenderer {
   private readonly controls: TrackballControls;
   private readonly content = new THREE.Group();
   private readonly highlight: THREE.Mesh;
+  /** Marks the atom rotation is centred on. */
+  private readonly selection: THREE.Mesh;
+  private glide = 0;
   private readonly insetScene = new THREE.Scene();
   private readonly insetCamera = new THREE.OrthographicCamera(-1.6, 1.6, 1.6, -1.6, -10, 10);
   private readonly insetAxes = new THREE.Group();
@@ -64,6 +67,9 @@ export class StructureRenderer {
     this.highlight = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, depthWrite: false }));
     this.highlight.visible = false;
     this.scene.add(this.highlight);
+    this.selection = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.45 }));
+    this.selection.visible = false;
+    this.scene.add(this.selection);
 
     // Trackball rotation is free and relative to the screen, like crystal viewers. (OrbitControls
     // orbits about the up axis it saw when created, and stops at the poles: wrong for a camera whose
@@ -75,6 +81,7 @@ export class StructureRenderer {
     this.controls.staticMoving = true;
     this.controls.addEventListener('change', () => this.draw());
     this.controls.addEventListener('start', () => {
+      cancelAnimationFrame(this.glide);
       this.interacting = true;
       this.tick();
     });
@@ -94,6 +101,7 @@ export class StructureRenderer {
     this.resizeObserver.disconnect();
     cancelAnimationFrame(this.frame);
     cancelAnimationFrame(this.loop);
+    cancelAnimationFrame(this.glide);
     this.controls.dispose();
     this.clear();
     this.renderer.dispose();
@@ -184,11 +192,8 @@ export class StructureRenderer {
     this.highlight.visible = false;
 
     this.buildInset();
+    // Otherwise the camera stays as it is, including a centre set on an atom.
     if (refit || !this.hasView) this.resetView();
-    else {
-      this.controls.target.copy(this.center);
-      this.controls.update();
-    }
     this.hasView = true;
     this.render();
   }
@@ -217,6 +222,40 @@ export class StructureRenderer {
     this.camera.lookAt(this.center);
     this.updateFrustum();
     this.controls.update();
+    this.render();
+  }
+
+  /**
+   * Makes the point the centre of rotation by sliding the camera (and its target) over to it: the
+   * viewing direction, up and zoom stay exactly as they are, so the picture only pans.
+   */
+  focusOn(point: Vec3) {
+    cancelAnimationFrame(this.glide);
+    const from = this.controls.target.clone();
+    const to = v3(point);
+    if (from.distanceToSquared(to) < 1e-12) return;
+    const offset = this.camera.position.clone().sub(from);
+    const start = performance.now();
+    const step = (now: number) => {
+      const t = Math.min(1, (now - start) / 220);
+      const k = 1 - (1 - t) ** 3; // ease out
+      this.controls.target.lerpVectors(from, to, k);
+      this.camera.position.copy(this.controls.target).add(offset);
+      this.draw();
+      this.glide = t < 1 ? requestAnimationFrame(step) : 0;
+    };
+    this.glide = requestAnimationFrame(step);
+  }
+
+  /** Marks the atom rotation is centred on (or nothing). */
+  setSelected(index: number | undefined, atomScale: number) {
+    const atom = index === undefined ? undefined : this.sceneAtoms[index];
+    this.selection.visible = !!atom;
+    if (atom) {
+      this.selection.position.copy(v3(atom.cart));
+      this.selection.scale.setScalar(atomRadius(atom.element, atomScale) * 1.25);
+      (this.selection.material as THREE.MeshBasicMaterial).color.set(cssColor('--vscode-focusBorder', '#0078d4'));
+    }
     this.render();
   }
 

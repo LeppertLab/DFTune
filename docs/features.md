@@ -122,7 +122,7 @@ The tables are generated from a BerkeleyGW distribution with `node scripts/fetch
 - Periodic images of atoms on the cell's faces, edges and corners, and supercells up to 6×6×6.
 - Drag to rotate, right-drag to pan, scroll to zoom; buttons to look down a, b or c.
 - Hover an atom for its number, species and fractional and Cartesian coordinates; click it to select its line in the text editor.
-- The atom on the text cursor's line is the centre of rotation: moving the cursor to another atom glides the view over to it, keeping the angle and zoom you set.
+- The atom on the text cursor's line is the centre of rotation: moving the cursor to another atom glides the view over to it, keeping the angle and zoom you set. Editing that atom's coordinates (or the cell) moves the centre along with it.
 - The view follows the text as you edit it. A VASP 4 POSCAR takes its species from the POTCAR next to it.
 
 Everything is bundled (three.js), so it works offline over Remote-SSH like the builders.

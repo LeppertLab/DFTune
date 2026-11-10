@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.3.0 (2026-11-10)
+
+### Added
+- Structure viewer: editing the coordinates of the atom at the text cursor (or the cell) moves the centre of rotation along with the atom, keeping the viewing angle and zoom. Edits to other atoms leave the centre where it is.
+
 ## 3.2.1 (2026-11-10)
 
 ### Fixed

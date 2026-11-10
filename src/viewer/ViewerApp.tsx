@@ -34,8 +34,8 @@ export function ViewerApp() {
   const renderer = useRef<StructureRenderer>();
   const fitted = useRef<string>();
   const down = useRef<{ x: number; y: number }>();
-  /** The atom rotation was last centred on. */
-  const focused = useRef<number>();
+  /** The atom rotation was last centred on, and where it was. */
+  const focused = useRef<{ atom: number; at: string }>();
 
   useEffect(() => {
     const onMessage = (e: MessageEvent<ToWebviewStructure>) => {
@@ -86,12 +86,19 @@ export function ViewerApp() {
     renderer.current?.setSelected(selectedIndex < 0 ? undefined : selectedIndex, ui.atomScale);
   }, [scene, selectedIndex, ui.atomScale]);
 
-  // Moving the cursor to another atom centres rotation on it; the angle and zoom stay as they are.
-  // Edits to the file keep the centre where it is.
+  // Moving the cursor to another atom centres rotation on it, and editing that atom's coordinates
+  // (or the cell) moves the centre along with it; the angle and zoom stay as they are. Other edits
+  // keep the centre where it is.
   useEffect(() => {
-    if (selected === focused.current) return;
-    focused.current = selected;
-    if (selectedIndex >= 0 && scene) renderer.current?.focusOn(scene.atoms[selectedIndex].cart);
+    const cart = selectedIndex >= 0 && scene ? scene.atoms[selectedIndex].cart : undefined;
+    if (selected === undefined || !cart) {
+      focused.current = undefined;
+      return;
+    }
+    const at = cart.join(' ');
+    if (focused.current?.atom === selected && focused.current.at === at) return;
+    focused.current = { atom: selected, at };
+    renderer.current?.focusOn(cart);
   }, [selected, selectedIndex, scene]);
 
   if (!message) return <div className="loading">Loading…</div>;

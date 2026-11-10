@@ -76,3 +76,5 @@ export * from './bgw/format';
 export * from './bgw/reader';
 export * from './bgw/edit';
 export * from './bgw/workflow';
+export * from './structure/view';
+export * from './structure/elementData';

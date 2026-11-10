@@ -3,6 +3,7 @@ import { INTENTS, KPOINT_DENSITIES, automaticGrid, cardsOf, kpointsCard, kspacin
 import { VIEW_TYPE } from './incarEditor';
 import { BGW_VIEW_TYPE } from './bgwEditor';
 import { QE_VIEW_TYPE } from './qeEditor';
+import { STRUCTURE_VIEW_TYPE } from './structureViewer';
 import { findPoscar, siblingName } from './inputs';
 
 export function registerCommands(context: vscode.ExtensionContext) {
@@ -10,6 +11,7 @@ export function registerCommands(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('dftune.openBuilder', openBuilder),
     vscode.commands.registerCommand('dftune.openQeBuilder', openQeBuilder),
     vscode.commands.registerCommand('dftune.openBgwBuilder', openBgwBuilder),
+    vscode.commands.registerCommand('dftune.openStructureViewer', openStructureViewer),
     vscode.commands.registerCommand('dftune.newCalculation', newCalculation),
     vscode.commands.registerCommand('dftune.generateKpoints', generateKpoints),
   );
@@ -207,4 +209,13 @@ async function exists(uri: vscode.Uri): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+async function openStructureViewer(uri?: vscode.Uri) {
+  const target = uri ?? vscode.window.activeTextEditor?.document.uri;
+  if (!target) {
+    vscode.window.showInformationMessage('Open a POSCAR, CONTCAR or pw.x input first.');
+    return;
+  }
+  await vscode.commands.executeCommand('vscode.openWith', target, STRUCTURE_VIEW_TYPE, vscode.ViewColumn.Beside);
 }

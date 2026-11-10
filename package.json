@@ -1,8 +1,8 @@
 {
   "name": "dftune",
   "displayName": "DFTune: DFT Input Builder",
-  "description": "Set up DFT calculations by physical intent instead of raw input tags. VASP: INCAR builder, plus checks, hovers, quick fixes and formatting for INCAR, KPOINTS and POSCAR. Quantum ESPRESSO: builder, checks, hovers, completion, formatting and conversion for pw.x, ph.x, dos.x, projwfc.x, bands.x and pp.x inputs. Works on remote HPC files over Remote-SSH.",
-  "version": "3.0.1",
+  "description": "Set up DFT calculations by physical intent instead of raw input tags. VASP: INCAR builder, plus checks, hovers, quick fixes and formatting for INCAR, KPOINTS and POSCAR. Quantum ESPRESSO: builder, checks, hovers, completion, formatting and conversion for pw.x, ph.x, dos.x, projwfc.x, bands.x and pp.x inputs. 3D structure viewer for POSCAR, CONTCAR and pw.x inputs. Works on remote HPC files over Remote-SSH.",
+  "version": "3.1.0",
   "publisher": "DaanHolleman",
   "icon": "images/icon.png",
   "license": "MIT",
@@ -36,7 +36,9 @@
     "pw.x",
     "BerkeleyGW",
     "GW",
-    "BSE"
+    "BSE",
+    "crystal structure",
+    "viewer"
   ],
   "extensionKind": [
     "workspace"
@@ -269,6 +271,58 @@
           }
         ],
         "priority": "option"
+      },
+      {
+        "viewType": "dftune.structureViewer",
+        "displayName": "Structure Viewer",
+        "selector": [
+          {
+            "filenamePattern": "POSCAR"
+          },
+          {
+            "filenamePattern": "POSCAR.*"
+          },
+          {
+            "filenamePattern": "POSCAR_*"
+          },
+          {
+            "filenamePattern": "CONTCAR"
+          },
+          {
+            "filenamePattern": "CONTCAR.*"
+          },
+          {
+            "filenamePattern": "CONTCAR_*"
+          },
+          {
+            "filenamePattern": "*.vasp"
+          },
+          {
+            "filenamePattern": "*.poscar"
+          },
+          {
+            "filenamePattern": "*.pwi"
+          },
+          {
+            "filenamePattern": "*.pw.in"
+          },
+          {
+            "filenamePattern": "pw.*.in"
+          },
+          {
+            "filenamePattern": "scf.in"
+          },
+          {
+            "filenamePattern": "nscf.in"
+          },
+          {
+            "filenamePattern": "relax.in"
+          },
+          {
+            "filenamePattern": "vc-relax.in"
+          }
+        ],
+        "priority": "option"
       }
     ],
     "commands": [
@@ -289,6 +343,12 @@
         "title": "Open BerkeleyGW Builder",
         "category": "DFTune",
         "icon": "$(settings)"
+      },
+      {
+        "command": "dftune.openStructureViewer",
+        "title": "Open Structure Viewer",
+        "category": "DFTune",
+        "icon": "$(symbol-structure)"
       },
       {
         "command": "dftune.newCalculation",
@@ -367,6 +427,11 @@
           "command": "dftune.openBgwBuilder",
           "when": "editorLangId == bgw",
           "group": "navigation"
+        },
+        {
+          "command": "dftune.openStructureViewer",
+          "when": "editorLangId == poscar || editorLangId == qe",
+          "group": "navigation"
         }
       ],
       "explorer/context": [
@@ -389,6 +454,11 @@
           "command": "dftune.qeToPoscar",
           "when": "resourceLangId == qe",
           "group": "navigation@92"
+        },
+        {
+          "command": "dftune.openStructureViewer",
+          "when": "resourceLangId == poscar || resourceLangId == qe",
+          "group": "navigation@93"
         }
       ],
       "editor/context": [
@@ -422,11 +492,13 @@
     "@types/node": "^20.0.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
+    "@types/three": "^0.180.0",
     "@types/vscode": "~1.90.0",
     "@vscode/vsce": "^4.1.0",
     "esbuild": "^0.24.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "three": "^0.180.0",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
   }

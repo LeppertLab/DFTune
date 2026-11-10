@@ -2,7 +2,7 @@
 // it serves a fixture INCAR/POSCAR and applies `setTags` messages with the same core code.
 
 import { detectProgram, readKpoints, readPoscar, readPotcar, setTags, setVariables } from '../../src/core';
-import type { FromWebview, ToWebview, ToWebviewQe } from '../../src/extension/messages';
+import type { FromWebview, ToWebview, ToWebviewQe, ToWebviewStructure } from '../../src/extension/messages';
 
 declare global {
   interface Window {
@@ -45,8 +45,33 @@ async function mainQe() {
   document.body.appendChild(script);
 }
 
+/** ?app=viewer&file=POSCAR (or qe/si.scf.in): the structure viewer with a fixture. */
+async function mainViewer() {
+  const name = params.get('file') ?? 'POSCAR';
+  const text = await (await fetch(`/test/fixtures/${name}`)).text();
+  const format = name.startsWith('qe/') ? 'qe' : 'poscar';
+  const send = () => window.postMessage({ type: 'update-structure', text, fileName: `test/fixtures/${name}`, format } satisfies ToWebviewStructure, '*');
+  let state: unknown;
+  window.acquireVsCodeApi = () => ({
+    postMessage(msg: FromWebview) {
+      if (msg.type === 'ready') send();
+      if (msg.type === 'reveal') console.log('reveal', JSON.stringify(text.slice(msg.offset, msg.end)));
+    },
+    getState: () => state,
+    setState: (s: unknown) => (state = s),
+  });
+  const css = document.createElement('link');
+  css.rel = 'stylesheet';
+  css.href = '/dist/viewer.css';
+  document.head.appendChild(css);
+  const script = document.createElement('script');
+  script.src = '/dist/viewer.js';
+  document.body.appendChild(script);
+}
+
 async function main() {
   if (params.get('app') === 'qe') return mainQe();
+  if (params.get('app') === 'viewer') return mainViewer();
   let text = await (await fetch(`/test/fixtures/${incarName}`)).text();
   const poscarResponse = await fetch('/test/fixtures/POSCAR');
   const poscarInfo = poscarResponse.ok && params.get('poscar') !== 'none' ? readPoscar(await poscarResponse.text()) : undefined;

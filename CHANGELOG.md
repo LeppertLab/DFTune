@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.1.0 (2026-11-10)
+
+### Added
+- Structure viewer for POSCAR, CONTCAR and pw.x inputs (*Open Structure Viewer*, in the editor title bar), in the style of Crystal Toolkit: atoms in Jmol colours, bonds from covalent radii (none between two metals), the unit cell, boundary images, supercells, views down a, b and c, and an axes indicator. Hover an atom for its coordinates; click it to select its line. The view follows edits to the file and is bundled with three.js, so it needs no internet.
+
 ## 3.0.1 (2026-11-09)
 
 ### Changed

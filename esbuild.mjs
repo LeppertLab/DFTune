@@ -32,6 +32,16 @@ const builds = [
     target: 'es2022',
     define: { 'process.env.NODE_ENV': production ? '"production"' : '"development"' },
   },
+  {
+    // The structure viewer is its own bundle, so the builders don't load three.js.
+    ...common,
+    entryPoints: ['src/viewer/main.tsx'],
+    outfile: 'dist/viewer.js',
+    platform: 'browser',
+    format: 'iife',
+    target: 'es2022',
+    define: { 'process.env.NODE_ENV': production ? '"production"' : '"development"' },
+  },
 ];
 
 if (watch) {

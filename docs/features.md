@@ -113,6 +113,19 @@ BerkeleyGW reads a fixed file name per program, so the program is taken from the
 
 The tables are generated from a BerkeleyGW distribution with `node scripts/fetch-bgw-keywords.mjs <BerkeleyGW-4.0 directory>`; 119 real inputs of its testsuite validate without a single false alarm.
 
+## Structure viewer
+
+*Open Structure Viewer* (the button in the editor title, or *Open With…*) shows the crystal structure of a POSCAR, CONTCAR or pw.x input in 3D, in the style of Crystal Toolkit:
+
+- Atoms in Jmol colours, sized by covalent radius, with the unit cell outline and an a/b/c axes indicator.
+- Bonds between atoms closer than the sum of their covalent radii (Cordero et al. 2008) plus 0.45 Å; no bonds between two metals. Bonds that leave the cell are drawn up to their midpoint.
+- Periodic images of atoms on the cell's faces, edges and corners, and supercells up to 6×6×6.
+- Drag to rotate, right-drag to pan, scroll to zoom; buttons to look down a, b or c.
+- Hover an atom for its number, species and fractional and Cartesian coordinates; click it to select its line in the text editor.
+- The view follows the text as you edit it. A VASP 4 POSCAR takes its species from the POTCAR next to it.
+
+Everything is bundled (three.js), so it works offline over Remote-SSH like the builders.
+
 ## Extending DFTune
 
 Tag defaults follow the [VASP wiki](https://vasp.at/wiki) for VASP 6. The Quantum ESPRESSO variable table is generated from the input definitions of a QE release with `node scripts/fetch-qe-tags.mjs [qe-7.4]`. To add a tag, add a `TagDef` to `src/core/tags/definitions.ts`. The full tag list in `src/core/tags/wikiTags.generated.ts` is refreshed with `node scripts/fetch-wiki-tags.mjs`. Patch tags (VTST, VASPsol) live in `src/core/tags/known.ts`. To add a preset, add a choice to `src/core/intents/definitions.ts`; the tests check automatically that every choice is detected again after it is applied.

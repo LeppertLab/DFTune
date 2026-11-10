@@ -21,6 +21,7 @@ For each of these:
 - **Hover, completion and quick fixes** for tags and their values.
 - **Format Document** (Alt+Shift+F): tags grouped and aligned, with values and comments kept.
 - **Cross-file checks**: the files of one calculation in the same folder are compared, e.g. INCAR against POSCAR and POTCAR, or ph.x against its pw.x run.
+- **Structure viewer** for POSCAR, CONTCAR and pw.x inputs: the crystal in 3D with bonds, the unit cell and supercells; click an atom to jump to its line.
 - **Commands**: *New VASP Calculation…*, *Generate k-point Mesh…*, and conversion between POSCAR and pw.x inputs.
 
 See [docs/features.md](docs/features.md) for the full list of features and checks per file type.

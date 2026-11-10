@@ -77,7 +77,6 @@ export class StructureRenderer {
     this.controls = new TrackballControls(this.camera, this.renderer.domElement);
     this.controls.rotateSpeed = 3;
     this.controls.zoomSpeed = 1.5;
-    this.controls.panSpeed = 1;
     this.controls.staticMoving = true;
     this.controls.addEventListener('change', () => this.draw());
     this.controls.addEventListener('start', () => {
@@ -321,6 +320,10 @@ export class StructureRenderer {
   private tick() {
     if (this.loop) return;
     const step = () => {
+      // TrackballControls scales an orthographic pan by the camera distance over the canvas width;
+      // this panSpeed cancels that, so the structure follows the cursor exactly.
+      const distance = this.camera.position.distanceTo(this.controls.target);
+      this.controls.panSpeed = distance > 0 ? this.renderer.domElement.clientWidth / distance : 1;
       this.controls.update();
       this.loop = this.interacting ? requestAnimationFrame(step) : 0;
     };

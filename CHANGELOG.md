@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.2.1 (2026-11-10)
+
+### Fixed
+- Structure viewer: panning (right-drag) had become much slower than the mouse since 3.1.1. The structure now follows the cursor exactly again.
+
 ## 3.2.0 (2026-11-10)
 
 ### Added

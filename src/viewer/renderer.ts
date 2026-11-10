@@ -2,7 +2,7 @@
 // outline, and an a/b/c axes inset. Renders on demand (after a camera move or a change), not in a loop.
 
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
 import type { Vec3 } from '../core/poscar/parse';
 import { covalentRadius, elementColor } from '../core/structure/elementData';
 import type { Scene, ViewStructure } from '../core/structure/view';
@@ -29,7 +29,7 @@ export class StructureRenderer {
   private readonly renderer: THREE.WebGLRenderer;
   private readonly scene = new THREE.Scene();
   private readonly camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -1000, 1000);
-  private readonly controls: OrbitControls;
+  private readonly controls: TrackballControls;
   private readonly content = new THREE.Group();
   private readonly highlight: THREE.Mesh;
   private readonly insetScene = new THREE.Scene();
@@ -44,6 +44,9 @@ export class StructureRenderer {
   private hasView = false;
   private readonly resizeObserver: ResizeObserver;
   private frame = 0;
+  /** The controls apply pointer moves in update(): run it every frame while the pointer is down. */
+  private loop = 0;
+  private interacting = false;
 
   constructor(private readonly host: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -62,10 +65,23 @@ export class StructureRenderer {
     this.highlight.visible = false;
     this.scene.add(this.highlight);
 
-    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-    this.controls.enableDamping = false;
-    this.controls.zoomToCursor = true;
-    this.controls.addEventListener('change', () => this.render());
+    // Trackball rotation is free and relative to the screen, like crystal viewers. (OrbitControls
+    // orbits about the up axis it saw when created, and stops at the poles: wrong for a camera whose
+    // up is a lattice vector.)
+    this.controls = new TrackballControls(this.camera, this.renderer.domElement);
+    this.controls.rotateSpeed = 3;
+    this.controls.zoomSpeed = 1.5;
+    this.controls.panSpeed = 1;
+    this.controls.staticMoving = true;
+    this.controls.addEventListener('change', () => this.draw());
+    this.controls.addEventListener('start', () => {
+      this.interacting = true;
+      this.tick();
+    });
+    this.controls.addEventListener('end', () => {
+      this.interacting = false;
+      this.tick(); // apply the last move (a wheel step starts and ends at once)
+    });
 
     this.insetScene.add(this.insetAxes);
 
@@ -77,6 +93,7 @@ export class StructureRenderer {
   dispose() {
     this.resizeObserver.disconnect();
     cancelAnimationFrame(this.frame);
+    cancelAnimationFrame(this.loop);
     this.controls.dispose();
     this.clear();
     this.renderer.dispose();
@@ -192,7 +209,8 @@ export class StructureRenderer {
   }
 
   private look(dir: THREE.Vector3, up: THREE.Vector3) {
-    this.camera.up.copy(up);
+    // Screen-up must be perpendicular to the view, or every drag also tilts the picture.
+    this.camera.up.copy(up).addScaledVector(dir, -up.dot(dir)).normalize();
     this.camera.position.copy(this.center).addScaledVector(dir, this.radius * 4);
     this.camera.zoom = 1;
     this.controls.target.copy(this.center);
@@ -247,6 +265,7 @@ export class StructureRenderer {
     const { clientWidth: w, clientHeight: h } = this.host;
     if (!w || !h) return;
     this.renderer.setSize(w, h);
+    this.controls.handleResize();
     this.updateFrustum();
     this.render();
   }
@@ -260,25 +279,37 @@ export class StructureRenderer {
     this.camera.updateProjectionMatrix();
   }
 
+  private tick() {
+    if (this.loop) return;
+    const step = () => {
+      this.controls.update();
+      this.loop = this.interacting ? requestAnimationFrame(step) : 0;
+    };
+    this.loop = requestAnimationFrame(step);
+  }
+
+  /** Draws in the next frame. */
   render() {
     cancelAnimationFrame(this.frame);
-    this.frame = requestAnimationFrame(() => {
-      const { clientWidth: w, clientHeight: h } = this.host;
-      this.renderer.setViewport(0, 0, w, h);
-      this.renderer.setScissorTest(false);
-      this.renderer.clear();
-      this.renderer.render(this.scene, this.camera);
-      // Axes inset in the bottom-left corner, turned with the main camera.
-      this.insetCamera.position.copy(this.camera.position).sub(this.controls.target).setLength(5);
-      this.insetCamera.up.copy(this.camera.up);
-      this.insetCamera.lookAt(0, 0, 0);
-      this.renderer.setViewport(4, 4, INSET, INSET);
-      this.renderer.setScissor(4, 4, INSET, INSET);
-      this.renderer.setScissorTest(true);
-      this.renderer.clearDepth();
-      this.renderer.render(this.insetScene, this.insetCamera);
-      this.renderer.setScissorTest(false);
-    });
+    this.frame = requestAnimationFrame(() => this.draw());
+  }
+
+  private draw() {
+    const { clientWidth: w, clientHeight: h } = this.host;
+    this.renderer.setViewport(0, 0, w, h);
+    this.renderer.setScissorTest(false);
+    this.renderer.clear();
+    this.renderer.render(this.scene, this.camera);
+    // Axes inset in the bottom-left corner, turned with the main camera.
+    this.insetCamera.position.copy(this.camera.position).sub(this.controls.target).setLength(5);
+    this.insetCamera.up.copy(this.camera.up);
+    this.insetCamera.lookAt(0, 0, 0);
+    this.renderer.setViewport(4, 4, INSET, INSET);
+    this.renderer.setScissor(4, 4, INSET, INSET);
+    this.renderer.setScissorTest(true);
+    this.renderer.clearDepth();
+    this.renderer.render(this.insetScene, this.insetCamera);
+    this.renderer.setScissorTest(false);
   }
 
   private clear() {

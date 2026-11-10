@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.1.1 (2026-11-10)
+
+### Fixed
+- Structure viewer: dragging rotated about a fixed, tilted axis instead of the screen axes, and stopped at the poles. Rotation is now a free trackball: left/right turns about the screen's vertical, up/down about its horizontal, and the start view and the a/b/c views have the screen-up square to the view.
+
 ## 3.1.0 (2026-11-10)
 
 ### Added

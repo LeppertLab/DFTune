@@ -8,7 +8,8 @@ const ML_TAGS = ['ML_LMLFF', 'ML_MODE'];
 
 export const calculation: IntentKind = {
   id: 'calculation',
-  label: 'Calculation',
+  label: 'Calculation type',
+  section: 'calculation',
   owns: ['IBRION', 'NSW', 'ISIF', 'EDIFFG', 'POTIM', 'NFREE', 'ICHARG', 'MDALGO', 'TEBEG', 'TEEND', 'SMASS',
     'LANGEVIN_GAMMA', 'LANGEVIN_GAMMA_L', 'PMASS', 'LEPSILON', 'LOPTICS', ...ML_TAGS],
   related: [],
@@ -163,7 +164,8 @@ export const calculation: IntentKind = {
 
 export const functional: IntentKind = {
   id: 'functional',
-  label: 'Exchange–correlation',
+  label: 'Functional',
+  section: 'xc',
   owns: ['GGA', 'METAGGA', 'LHFCALC', 'HFSCREEN', 'AEXX', 'AGGAX', 'AGGAC', 'ALDAC'],
   related: ['LASPH', 'ALGO'],
   choices: [
@@ -236,6 +238,7 @@ export const functional: IntentKind = {
 export const vdw: IntentKind = {
   id: 'vdw',
   label: 'van der Waals',
+  section: 'xc',
   owns: ['IVDW'],
   related: [],
   choices: [
@@ -251,6 +254,7 @@ export const vdw: IntentKind = {
 export const spin: IntentKind = {
   id: 'spin',
   label: 'Magnetism',
+  section: 'spin',
   owns: ['ISPIN', 'LNONCOLLINEAR', 'LSORBIT', 'MAGMOM', 'NUPDOWN', 'SAXIS'],
   related: [],
   choices: [
@@ -294,6 +298,7 @@ export const spin: IntentKind = {
 export const smearing: IntentKind = {
   id: 'smearing',
   label: 'Occupations',
+  section: 'smearing',
   owns: ['ISMEAR', 'SIGMA'],
   related: [],
   choices: [
@@ -336,6 +341,7 @@ export const smearing: IntentKind = {
 export const accuracy: IntentKind = {
   id: 'accuracy',
   label: 'Accuracy',
+  section: 'electronic',
   owns: ['PREC', 'EDIFF', 'LREAL'],
   related: ['ENCUT', 'EDIFF', 'NELM', 'ALGO'],
   choices: [

@@ -3,9 +3,9 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_FORMAT_OPTIONS, formatIncar } from '../../src/core/incar/format';
 import { parseIncar } from '../../src/core/incar/parse';
-import { CATEGORY_LABELS } from '../../src/core/tags/schema';
+import { SECTION_LABELS } from '../../src/core/tags/schema';
 
-const HEADERS = new Set([...Object.values(CATEGORY_LABELS), 'Other tags'].map((l) => `# ${l}`));
+const HEADERS = new Set([...Object.values(SECTION_LABELS), 'Other tags'].map((l) => `# ${l}`));
 const fixtures = join(__dirname, '..', 'fixtures');
 const incars = readdirSync(fixtures).filter((f) => f.startsWith('INCAR')).map((f) => readFileSync(join(fixtures, f), 'utf8'));
 
@@ -91,7 +91,7 @@ describe('formatIncar', () => {
   it('sorts tags without a curated definition by their wiki category', () => {
     // From testing 0.4.0: ML_OUTPUT_MODE belongs with the MLFF tags, not under "Other tags".
     const out = formatIncar('ML_OUTPUT_MODE = 0\nML_LMLFF = .TRUE.\nNEW_FLAG = 1\nKERNEL_TRUNCATION {\n  LTRUNCATE = T\n}\n')!;
-    expect(out).toContain('# Machine-learned force fields\nML_LMLFF       = .TRUE.\nML_OUTPUT_MODE = 0\n');
+    expect(out).toContain('# Calculation\nML_LMLFF       = .TRUE.\nML_OUTPUT_MODE = 0\n');
     expect(out).toContain('# Other tags\nNEW_FLAG = 1\n');
     expect(out).not.toMatch(/# Other tags[\s\S]*KERNEL_TRUNCATION/);
   });

@@ -15,7 +15,7 @@ export type Category =
   | 'mlff'
   | 'parallel';
 
-/** Labels, in the order the builder and the formatter show the categories. */
+/** Fine-grained labels of the categories (the wiki topics a tag belongs to), for hovers. */
 export const CATEGORY_LABELS: Record<Category, string> = {
   electronic: 'Electronic structure',
   smearing: 'Occupations & smearing',
@@ -31,6 +31,35 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   parallel: 'Parallelization',
   flow: 'Flow control',
 };
+
+export type SectionId = 'calculation' | 'electronic' | 'xc' | 'spin' | 'smearing' | 'ldau' | 'manybody' | 'parallel' | 'flow';
+
+/**
+ * The sections of an INCAR: the one grouping used everywhere. The formatter writes one
+ * `# Label` header per section, the builder shows its cards under the same headings in the same
+ * order, and the tag table lists the same sections. A section collects several categories; inside
+ * it the tags are sorted by category, then by definition.
+ */
+export const SECTIONS: { id: SectionId; label: string; categories: Category[] }[] = [
+  { id: 'calculation', label: 'Calculation', categories: ['ionic', 'md', 'mlff', 'response'] },
+  { id: 'electronic', label: 'Electronic structure', categories: ['electronic'] },
+  { id: 'xc', label: 'Exchange–correlation', categories: ['xc', 'vdw'] },
+  { id: 'spin', label: 'Magnetism & spin–orbit', categories: ['spin'] },
+  { id: 'smearing', label: 'Occupations & smearing', categories: ['smearing'] },
+  { id: 'ldau', label: 'DFT+U', categories: ['ldau'] },
+  { id: 'manybody', label: 'Many-body (GW, BSE, RPA)', categories: ['manybody'] },
+  { id: 'parallel', label: 'Parallelization', categories: ['parallel'] },
+  { id: 'flow', label: 'Flow control & output', categories: ['flow'] },
+];
+
+export const SECTION_LABELS = Object.fromEntries(SECTIONS.map((s) => [s.id, s.label])) as Record<SectionId, string>;
+
+const SECTION_OF = new Map(SECTIONS.flatMap((s) => s.categories.map((c) => [c, s.id] as const)));
+
+export const sectionOf = (category: Category): SectionId => SECTION_OF.get(category)!;
+
+/** Position of a category in the INCAR order: its section first, then its place in the section. */
+export const categoryRank = (category: Category): number => SECTIONS.findIndex((s) => s.id === sectionOf(category)) * 10 + SECTIONS.find((s) => s.id === sectionOf(category))!.categories.indexOf(category);
 
 export interface TagOption {
   /** Value as written in the INCAR. Compared case-insensitively for strings. */

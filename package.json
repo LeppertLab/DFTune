@@ -2,7 +2,7 @@
   "name": "dftune",
   "displayName": "DFTune: DFT Input Builder",
   "description": "Set up DFT calculations by physical intent instead of raw input tags. VASP: INCAR builder, plus checks, hovers, quick fixes and formatting for INCAR, KPOINTS and POSCAR. Quantum ESPRESSO: builder, checks, hovers, completion, formatting and conversion for pw.x, ph.x, dos.x, projwfc.x, bands.x and pp.x inputs. 3D structure viewer for POSCAR, CONTCAR and pw.x inputs. Works on remote HPC files over Remote-SSH.",
-  "version": "3.3.0",
+  "version": "3.4.0",
   "publisher": "DaanHolleman",
   "icon": "images/icon.png",
   "license": "MIT",
@@ -329,7 +329,7 @@
       {
         "command": "dftune.openBuilder",
         "title": "Open INCAR Builder",
-        "category": "VASP",
+        "category": "DFTune",
         "icon": "$(settings)"
       },
       {
@@ -353,12 +353,12 @@
       {
         "command": "dftune.newCalculation",
         "title": "New VASP Calculation…",
-        "category": "VASP"
+        "category": "DFTune"
       },
       {
         "command": "dftune.generateKpoints",
         "title": "Generate k-point Mesh…",
-        "category": "VASP"
+        "category": "DFTune"
       },
       {
         "command": "dftune.poscarToQe",
@@ -441,11 +441,6 @@
           "group": "navigation@90"
         },
         {
-          "command": "dftune.generateKpoints",
-          "when": "explorerResourceIsFolder || resourceLangId =~ /^(incar|poscar|kpoints|qe)$/",
-          "group": "navigation@91"
-        },
-        {
           "command": "dftune.poscarToQe",
           "when": "resourceLangId == poscar",
           "group": "navigation@92"
@@ -476,6 +471,36 @@
           "command": "dftune.qeToPoscar",
           "when": "editorLangId == qe",
           "group": "1_modification@91"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "dftune.openBuilder",
+          "when": "editorLangId == incar"
+        },
+        {
+          "command": "dftune.openQeBuilder",
+          "when": "editorLangId == qe"
+        },
+        {
+          "command": "dftune.openBgwBuilder",
+          "when": "editorLangId == bgw"
+        },
+        {
+          "command": "dftune.openStructureViewer",
+          "when": "editorLangId == poscar || editorLangId == qe"
+        },
+        {
+          "command": "dftune.generateKpoints",
+          "when": "editorLangId =~ /^(incar|poscar|kpoints|qe)$/"
+        },
+        {
+          "command": "dftune.poscarToQe",
+          "when": "editorLangId == poscar"
+        },
+        {
+          "command": "dftune.qeToPoscar",
+          "when": "editorLangId == qe"
         }
       ]
     }

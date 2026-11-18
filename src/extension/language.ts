@@ -3,7 +3,8 @@
 
 import * as vscode from 'vscode';
 import {
-  CATEGORY_LABELS,
+  SECTION_LABELS,
+  sectionOf,
   DEFAULT_FORMAT_OPTIONS,
   KNOWN_TAG_NAMES,
   TAG_DEFS,
@@ -102,7 +103,7 @@ export function toVscodeDiagnostics(doc: vscode.TextDocument, diagnostics: Diagn
 
 export function tagMarkdown(def: TagDef, currentValue?: string): vscode.MarkdownString {
   const md = new vscode.MarkdownString();
-  md.appendMarkdown(`**${def.name}** · ${CATEGORY_LABELS[def.category]}\n\n${def.summary}\n\n`);
+  md.appendMarkdown(`**${def.name}** · ${SECTION_LABELS[sectionOf(def.category)]}\n\n${def.summary}\n\n`);
   const facts: string[] = [`type: \`${def.type}\``];
   if (def.unit) facts.push(`unit: ${def.unit}`);
   if (def.default !== undefined) facts.push(`default: \`${def.default}\``);
@@ -208,7 +209,7 @@ function provideCompletionItems(doc: vscode.TextDocument, position: vscode.Posit
   const present = parseIncar(doc.getText()).tags;
   const curated = TAG_DEFS.filter((d) => !present.has(d.name)).map((def) => {
     const item = new vscode.CompletionItem(def.name, vscode.CompletionItemKind.Property);
-    item.detail = CATEGORY_LABELS[def.category];
+    item.detail = SECTION_LABELS[sectionOf(def.category)];
     item.documentation = tagMarkdown(def);
     item.insertText = new vscode.SnippetString(`${def.name} = \${1:${def.default ?? ''}}`);
     item.sortText = (def.advanced ? '1' : '0') + def.name;

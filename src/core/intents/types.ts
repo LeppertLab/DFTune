@@ -1,3 +1,4 @@
+import type { SectionId } from '../tags/schema';
 import type { TagReader } from './reader';
 
 export interface IntentChoice {
@@ -19,6 +20,8 @@ export interface IntentChoice {
 export interface IntentKind {
   id: string;
   label: string;
+  /** The INCAR section this card belongs to: the builder shows it under that heading, in the formatter's order. */
+  section: SectionId;
   /** Tags this intent controls: removed when the new choice neither forces nor suggests them. */
   owns: string[];
   /** Tags always shown as fields under the choice for fine-tuning. */

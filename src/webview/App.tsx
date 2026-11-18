@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { INTENTS, describeKpoints, kspacingMesh, parseIncar, potcarSymbols, tagGroup, tagReader, validate, type TagChanges } from '../core';
+import { INTENTS, PLAIN_SECTIONS, SECTIONS, describeKpoints, kspacingMesh, parseIncar, potcarSymbols, tagGroup, tagReader, validate, type TagChanges } from '../core';
 import type { ToWebview } from '../extension/messages';
 import { Diagnostics } from './components/Diagnostics';
 import { GroupCard } from './components/GroupCard';
 import { HubbardCard } from './components/HubbardCard';
 import { IntentCard } from './components/IntentCard';
+import { SectionCard } from './components/SectionCard';
 import { SystemField } from './components/SystemField';
 import { TagTable } from './components/TagTable';
 import { vscode } from './vscode';
@@ -67,13 +68,30 @@ export function App() {
       <div className="columns">
         <section className="setup">
           <h2>Setup</h2>
-          {INTENTS.map((kind) => (
-            <IntentCard key={kind.id} kind={kind} doc={doc} reader={reader} onApply={apply} />
-          ))}
-          <HubbardCard reader={reader} species={species} onApply={apply} />
-          {groups.map((group) => (
-            <GroupCard key={group} group={group} doc={doc} onApply={apply} onReveal={reveal} />
-          ))}
+          {/* The sections of the INCAR, in the order the formatter writes them. */}
+          {SECTIONS.map((section) => {
+            const kinds = INTENTS.filter((k) => k.section === section.id);
+            const plain = PLAIN_SECTIONS.includes(section.id);
+            if (!kinds.length && !plain && section.id !== 'ldau') return null;
+            return (
+              <div key={section.id} className="section" data-section={section.id}>
+                <h3>{section.label}</h3>
+                {kinds.map((kind) => (
+                  <IntentCard key={kind.id} kind={kind} doc={doc} reader={reader} onApply={apply} />
+                ))}
+                {section.id === 'ldau' && <HubbardCard reader={reader} species={species} onApply={apply} />}
+                {plain && <SectionCard section={section.id} doc={doc} reader={reader} onApply={apply} />}
+              </div>
+            );
+          })}
+          {groups.length > 0 && (
+            <div className="section" data-section="nested">
+              <h3>Nested tags</h3>
+              {groups.map((group) => (
+                <GroupCard key={group} group={group} doc={doc} onApply={apply} onReveal={reveal} />
+              ))}
+            </div>
+          )}
         </section>
         <section className="tags">
           <h2>All tags</h2>

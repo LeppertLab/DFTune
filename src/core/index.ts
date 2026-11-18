@@ -8,6 +8,7 @@ export * from './tags/known';
 export * from './intents/types';
 export * from './intents/reader';
 export * from './intents/engine';
+export * from './intents/sections';
 export * from './intents/definitions';
 export * from './intents/hubbard';
 export * from './poscar/read';
@@ -17,28 +18,33 @@ export * from './kpoints/format';
 export * from './validation/rules';
 
 import { setTags } from './incar/edit';
+import { formatIncar } from './incar/format';
 import { parseIncar } from './incar/parse';
 import { INTENTS } from './intents/definitions';
 import { intentChanges } from './intents/engine';
 import { tagReader } from './intents/reader';
 
-/** A fresh INCAR from a set of intent choices (intent id → choice id), grouped with comment headers. */
+/**
+ * A fresh INCAR from a set of intent choices (intent id → choice id): a one-line summary of the
+ * choices, then the tags in the sections of the builder, formatted like Format Document does.
+ */
 export function newIncar(system: string, choices: Record<string, string>): string {
   let text = `SYSTEM = ${system}\n`;
+  const chosen: string[] = [];
   for (const kind of INTENTS) {
     const choiceId = choices[kind.id];
-    if (!choiceId) continue;
-    const choice = kind.choices.find((c) => c.id === choiceId);
+    const choice = choiceId ? kind.choices.find((c) => c.id === choiceId) : undefined;
     if (!choice) continue;
     const changes = intentChanges(kind, choiceId, tagReader(parseIncar(text)));
-    // Only additions apply to a new file; skip tags an earlier section already wrote.
+    // Only additions apply to a new file; skip tags an earlier choice already wrote.
     const existing = parseIncar(text).tags;
     const fresh = Object.fromEntries(Object.entries(changes).filter(([k, v]) => v !== null && !existing.has(k)));
     if (Object.keys(fresh).length === 0) continue;
-    text += `\n# ${kind.label}: ${choice.label}\n`;
+    chosen.push(choice.label);
     text = setTags(text, fresh);
   }
-  return text;
+  const summary = chosen.length ? `# ${chosen.join(' · ')}\n\n` : '';
+  return formatIncar(summary + text) ?? summary + text;
 }
 export * from './poscar/elements';
 export * from './poscar/parse';

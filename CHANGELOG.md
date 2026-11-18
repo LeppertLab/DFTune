@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.4.0 (2026-11-18)
+
+Tidying: one grouping for the INCAR and its builder, and fewer menu entries.
+
+### Changed
+- **One list of sections for everything.** Format Document, the builder's Setup cards, the *All tags* table, hovers and *New VASP Calculation…* all use the same sections in the same order: Calculation, Electronic structure, Exchange–correlation, Magnetism & spin–orbit, Occupations & smearing, DFT+U, Many-body, Parallelization, Flow control & output (SYSTEM stays on top). Ionic relaxation, molecular dynamics, machine-learned force fields and response properties are now one *Calculation* section, van der Waals is part of *Exchange–correlation*; inside a section the tags keep their finer order. Formatted INCARs are re-headed on the next Format Document (the old headers are recognized and replaced).
+- The builder's Setup column has a heading per section with its cards under it (*Calculation type*, *Functional* and *van der Waals*, *Accuracy* under Electronic structure, the DFT+U table, and plain cards for Parallelization and Flow control & output); nested-tag groups come last under *Nested tags*.
+- *New VASP Calculation…* writes the same sections and headers as Format Document (with a one-line summary of the choices on top) instead of one comment per choice.
+- Menus: the explorer menu offers only *New VASP Calculation…* (folders), *Create Quantum ESPRESSO Input from POSCAR…*, *Create POSCAR from Quantum ESPRESSO Input* and *Open Structure Viewer* (on the files they work on); *Generate k-point Mesh…* is in the editor's context menu and the Command Palette, not on folders and files in the explorer. Every command except *New VASP Calculation…* is hidden from the Command Palette unless a file it applies to is active. All commands are under one *DFTune* category.
+
 ## 3.3.0 (2026-11-10)
 
 ### Added

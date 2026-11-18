@@ -75,7 +75,10 @@ describe('applying intents', () => {
 
   it('generates a commented INCAR for a new calculation', () => {
     const text = newIncar('Si', { calculation: 'relax-ions', functional: 'pbe', smearing: 'gaussian', accuracy: 'production' });
-    expect(text).toContain('# Calculation: Relax ions\n');
+    // The sections of the formatter, in its order, under one summary line.
+    expect(text.startsWith('# Relax ions · PBE · Gaussian · Production\n\n')).toBe(true);
+    expect(text.indexOf('# Calculation\n')).toBeLessThan(text.indexOf('# Electronic structure\n'));
+    expect(text.indexOf('# Electronic structure\n')).toBeLessThan(text.indexOf('# Exchange–correlation\n'));
     const r = reader(text);
     expect(detectIntent(calculation, r)).toBe('relax-ions');
     expect(detectIntent(smearing, r)).toBe('gaussian');

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CATEGORY_LABELS, TAG_DEFS, TAGS, fallbackDef, knownTag, tagGroup, wikiUrl, type Category, type Diagnostic, type IncarDoc, type KnownTag, type TagChanges, type TagDef } from '../../core';
+import { SECTIONS, TAG_DEFS, TAGS, categoryRank, fallbackDef, knownTag, sectionOf, tagGroup, wikiUrl, type SectionId, type Diagnostic, type IncarDoc, type KnownTag, type TagChanges, type TagDef } from '../../core';
 import { loadUiState, vscode } from '../vscode';
 import { TagField } from './TagField';
 
@@ -38,10 +38,11 @@ export function TagTable({ doc, diagnostics, onApply, onReveal }: Props) {
   // Nested tags (GROUP/TAG) have their own cards in the Setup column.
   const uncurated = [...doc.tags.keys()].filter((k) => !TAGS.has(k) && !tagGroup(k));
   const extra = uncurated.map((k) => (knownTag(k)?.category ? fallbackDef(k) : undefined)).filter((d): d is TagDef => !!d && matches(d.name, d.summary));
-  const byCategory = new Map<Category, typeof visible>();
-  for (const category of Object.keys(CATEGORY_LABELS) as Category[]) {
-    const defs = [...visible, ...extra].filter((d) => d.category === category);
-    if (defs.length) byCategory.set(category, defs);
+  // The sections of the INCAR, in the formatter's order; by category within a section.
+  const bySection = new Map<SectionId, typeof visible>();
+  for (const section of SECTIONS) {
+    const defs = [...visible, ...extra].filter((d) => sectionOf(d.category) === section.id).sort((a, b) => categoryRank(a.category) - categoryRank(b.category));
+    if (defs.length) bySection.set(section.id, defs);
   }
 
   // Everything else in the file (unknown tags, older names, tags without a category): raw text.
@@ -83,10 +84,10 @@ export function TagTable({ doc, diagnostics, onApply, onReveal }: Props) {
         </details>
       )}
 
-      {[...byCategory].map(([category, defs]) => (
-        <details key={category} open={!!q || filters.onlySet || defs.some((d) => doc.tags.has(d.name))}>
+      {[...bySection].map(([section, defs]) => (
+        <details key={section} open={!!q || filters.onlySet || defs.some((d) => doc.tags.has(d.name))}>
           <summary>
-            {CATEGORY_LABELS[category]} <span className="muted">({defs.filter((d) => doc.tags.has(d.name)).length}/{defs.length})</span>
+            {SECTIONS.find((x) => x.id === section)!.label} <span className="muted">({defs.filter((d) => doc.tags.has(d.name)).length}/{defs.length})</span>
           </summary>
           {defs.map((def) => {
             const entry = doc.tags.get(def.name);

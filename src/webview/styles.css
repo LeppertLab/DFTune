@@ -430,3 +430,17 @@ table.hubbard input {
   padding: 0.25rem 0.4rem;
   resize: vertical;
 }
+
+/* Setup sections: the headings are those of the formatted INCAR. */
+.section h3 {
+  margin: 14px 0 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--vscode-descriptionForeground);
+}
+
+.section:first-of-type h3 {
+  margin-top: 0;
+}

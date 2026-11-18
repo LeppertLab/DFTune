@@ -1,20 +1,20 @@
 // Formats a whole INCAR: one statement per line, tag names in upper case, tags grouped by
-// category in a fixed order with `# Category` headers, and `=` signs and trailing comments aligned.
+// section in a fixed order (the sections of the builder) with `# Section` headers, and `=` signs and trailing comments aligned.
 //
 // Values are copied verbatim (including quotes and `\` continuations) and every comment is kept:
 // a trailing comment stays with its statement, comment lines move with the statement below them.
-// Formatting is idempotent: the category headers it writes are recognized and replaced.
+// Formatting is idempotent: the section headers it writes are recognized and replaced.
 
-import { CATEGORY_LABELS, type Category } from '../tags/schema';
+import { CATEGORY_LABELS, SECTIONS, SECTION_LABELS, categoryRank, sectionOf, type SectionId } from '../tags/schema';
 import { TAG_DEFS, tagDef } from '../tags/definitions';
 import { fallbackDef, isKnownTag, tagCategory } from '../tags/known';
 import { formatBool, parseBool } from './values';
 import { computeLineStarts, lineOf, parseIncar, type Span } from './parse';
 
 export interface FormatOptions {
-  /** Sort tags into categories (General, Electronic minimization, …); otherwise keep file order. */
+  /** Sort tags into the sections of the builder (Calculation, Electronic structure, …); otherwise keep file order. */
   groupByCategory: boolean;
-  /** Write a `# Category` comment above each group. */
+  /** Write a `# Section` comment above each group. */
   categoryHeaders: boolean;
   /** Pad tag names so the `=` signs of a group line up. */
   alignEquals: boolean;
@@ -51,8 +51,9 @@ export function unifyLogicals(text: string, style: FormatOptions['logicals']): s
 }
 
 const OTHER = 'Other tags';
-const CATEGORY_ORDER = Object.keys(CATEGORY_LABELS) as Category[];
-const HEADER_TEXTS = new Set([...Object.values(CATEGORY_LABELS), OTHER]);
+const SECTION_ORDER = SECTIONS.map((s) => s.id);
+// Headers we wrote are replaced: those of the sections, and of the older category groups.
+const HEADER_TEXTS = new Set([...Object.values(SECTION_LABELS), ...Object.values(CATEGORY_LABELS), 'Flow control', OTHER]);
 const DEF_ORDER = new Map(TAG_DEFS.map((d, i) => [d.name, i]));
 /** Trailing comments of longer statements are not used to set the comment column. */
 const MAX_ALIGNED_BODY = 50;
@@ -71,27 +72,23 @@ interface Item {
   key?: string;
   value?: string;
   block?: string;
-  group: Category | typeof OTHER;
+  group: SectionId | typeof OTHER;
   order: number;
   /** `leading` is one comment line that opens a paragraph: possibly a hand-written section heading. */
   section?: boolean;
 }
 
 /** Words that mark a hand-written section heading as being about a category. */
-const SECTION_WORDS: Record<Category | typeof OTHER, RegExp> = {
+const SECTION_WORDS: Record<SectionId | typeof OTHER, RegExp> = {
   flow: /\b(flow|output|input|i\/o|write|start|restart|files?|dos)\b/i,
   electronic: /\b(electronic|scf|convergence|minimi[sz]ation|basis|cutoff|precision|accuracy)\b/i,
   smearing: /\b(smearing|occupations?)\b/i,
-  xc: /\b(exchange|functional|xc|hybrid|hse\d*|pbe\d*|gga|meta-?gga|r?scan)\b/i,
-  vdw: /\b(vdw|van der waals|dispersion|d3|d4)\b/i,
+  xc: /\b(exchange|functional|xc|hybrid|hse\d*|pbe\d*|gga|meta-?gga|r?scan|vdw|van der waals|dispersion|d3|d4)\b/i,
   spin: /\b(magneti\w*|spin|soc)\b/i,
   ldau: /(dft\s*\+\s*u|\bldau\b|\bhubbard\b|\+u\b)/i,
-  ionic: /\b(ionic|relax\w*|geometry|optimi[sz]ation)\b/i,
-  md: /\b(md|molecular dynamics|thermostat|barostat)\b/i,
-  response: /\b(dielectric|optic\w*|response|born|phonons?)\b/i,
+  calculation: /\b(ionic|relax\w*|geometry|optimi[sz]ation|md|molecular dynamics|thermostat|barostat|dielectric|optic\w*|response|born|phonons?|mlff|machine[- ]learn\w*|force fields?|calculation)\b/i,
   manybody: /\b(gw|bse|rpa|acfdt|mp2|many[- ]body)\b/i,
   parallel: /\b(parallel\w*)\b/i,
-  mlff: /\b(mlff|machine[- ]learn\w*|force fields?)\b/i,
   [OTHER]: /\bother\b/i,
 };
 
@@ -192,12 +189,13 @@ export function formatIncar(original: string, options: FormatOptions = DEFAULT_F
   if (options.groupByCategory) {
     // SYSTEM is the title of the run: first, without a header.
     groups.set(TITLE, items.filter(isTitle));
-    for (const g of [...CATEGORY_ORDER, OTHER]) groups.set(g, []);
+    for (const g of [...SECTION_ORDER, OTHER]) groups.set(g, []);
     for (const item of items) if (!isTitle(item)) groups.get(item.group)!.push(item);
     for (const [g, list] of groups) {
-      // Curated tags in their definition order, then the rest (and blocks) in file order.
+      // By category within the section, curated tags in their definition order, then the rest (and blocks) in file order.
       const rank = (i: Item) => (i.key !== undefined ? DEF_ORDER.get(i.key) : undefined) ?? Infinity;
-      if (g !== OTHER) list.sort((a, b) => rank(a) - rank(b) || a.order - b.order);
+      const cat = (i: Item) => (i.key !== undefined && tagCategory(i.key) ? categoryRank(tagCategory(i.key)!) : Infinity);
+      if (g !== OTHER) list.sort((a, b) => cat(a) - cat(b) || rank(a) - rank(b) || a.order - b.order);
     }
   } else {
     groups.set('', items);
@@ -221,7 +219,7 @@ export function formatIncar(original: string, options: FormatOptions = DEFAULT_F
       if (!list.length || g === TITLE) continue;
       const own = list.map((item) => paragraphs.get(item)).find((o) => o && !used.has(o) && SECTION_WORDS[g as Item['group']].test(o.leading[0]));
       if (own) used.add(own);
-      headers.set(g, own ? own.leading[0] : `# ${g === OTHER ? OTHER : CATEGORY_LABELS[g as Category]}`);
+      headers.set(g, own ? own.leading[0] : `# ${g === OTHER ? OTHER : SECTION_LABELS[g as SectionId]}`);
     }
     for (const o of used) o.leading.shift();
   }
@@ -272,7 +270,8 @@ function isTitle(item: Item): boolean {
 const DISABLED = /^[#!]+\s*([A-Za-z][A-Za-z0-9_]*(?:\/[A-Za-z][A-Za-z0-9_]*)*)\s*=/;
 
 function categoryOf(key: string): Item['group'] {
-  return tagCategory(key) ?? OTHER;
+  const category = tagCategory(key);
+  return category ? sectionOf(category) : OTHER;
 }
 
 function isHeader(comment: string): boolean {

@@ -2,7 +2,7 @@
   "name": "dftune",
   "displayName": "DFTune",
   "description": "DFTune is a helper tool that helps with formatting, error checking, and adjusting of files related to first-principles codes, as well as a 3D structure viewer for coordinate files. The codes that are currently supported are VASP, Quantum ESPRESSO, and BerkeleyGW.",
-  "version": "3.4.1",
+  "version": "3.4.2",
   "publisher": "DaanHolleman",
   "icon": "images/icon.png",
   "license": "MIT",

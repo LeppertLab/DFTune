@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.4.2 (2026-11-19)
+
+### Changed
+- Marketplace listing: shorter description.
+
 ## 3.4.1 (2026-11-19)
 
 ### Changed

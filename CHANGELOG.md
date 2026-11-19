@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.4.1 (2026-11-19)
+
+### Changed
+- Marketplace listing: shorter display name (*DFTune*) and a new description that names the supported codes (VASP, Quantum ESPRESSO, BerkeleyGW) and the structure viewer.
+
 ## 3.4.0 (2026-11-18)
 
 Tidying: one grouping for the INCAR and its builder, and fewer menu entries.

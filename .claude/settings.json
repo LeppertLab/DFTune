@@ -5,6 +5,8 @@
       "Bash(npx tsc --noEmit)",
       "Bash(git add *)",
       "Bash(git commit *)",
+      "Bash(git tag)",
+      "Bash(git push origin v*)",
       "Bash(git -c user.name=DaanHolleman -c user.email=dholleman123@gmail.com commit *)",
       "Bash(git checkout -b *)",
       "Bash(git checkout main)",

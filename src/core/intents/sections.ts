@@ -15,9 +15,9 @@ export const PLAIN_SECTIONS: SectionId[] = SECTIONS.map((s) => s.id).filter((id)
 
 /**
  * The tags a plain section card shows: the curated ones that are not marked advanced, plus any
- * of the section that are set. Tags an intent card owns (ICHARG) are set there, and SYSTEM is the
- * title of the builder, not a field.
+ * of the section that are set. A tag a preset also writes (ICHARG, ML_MODE) is shown here too. SYSTEM
+ * is the title of the builder, not a field.
  */
 export function plainTags(section: SectionId, r: TagReader | undefined): string[] {
-  return TAG_DEFS.filter((d) => sectionOf(d.category) === section && d.name !== 'SYSTEM' && !INTENTS.some((k) => k.owns.includes(d.name)) && (!d.advanced || r?.has(d.name))).map((d) => d.name);
+  return TAG_DEFS.filter((d) => sectionOf(d.category) === section && d.name !== 'SYSTEM' && (!d.advanced || r?.has(d.name))).map((d) => d.name);
 }

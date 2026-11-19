@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.5.0 (2026-11-19)
+
+### Changed
+- Machine-learned force field tags (`ML_*`) are their own section again, *Machine-learned force fields*, right after *Calculation*: a `# Machine-learned force fields` header in Format Document and in new INCARs, a card in the builder's Setup column with the everyday `ML_*` tags, and the same group in *All tags*. The *MLFF on-the-fly training* and *production MD* presets stay in the Calculation card and write the same tags.
+
 ## 3.4.3 (2026-11-19)
 
 ### Changed

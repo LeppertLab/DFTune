@@ -3,8 +3,8 @@ import { INTENTS, PLAIN_SECTIONS, SECTIONS, SECTION_LABELS, newIncar, plainTags,
 import { CATEGORY_LABELS } from '../../src/core/tags/schema';
 import { formatIncar } from '../../src/core/incar/format';
 
-/** Owned by a card of another section: a non-SCF run is chosen under Calculation, ICHARG belongs to the flow control. */
-const CROSS_SECTION = new Set(['ICHARG']);
+/** Owned by a card of another section: a non-SCF run or an MLFF run is chosen under Calculation, while ICHARG belongs to flow control and the ML_ tags to their own section. */
+const CROSS_SECTION = new Set(['ICHARG', 'ML_LMLFF', 'ML_MODE']);
 
 describe('one grouping for the INCAR and the builder', () => {
   it('puts every category in exactly one section', () => {
@@ -24,7 +24,8 @@ describe('one grouping for the INCAR and the builder', () => {
   });
 
   it('shows plain cards only for sections without a preset card', () => {
-    expect(PLAIN_SECTIONS).toEqual(['parallel', 'flow']);
+    expect(PLAIN_SECTIONS).toEqual(['mlff', 'parallel', 'flow']);
+    expect(plainTags('mlff', undefined)).toContain('ML_LMLFF');
     for (const id of PLAIN_SECTIONS) expect(INTENTS.some((k) => k.section === id)).toBe(false);
     expect(plainTags('parallel', undefined)).toEqual(['NCORE', 'KPAR']);
     expect(plainTags('flow', undefined)).not.toContain('SYSTEM');

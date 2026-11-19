@@ -32,7 +32,7 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   flow: 'Flow control',
 };
 
-export type SectionId = 'calculation' | 'electronic' | 'xc' | 'spin' | 'smearing' | 'ldau' | 'manybody' | 'parallel' | 'flow';
+export type SectionId = 'calculation' | 'mlff' | 'electronic' | 'xc' | 'spin' | 'smearing' | 'ldau' | 'manybody' | 'parallel' | 'flow';
 
 /**
  * The sections of an INCAR: the one grouping used everywhere. The formatter writes one
@@ -41,7 +41,8 @@ export type SectionId = 'calculation' | 'electronic' | 'xc' | 'spin' | 'smearing
  * it the tags are sorted by category, then by definition.
  */
 export const SECTIONS: { id: SectionId; label: string; categories: Category[] }[] = [
-  { id: 'calculation', label: 'Calculation', categories: ['ionic', 'md', 'mlff', 'response'] },
+  { id: 'calculation', label: 'Calculation', categories: ['ionic', 'md', 'response'] },
+  { id: 'mlff', label: 'Machine-learned force fields', categories: ['mlff'] },
   { id: 'electronic', label: 'Electronic structure', categories: ['electronic'] },
   { id: 'xc', label: 'Exchange–correlation', categories: ['xc', 'vdw'] },
   { id: 'spin', label: 'Magnetism & spin–orbit', categories: ['spin'] },

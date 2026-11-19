@@ -91,7 +91,7 @@ describe('formatIncar', () => {
   it('sorts tags without a curated definition by their wiki category', () => {
     // From testing 0.4.0: ML_OUTPUT_MODE belongs with the MLFF tags, not under "Other tags".
     const out = formatIncar('ML_OUTPUT_MODE = 0\nML_LMLFF = .TRUE.\nNEW_FLAG = 1\nKERNEL_TRUNCATION {\n  LTRUNCATE = T\n}\n')!;
-    expect(out).toContain('# Calculation\nML_LMLFF       = .TRUE.\nML_OUTPUT_MODE = 0\n');
+    expect(out).toContain('# Machine-learned force fields\nML_LMLFF       = .TRUE.\nML_OUTPUT_MODE = 0\n');
     expect(out).toContain('# Other tags\nNEW_FLAG = 1\n');
     expect(out).not.toMatch(/# Other tags[\s\S]*KERNEL_TRUNCATION/);
   });

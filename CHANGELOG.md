@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.4.3 (2026-11-19)
+
+### Changed
+- README rewritten around what DFTune does (catching mistakes, building by intent, formatting, cross-file checks, the structure viewer) with concrete examples per code, instead of a list of file types; the demo notes use the new section headers.
+
 ## 3.4.2 (2026-11-19)
 
 ### Changed

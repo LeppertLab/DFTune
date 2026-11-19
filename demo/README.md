@@ -40,7 +40,7 @@ Also show:
 
 A NiO +U relaxation as pymatgen writes it: alphabetical, `True`/`.true.` mixed, two tags on one line,
 no structure. Press **Alt+Shift+F**:
-- tags grouped under `# Category` headers, `=` signs aligned, tag names upper case,
+- tags grouped under `# Section` headers (the sections of the builder), `=` signs aligned, tag names upper case,
 - `True`, `False`, `.true.` all become `.TRUE.`/`.FALSE.`,
 - `ncore = 8; kpar = 2` split onto two lines; values and comments otherwise untouched.
 

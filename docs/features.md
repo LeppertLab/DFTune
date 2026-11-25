@@ -113,6 +113,31 @@ BerkeleyGW reads a fixed file name per program, so the program is taken from the
 
 The tables are generated from a BerkeleyGW distribution with `node scripts/fetch-bgw-keywords.mjs <BerkeleyGW-4.0 directory>`; 119 real inputs of its testsuite validate without a single false alarm.
 
+## CASTEP
+
+### *.cell and *.param
+
+CASTEP inputs come in pairs, `<seed>.cell` (the structure: `%BLOCK … %ENDBLOCK` blocks and `keyword : value` lines) and `<seed>.param` (the calculation). Both get a language (`.cell`, `.param`) with highlighting, hover, completion, Format Document and quick fixes. Keywords are case-insensitive and may be separated by `:`, `=` or a space, as CASTEP reads them.
+
+- **Checks** for what CASTEP cannot read: an unterminated block or a `%BLOCK` without a name, a missing lattice or positions block (unless `UNIT_CELL` is given), `LATTICE_CART` together with `LATTICE_ABC`, `POSITIONS_FRAC` with `POSITIONS_ABS`, a non-numeric value for a numeric keyword, the wrong number or type of items in a block row (lattice, positions, species, k points, constraints), an invalid `basis_precision`, and `CELL_CONSTRAINTS` that reuse one integer for a length and an angle. Warnings for what the documentation lists but CASTEP may accept: two k-point or symmetry specifications at once, options outside the documented list, a keyword in the wrong file, lattice lengths and angles out of range, k-point weights not summing to 1.
+- **Unknown keywords are warnings**, not errors: the documentation is not a complete keyword list (`castep -h all` is), so a name it does not mention may still be valid. Names are suggested with *did you mean*.
+- **Across the pair** (the `.param` and `.cell` of the same seed, found in the same folder): spin polarisation without initial spins, `SPIN=` in the positions while the param file says `spin_polarised false`, a band-structure task without `SPECTRAL_KPOINT_*` (also `BS_` and `OPTICS_`), a phonon task without `PHONON_KPOINT_*`, and a geometry optimisation with both `FIX_ALL_IONS` and `FIX_ALL_CELL`.
+- **Format Document** uses ` : `, aligns consecutive keyword lines, keeps comments and never changes block contents.
+
+The keyword table (54 cell and 178 param keywords) is generated from the [CASTEP community documentation](https://castep-docs.github.io/castep-docs/) with `node scripts/fetch-castep-keywords.mjs <checkout>`. It holds names, types, defaults and allowed values only, because that documentation declares no licence. The six tutorial inputs of the documentation validate without a diagnostic.
+
+## MolGW
+
+### molgw.in
+
+MolGW (all-electron Gaussian-basis GW and BSE for molecules) reads a Fortran namelist `&molgw … /` followed by the atoms. Files named `molgw.in`, `*.molgw` or `*.molgw.in` get their own language, and a plain `.in`, `.inp`, `.dat` or `.txt` file whose first line is `&molgw` is switched to it.
+
+- **Highlighting, hover and completion** for the 249 variables of MolGW 3.4 (type, default, section of the manual, description, allowed values), taken from `input_variables.yaml` in its repository, and for element symbols in the atom lines.
+- **Checks that follow the reader.** MolGW reads the namelist with plain Fortran input, so only `!` starts a comment: `#` is a warning with a quick fix. Errors for values the code rejects (`scf`, `postscf`, `mixing_scheme`, `pt3_a_diagrams`, `move_nuclei`, `length_unit`, `excit_name` and every yes/no variable), an unknown variable, no basis at all (`basis`, `ecp_basis` or a per-atom basis), `natom` not matching the atom lines (or the `xyz_file` it names), an unknown element, and a blank or comment line among the atoms (the atoms are read by list-directed input). Values the manual lists but the code does not check (`gaussian_type`, the `*_quality` variables, `frozencore`, `init_hamiltonian`, …) and unquoted strings are warnings.
+- **Format Document** puts one variable per line with the `=` aligned, aligns the atom columns, keeps comments and never changes a number.
+
+The table is generated with `node scripts/fetch-molgw-keywords.mjs <molgw checkout>`, which reads the source as data. All 246 inputs of the MolGW testsuite validate without a false alarm (the one hit, a `mixing_scheme` set twice in `he_wb97.in`, is real).
+
 ## ABINIT
 
 ### *.abi, *.abinit

@@ -30,6 +30,9 @@ if (!root) {
   console.error('usage: node scripts/fetch-castep-keywords.mjs <castep-docs checkout>');
   process.exit(1);
 }
+// The castep-docs repository declares no licence, so the prose of its pages is left out unless asked for:
+// CASTEP_KEEP_DOCS=1 node scripts/fetch-castep-keywords.mjs <checkout> keeps the one-line descriptions.
+const KEEP_DOCS = process.env.CASTEP_KEEP_DOCS === '1';
 const docs = join(root, 'docs');
 const read = (p) => readFileSync(join(docs, p), 'utf8');
 let commit = 'unknown';
@@ -280,7 +283,7 @@ for (const f of ['cell', 'param']) {
   const rows = [...table[f].values()].sort((a, b) => a.name.localeCompare(b.name));
   console.log(`${f}: ${rows.length} keywords (${rows.filter((r) => r.type).length} typed, ${rows.filter((r) => r.type === 'block').length} blocks)`);
   out += `export const CASTEP_${f.toUpperCase()}_DEFS: Record<string, CastepKeywordRow> = {\n`;
-  for (const r of rows) out += `  ${ser(r.name.toLowerCase())}: [${ser(r.name)}, ${ser(r.type)}, ${ser(r.def)}, ${ser(r.unit)}, ${ser(r.doc)}, ${ser(r.options)}, ${ser(r.examples)}, ${ser(r.source)}],\n`;
+  for (const r of rows) out += `  ${ser(r.name.toLowerCase())}: [${ser(r.name)}, ${ser(r.type)}, ${ser(r.def)}, ${ser(r.unit)}, ${ser(KEEP_DOCS ? r.doc : '')}, ${ser(r.options)}, ${ser(r.examples)}, ${ser(r.source)}],\n`;
   out += '};\n\n';
 }
 out += `/** Groups of cell keywords of which "only one may be present" (cell_keywords.md, footnotes), under their canonical names. */\nexport const CASTEP_EXCLUSIVE: string[][] = ${ser(exclusive)};\n\n`;

@@ -1,8 +1,8 @@
 {
   "name": "dftune",
   "displayName": "DFTune",
-  "description": "DFTune is a helper tool that helps with formatting, error checking, and adjusting of files related to first-principles codes, as well as a 3D structure viewer for coordinate files. The codes that are currently supported are VASP, Quantum ESPRESSO, and BerkeleyGW.",
-  "version": "3.5.0",
+  "description": "DFTune is a helper tool that helps with formatting, error checking, and adjusting of files related to first-principles codes, as well as a 3D structure viewer for coordinate files. The codes that are currently supported are VASP, Quantum ESPRESSO, BerkeleyGW, CASTEP, ABINIT, and MolGW. Works on remote hosts over SSH.",
+  "version": "3.6.0",
   "publisher": "DaanHolleman",
   "icon": "images/icon.png",
   "license": "MIT",
@@ -38,7 +38,10 @@
     "GW",
     "BSE",
     "crystal structure",
-    "viewer"
+    "viewer",
+    "CASTEP",
+    "ABINIT",
+    "MolGW"
   ],
   "extensionKind": [
     "workspace"
@@ -186,10 +189,9 @@
           ".param"
         ],
         "configuration": "./castep-language-configuration.json"
-
       },
       {
-        "id": "abinit",
+        "id": "ABINIT",
         "aliases": [
           "ABINIT",
           "ABINIT input"
@@ -199,10 +201,9 @@
           "*.abinit"
         ],
         "configuration": "./abinit-language-configuration.json"
-
       },
       {
-        "id": "molgw",
+        "id": "MolGW",
         "aliases": [
           "MolGW",
           "MolGW input"
@@ -251,16 +252,14 @@
         "language": "castep-param",
         "scopeName": "source.castep-param",
         "path": "./syntaxes/castep-param.tmLanguage.json"
-
       },
       {
-        "language": "abinit",
+        "language": "ABINIT",
         "scopeName": "source.abinit",
         "path": "./syntaxes/abinit.tmLanguage.json"
-
       },
       {
-        "language": "molgw",
+        "language": "MolGW",
         "scopeName": "source.molgw",
         "path": "./syntaxes/molgw.tmLanguage.json"
       }

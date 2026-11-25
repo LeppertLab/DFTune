@@ -2,7 +2,7 @@
 
 # DFTune
 
-**Input files for first-principles codes, checked, formatted and built from inside VS Code.** DFTune reads your VASP, Quantum ESPRESSO and BerkeleyGW input files the way each code does, tells you what is wrong before the job spends a day in the queue, tidies the files, and lets you set a calculation up by what you want to do instead of by tag names. A 3D viewer shows the structure next to the text.
+**Input files for first-principles codes, checked, formatted and built from inside VS Code.** DFTune reads your VASP, Quantum ESPRESSO, BerkeleyGW, CASTEP, ABINIT and MolGW input files the way each code does, tells you what is wrong before the job spends a day in the queue, tidies the files, and lets you set a calculation up by what you want to do instead of by tag names. A 3D viewer shows the structure next to the text.
 
 It is built for working on a cluster through **Remote-SSH**: the extension runs on the cluster and edits your files in place, and nothing needs internet access.
 
@@ -35,6 +35,9 @@ Errors are kept for what makes the code stop; anything softer is a warning. On t
 | **VASP** | INCAR, KPOINTS, POSCAR/CONTCAR, POTCAR (headers only) | ~600 known INCAR tags from the VASP wiki, 100 with typed fields; physics checks; the builder with presets for calculation type, functional, magnetism, smearing, van der Waals, accuracy and DFT+U |
 | **Quantum ESPRESSO** | pw.x, ph.x, dos.x, projwfc.x, bands.x, pp.x, plotband.x, plotrho.x, pw2bgw.x | variable tables of QE 7.4; the cell built the way QE builds it; pseudopotential files read; builders for the namelist programs |
 | **BerkeleyGW** | epsilon, sigma, kernel, absorption, inteqp | all 332 keywords of BerkeleyGW 4.0; checks that follow the Fortran readers; a keyword builder; checks across the workflow files |
+| **CASTEP** | `.cell` and `.param` | the documented keywords and blocks; block rows checked; the cell and param files of one seed compared |
+| **ABINIT** | `.abi` | 1056 documented variables; multi-dataset aware checks of `natom`, `typat`, `znucl`, `xred` and the k-point variables; checked on 1339 test-suite inputs |
+| **MolGW** | `molgw.in` | 249 variables of MolGW 3.4; value checks that follow its namelist reader; the atoms checked against `natom` or the `xyz_file` |
 
 See [docs/features.md](docs/features.md) for every feature and check per file type.
 
@@ -60,8 +63,11 @@ To release, push a `vX.Y.Z` tag that matches `package.json`: CI attaches the `.v
 
 ## License
 
-MIT, see [LICENSE](LICENSE). There are three exceptions:
+MIT, see [LICENSE](LICENSE). There are six exceptions:
 
 - The tag descriptions in `src/core/tags/wikiTags.generated.ts` are excerpts from the [VASP Wiki](https://vasp.at/wiki), © VASP Software GmbH and the VASP Wiki authors, and are distributed under the [GNU Free Documentation License 1.2](LICENSES/GFDL-1.2.txt).
 - The keyword descriptions in `src/core/bgw/keywords.generated.ts` and the testsuite inputs in `test/fixtures/bgw` are from the documentation and testsuite of [BerkeleyGW](https://berkeleygw.org), distributed under a [modified BSD license](LICENSES/BerkeleyGW.txt), whose notice they keep.
 - The variable descriptions in `src/core/qe/tags.generated.ts` are excerpts from the input documentation of [Quantum ESPRESSO](https://www.quantum-espresso.org), which is distributed under the [GNU General Public License, version 2 or later](LICENSES/GPL-2.0.txt); the excerpts keep that licence.
+- The keyword names, types, defaults and allowed values in `src/core/castep/keywords.generated.ts` come from the [CASTEP community documentation](https://castep-docs.github.io/castep-docs/), © its authors (the phonon pages: Science and Technology Facilities Council, 2009). That repository declares no licence, so no descriptions are included; see [LICENSES/CASTEP-docs.txt](LICENSES/CASTEP-docs.txt).
+- The variable descriptions in `src/core/abinit/variables.generated.ts` are excerpts from the documentation of [ABINIT](https://www.abinit.org) (`abimkdocs/variables_abinit.py`), which is free software distributed under the [GNU General Public License, version 3](LICENSES/ABINIT-GPL-3.0.txt); the excerpts keep that licence. The inputs in `test/fixtures/abinit` are copied from the ABINIT test suite under the same licence.
+- The keyword names, defaults and descriptions in `src/core/molgw/keywords.generated.ts` are derived from the source of [MolGW](https://github.com/molgw/molgw) (Copyright (C) 2010-2026 Fabien Bruneval), and the inputs in `test/fixtures/molgw` are copied from its testsuite. MolGW is free software distributed under the [GNU General Public License](LICENSES/GPL-3.0.txt), version 3 or (at your option) any later version, without any warranty; those files are distributed under the same terms and keep that notice.

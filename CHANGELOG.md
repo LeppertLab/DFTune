@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.6.0 (2026-11-25)
+
+Three more codes, each with its own language, tables generated from the code's own documentation or source, checks that follow its reader, hover, completion, Format Document and quick fixes.
+
+### Added
+- **CASTEP** (`.cell` and `.param`): keyword and block tables from the community documentation (names, types, defaults and allowed values only: that documentation declares no licence), block-row checks, exclusive keyword groups, and checks across the cell and param files of one seed (spin, band-structure and phonon k points, fixed ions and cell).
+- **ABINIT** (`.abi`, `.abinit`): the 1056 documented variables plus 46 names the readers accept, multi-dataset aware cross-field checks (`typat`, `znucl`, `xred`, `spinat` against `natom` and `ntypat`, `pseudos` against `npsp`, k-point variables against `kptopt`), about 40 rules each tied to the ABINIT source. 1339 inputs of the ABINIT test suite give no false alarm.
+- **MolGW** (`molgw.in`, `*.molgw`, or any file starting with `&molgw`): the 249 variables of MolGW 3.4 from `input_variables.yaml`, value checks that follow its namelist reader (`#` is not a comment there), the atom lines checked against `natom` and a named `xyz_file`. All 246 inputs of the MolGW testsuite validate without a false alarm.
+
 ## 3.5.0 (2026-11-19)
 
 ### Changed

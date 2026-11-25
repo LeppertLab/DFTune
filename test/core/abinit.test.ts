@@ -439,3 +439,11 @@ describe('abinitCompletions', () => {
     for (const w of ['ha', 'hartree', 'ry', 'rydberg', 'ev', 'mev', 'k', 'kelvin', 'bohr', 'angstrom', 'nm', 'tesla', 'au']) expect(ABINIT_UNIT_WORDS[w]).toBeDefined();
   });
 });
+
+describe('review fixes', () => {
+  it('keeps an = inside a quoted string and treats it as a blank elsewhere', () => {
+    const doc = parseAbinit('pseudos "Pseudos/a=b.psp8"\necut = 20\n');
+    expect(doc.entries.find((e) => e.word === 'pseudos')?.args.map((v) => v.text)).toEqual(['"Pseudos/a=b.psp8"']);
+    expect(doc.entries.find((e) => e.word === 'ecut')?.args.map((v) => v.text)).toEqual(['20']);
+  });
+});

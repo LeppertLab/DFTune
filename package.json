@@ -2,7 +2,7 @@
   "name": "dftune",
   "displayName": "DFTune",
   "description": "DFTune is a helper tool that helps with formatting, error checking, and adjusting of files related to first-principles codes, as well as a 3D structure viewer for coordinate files. The codes that are currently supported are VASP, Quantum ESPRESSO, BerkeleyGW, CASTEP, ABINIT, and MolGW. Works on remote hosts over SSH.",
-  "version": "3.6.0",
+  "version": "4.0.0",
   "publisher": "DaanHolleman",
   "icon": "images/icon.png",
   "license": "MIT",
@@ -191,7 +191,7 @@
         "configuration": "./castep-language-configuration.json"
       },
       {
-        "id": "ABINIT",
+        "id": "abinit",
         "aliases": [
           "ABINIT",
           "ABINIT input"
@@ -203,7 +203,7 @@
         "configuration": "./abinit-language-configuration.json"
       },
       {
-        "id": "MolGW",
+        "id": "molgw",
         "aliases": [
           "MolGW",
           "MolGW input"
@@ -254,12 +254,12 @@
         "path": "./syntaxes/castep-param.tmLanguage.json"
       },
       {
-        "language": "ABINIT",
+        "language": "abinit",
         "scopeName": "source.abinit",
         "path": "./syntaxes/abinit.tmLanguage.json"
       },
       {
-        "language": "MolGW",
+        "language": "molgw",
         "scopeName": "source.molgw",
         "path": "./syntaxes/molgw.tmLanguage.json"
       }

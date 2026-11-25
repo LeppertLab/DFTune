@@ -16,7 +16,11 @@ export type Report = (severity: Diagnostic['severity'], code: string, message: s
 export function isCastepNumber(text: string): boolean {
   if (isNumber(text)) return true;
   const bare = text.replace(/\b(cos|sin|tan|sqrt)\b/gi, '');
-  return /^[\d.eEdD+\-*/()]+$/.test(bare) && /\d/.test(bare) && !/[+\-*/]$/.test(bare);
+  if (!/^[\d.eEdD+\-*/()]+$/.test(bare) || !/\d/.test(bare) || /[+\-*/]$/.test(bare)) return false;
+  // A label such as D1, E2 or ee2 is not a number: the first character must start one, and an exponent
+  // letter needs a digit or dot before it and a digit or sign after it.
+  if (!/^[+\-]?[\d.(]/.test(bare)) return false;
+  return !/(?<![\d.])[eEdD]|[eEdD](?![\d+\-])/.test(bare);
 }
 
 const span = (r: CastepRow): Span => ({ start: r.start, end: r.end });

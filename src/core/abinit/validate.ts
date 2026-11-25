@@ -164,10 +164,9 @@ export function validateAbinit(doc: AbinitDoc): Diagnostic[] {
 
   // m_parser.F90, intagm: the ?-forms for the units and for the tens digit of one dataset exclude each other.
   for (const d of datasets) {
-    for (const [name, list] of byBase) {
+    for (const list of byBase.values()) {
       const hits = list.filter((e) => e.kind.kind === 'wild' && (e.kind.unit !== undefined ? d % 10 === e.kind.unit : Math.floor(d / 10) === e.kind.tens));
       if (hits.length > 1 && d > 0) report('error', 'abinit-duplicate', `${hits[0].word} and ${hits[1].word} both apply to dataset ${d}: ABINIT stops ("cannot be used together in the input file"). Remove one of them.`, hits[1].keySpan);
-      void name;
     }
   }
 
@@ -180,7 +179,7 @@ export function validateAbinit(doc: AbinitDoc): Diagnostic[] {
     const plus = ops.includes('+');
     const times = ops.includes('*');
     const at = series[0].keySpan;
-    if (series.length !== 2 && !(series.length > 2)) {
+    if (series.length < 2) {
       // intagm only runs for the variables ABINIT actually reads, so for these the message is a warning.
       if (colon) report('warning', 'abinit-series', `${name}: the series is started with "${series[0].word}" but there is no ${name}+ or ${name}* with the increment or factor: ABINIT stops when it reads ${name} (m_parser.F90, intagm: "initiate a series, but there is no occurrence of + or *").`, at);
       else report('warning', 'abinit-series', `${series[0].word} appears without ${name}: that starts the series: ABINIT stops when it reads ${name} (m_parser.F90, intagm: "does not appear in the input file ... This is forbidden").`, at);

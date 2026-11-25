@@ -82,7 +82,9 @@ export function parseAbinit(text: string): AbinitDoc {
       });
     }
     // `=` is a blank to ABINIT (same length, so the offsets stay).
-    const body = code.replace(/=/g, ' ');
+    // Inside a quoted string it is a character like any other (a path may contain it).
+    let inString = false;
+    const body = [...code].map((c) => (c === '"' ? ((inString = !inString), c) : c === '=' && !inString ? ' ' : c)).join('');
     for (const m of body.matchAll(/"[^"]*"?|\S+/g)) {
       const start = line.start + m.index!;
       const tok: Token = { text: m[0], start, end: start + m[0].length };

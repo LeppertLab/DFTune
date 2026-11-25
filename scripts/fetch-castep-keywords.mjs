@@ -76,6 +76,30 @@ const canon = (name) => {
   return n;
 };
 
+
+/**
+ * The pages put prose and page fragments in their default and unit columns ("Generated from …", "See text",
+ * "### PARAM file keywords {#sec:paramkw}"). Only a value CASTEP could read survives: a short literal, with a
+ * trailing full stop removed and "(0, 0, 0)." written as "0 0 0".
+ */
+function cleanDefault(def, type = '') {
+  let d = String(def ?? '').trim().replace(/\.$/, '');
+  const group = d.match(/^\(([^()]*)\)$/);
+  if (group) d = group[1].replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
+  d = d.replace(/\s+(?:A|Ang|Å)⁻¹$/, ' Å⁻¹'); // "0.1 A⁻¹. ### …" keeps the value and its unit only if clean
+  if (!d || /[#{}<>]|generated|see |determined|none|no |depends|same as|default/i.test(d)) return '';
+  if (d.split(/\s+/).length > 4 || d.length > 30) return '';
+  // A number, a vector or a physical quantity has a numeric default ("INCLUDE_GAMMA" is the name of an option).
+  if (/^(integer|real|physical|integer-vector|real-vector)$/.test(type) && !/^[-+\d.]/.test(d)) return '';
+  return d;
+}
+
+/** A unit is a short word such as eV, Å⁻¹ or A/ps, not a stray fragment. */
+function cleanUnit(unit) {
+  const u = String(unit ?? '').trim();
+  return /^[A-Za-zÅ⁻¹²³^/*·0-9 ]{1,16}$/.test(u) && /[A-Za-zÅ]/.test(u) ? u : '';
+}
+
 /** name (lower case) → { file, name, type, def, unit, doc, options, examples, source } */
 const table = { cell: new Map(), param: new Map() };
 function add(file, name, info, source, override = false) {
@@ -283,7 +307,7 @@ for (const f of ['cell', 'param']) {
   const rows = [...table[f].values()].sort((a, b) => a.name.localeCompare(b.name));
   console.log(`${f}: ${rows.length} keywords (${rows.filter((r) => r.type).length} typed, ${rows.filter((r) => r.type === 'block').length} blocks)`);
   out += `export const CASTEP_${f.toUpperCase()}_DEFS: Record<string, CastepKeywordRow> = {\n`;
-  for (const r of rows) out += `  ${ser(r.name.toLowerCase())}: [${ser(r.name)}, ${ser(r.type)}, ${ser(r.def)}, ${ser(r.unit)}, ${ser(KEEP_DOCS ? r.doc : '')}, ${ser(r.options)}, ${ser(r.examples)}, ${ser(r.source)}],\n`;
+  for (const r of rows) out += `  ${ser(r.name.toLowerCase())}: [${ser(r.name)}, ${ser(r.type)}, ${ser(cleanDefault(r.def, r.type))}, ${ser(cleanUnit(r.unit))}, ${ser(KEEP_DOCS ? r.doc : '')}, ${ser(r.options)}, ${ser(r.examples)}, ${ser(r.source)}],\n`;
   out += '};\n\n';
 }
 out += `/** Groups of cell keywords of which "only one may be present" (cell_keywords.md, footnotes), under their canonical names. */\nexport const CASTEP_EXCLUSIVE: string[][] = ${ser(exclusive)};\n\n`;

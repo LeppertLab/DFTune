@@ -1,6 +1,8 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { isCastepNumber } from '../../src/core/castep/blocks';
+import { CASTEP_CELL_DEFS, CASTEP_PARAM_DEFS } from '../../src/core/castep/keywords.generated';
 import { formatCastep } from '../../src/core/castep/format';
 import { castepCompletions, castepHover } from '../../src/core/castep/hover';
 import { parseCastep } from '../../src/core/castep/parse';
@@ -272,5 +274,15 @@ describe('hover and completion', () => {
     expect(castepCompletions(parseCastep(text), 'cell', text.length)).toEqual([]);
     const c = 'task : energy ! cut';
     expect(castepCompletions(parseCastep(c), 'param', c.length)).toEqual([]);
+  });
+});
+
+describe('review fixes', () => {
+  it('does not take special-point labels such as D1, E2 or ee2 for numbers', () => {
+    for (const label of ['D1', 'E2', 'e3', 'ee2', '1e']) expect(isCastepNumber(label), label).toBe(false);
+    for (const n of ['0.5', '1e-3', '1.0d0', '-0.25', '1/3', '(1+2)/3']) expect(isCastepNumber(n), n).toBe(true);
+  });
+  it('keeps prose out of the keyword table defaults', () => {
+    for (const [name, row] of Object.entries({ ...CASTEP_CELL_DEFS, ...CASTEP_PARAM_DEFS })) expect(String(row[2]), name).not.toMatch(/[#{}]|Generated|See text/);
   });
 });

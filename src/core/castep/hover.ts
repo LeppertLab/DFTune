@@ -3,6 +3,9 @@
 import { commentStart, type CastepDoc } from './parse';
 import { canonicalCastepName, castepDocsUrl, castepKeywordsOf, lookupCastepKeyword, type CastepFile, type CastepKeyword } from './tags';
 
+/** Text for a snippet placeholder: `$`, `}` and `\\` would end or break it. */
+const snippetText = (s: string) => s.replace(/[$}\\]/g, '\\$&');
+
 /** Markdown for a keyword or block: type, unit, default, the description and where the docs say it. */
 export function castepKeywordMarkdown(k: CastepKeyword, current?: string): string {
   const type = k.kind === 'block' ? 'block' : k.type === 'defined' ? 'flag' : k.type;
@@ -78,7 +81,7 @@ export function castepCompletions(doc: CastepDoc, file: CastepFile, offset: numb
         kind: k.kind === 'block' ? ('block' as const) : ('keyword' as const),
         detail: detailOf(k),
         documentation: castepKeywordMarkdown(k),
-        insertText: k.kind === 'block' ? `%BLOCK ${name}\n  $0\n%ENDBLOCK ${name}` : k.type === 'defined' ? name : `${name} : \${1:${k.options[0] ?? k.default ?? ''}}`,
+        insertText: k.kind === 'block' ? `%BLOCK ${name}\n  $0\n%ENDBLOCK ${name}` : k.type === 'defined' ? name : `${name} : \${1:${snippetText(k.options[0] ?? k.default ?? '')}}`,
         sortText: (k.type ? '0' : '1') + k.name.toLowerCase(),
       };
     });

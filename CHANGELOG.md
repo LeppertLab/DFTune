@@ -1,5 +1,16 @@
 # Changelog
 
+## 4.0.0 (2026-11-26)
+
+Six codes are now supported (VASP, Quantum ESPRESSO, BerkeleyGW, CASTEP, ABINIT, MolGW). This release is the independent review of the 3.6.0 additions.
+
+### Fixed
+- **ABINIT and MolGW did nothing in the editor in 3.6.0**: their language ids were written in capitals in `package.json` while the code registers lower-case ids, so VS Code never matched a document. A test now checks that every registered language id is contributed by the package and that ids are lower case.
+- CASTEP completion inserted scraped documentation text as the placeholder value (one with a `}` that broke the snippet). The keyword table now keeps only defaults that are values, units that are units, and placeholders are escaped. The shipped table no longer holds prose, as the licence note says.
+- CASTEP k-point path rows: special-point labels such as `D1`, `E2` or `ee2` are no longer mistaken for numbers (and `1e` is no longer a number).
+- ABINIT: an `=` inside a quoted string (a path) is kept; elsewhere it is still a blank.
+- Changes to a `.xyz` file re-check the MolGW input that names it; the file watcher no longer reacts to `.abi` files, which have no neighbours.
+
 ## 3.6.0 (2026-11-25)
 
 Three more codes, each with its own language, tables generated from the code's own documentation or source, checks that follow its reader, hover, completion, Format Document and quick fixes.

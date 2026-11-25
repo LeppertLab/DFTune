@@ -199,6 +199,21 @@
           "*.abinit"
         ],
         "configuration": "./abinit-language-configuration.json"
+
+      },
+      {
+        "id": "molgw",
+        "aliases": [
+          "MolGW",
+          "MolGW input"
+        ],
+        "filenamePatterns": [
+          "molgw.in",
+          "*.molgw",
+          "*.molgw.in"
+        ],
+        "firstLine": "^\\s*&\\s*[Mm][Oo][Ll][Gg][Ww]\\b",
+        "configuration": "./molgw-language-configuration.json"
       }
     ],
     "grammars": [
@@ -242,6 +257,12 @@
         "language": "abinit",
         "scopeName": "source.abinit",
         "path": "./syntaxes/abinit.tmLanguage.json"
+
+      },
+      {
+        "language": "molgw",
+        "scopeName": "source.molgw",
+        "path": "./syntaxes/molgw.tmLanguage.json"
       }
     ],
     "customEditors": [

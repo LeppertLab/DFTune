@@ -117,12 +117,16 @@ vscode.workspace.textDocuments.push(
   doc('qe-plot', '-6 10\nb.xmgr\nb.ps\nfermi\n2 0\n', 'plotband.in'),
   doc('bgw', 'epsilon_cutof 10.0\nnumber_bands 20\nbegin qpoints\n 0 0 0.001 1 1\nend\n', 'bgw/bad/epsilon.inp'),
   doc('bgw', readFileSync(join(fixtures, 'bgw', 'graphene', 'sigma.inp'), 'utf8'), 'bgw/graphene/sigma.inp'),
+  doc('molgw', "&molgw\n scf='pbee'\n basis='cc-pVDZ'\n natom=1\n/\nHe 0 0 0\n", 'molgw/bad/molgw.in'),
+  doc('molgw', readFileSync(join(fixtures, 'molgw', 'acetamide.in'), 'utf8'), 'molgw/acetamide.in'),
   doc('qe', readFileSync(join(fixtures, 'qe', 'pp.in'), 'utf8').replace('iflag = 2', 'iflag = 9'), 'qe/pp.bad.in'),
   doc('qe', readFileSync(join(fixtures, 'qe', 'bands.pp.in'), 'utf8').replace("prefix = 'si'", "prefix = 'ge'"), 'qe/bands.pp.in'),
 );
 // A plain-text file that starts with a QE namelist is switched to the QE language.
 const sniffed = doc('plaintext', '! my run\n&CONTROL\n calculation = "scf"\n/\n', 'my-run.in');
 vscode.workspace.textDocuments.push(sniffed);
+const molgwSniffed = doc('plaintext', '! my run\n&molgw\n scf="hf"\n/\n', 'my-molgw-run.in');
+vscode.workspace.textDocuments.push(molgwSniffed);
 ext.activate({ subscriptions: [], extensionUri: { path: root } });
 
 /** Applies a formatter's edits to `text`. */
@@ -159,6 +163,7 @@ function format(lang, text, name) {
   for (const id of ['hover', 'completion', 'actions', 'format']) check(!!providers[id].qe, `QE ${id} registered`);
   const messy = "&control calculation='scf',prefix='x'\n/\n";
   check(format('qe', messy, 'x.in') === "&CONTROL\n  calculation = 'scf'\n  prefix      = 'x'\n/\n", 'QE Format Document works through the extension');
+  check(molgwSniffed.languageId === 'molgw', 'a plain-text file starting with &molgw is switched to the MolGW language');
   check(sniffed.languageId === 'qe', 'a plain-text file starting with &CONTROL is switched to the QE language');
   const qd = doc('qe', QE_BAD, 'scf.bad.in');
   const qh = await providers.hover.qe.provideHover(qd, qd.positionAt(QE_BAD.indexOf('celldm') + 2));
@@ -199,6 +204,20 @@ function format(lang, text, name) {
   const abTypo = doc('abinit', 'ecut 20\nntypa 1\n', 'abinit/typo/run.abi');
   const aacts = await providers.actions.abinit.provideCodeActions(abTypo, new Range(new Position(1, 2), new Position(1, 2)), { diagnostics: [] });
   check(aacts.length === 1 && aacts[0].edit.edits[0].newText === 'ntypat', `ABINIT quick fix: ${aacts.map((a) => a.title)}`);
+
+  // MolGW.
+  for (const id of ['hover', 'completion', 'actions', 'format']) check(!!providers[id].molgw, `MolGW ${id} registered`);
+  const mgText = "&molgw\n scf='hf'\n nspin=1\n natom=1\n/\nHe 0 0 0\n";
+  const mg = doc('molgw', mgText, 'molgw/x/molgw.in');
+  const mh = await providers.hover.molgw.provideHover(mg, mg.positionAt(mgText.indexOf('nspin') + 1));
+  check(mh && mh.contents.value.includes('**nspin**') && mh.contents.value.includes('Sets the number of spin channels'), 'MolGW hover describes the variable');
+  const mgNew = doc('molgw', "&molgw\n scf='hf'\n \n/\n", 'molgw/x/molgw.in');
+  const mc = await providers.completion.molgw.provideCompletionItems(mgNew, new Position(2, 1));
+  check(mc.some((c) => c.label === 'basis') && !mc.some((c) => c.label === 'scf'), 'MolGW completes the variables not set yet');
+  check(format('molgw', "&molgw\n scf='hf', natom=1  \n/\nH 0 0 0   \n", 'molgw/x/molgw.in') === "&molgw\n  scf   = 'hf'\n  natom = 1\n/\nH  0  0  0\n", 'MolGW Format Document puts one variable per line');
+  const mgTypo = doc('molgw', "&molgw\n scf='pbee'\n/\n", 'molgw/typo/molgw.in');
+  const mgActs = await providers.actions.molgw.provideCodeActions(mgTypo, new Range(new Position(1, 8), new Position(1, 8)), { diagnostics: [] });
+  check(mgActs.length === 1 && mgActs[0].edit.edits[0].newText === "'pbe'", `MolGW quick fix: ${mgActs.map((a) => a.title)}`);
 
   // Quick fixes, through the code-action provider.
   for (const id of ['incar', 'kpoints', 'poscar']) check(!!providers.actions[id], `quick fixes registered for ${id}`);
@@ -271,6 +290,9 @@ function format(lang, text, name) {
   const bgwBad = get('bgw', 'bgw/bad/epsilon.inp').map((d) => d.message);
   check(bgwBad.length === 2 && bgwBad.some((m) => /Did you mean epsilon_cutoff\?/.test(m)) && bgwBad.some((m) => /is required/.test(m)), `BerkeleyGW diagnostics: ${bgwBad.length} problems`);
   check(get('bgw', 'bgw/graphene/sigma.inp').length === 0, 'a real BerkeleyGW input has no problems');
+  const mgBad = get('molgw', 'molgw/bad/molgw.in').map((d) => d.message);
+  check(mgBad.length === 1 && /scf='pbee' is not a scheme or functional MolGW knows/.test(mgBad[0]), `MolGW diagnostics: ${mgBad}`);
+  check(get('molgw', 'molgw/acetamide.in').length === 0, 'a real MolGW input has no problems');
   const incar = get('incar', 'INCAR.headers');
   check(incar.some((d) => /below the largest ENMAX/.test(d.message)), 'INCAR ENCUT checked against the POTCAR');
   process.exit(failed ? 1 : 0);

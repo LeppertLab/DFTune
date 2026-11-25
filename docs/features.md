@@ -113,6 +113,20 @@ BerkeleyGW reads a fixed file name per program, so the program is taken from the
 
 The tables are generated from a BerkeleyGW distribution with `node scripts/fetch-bgw-keywords.mjs <BerkeleyGW-4.0 directory>`; 119 real inputs of its testsuite validate without a single false alarm.
 
+## ABINIT
+
+### *.abi, *.abinit
+
+ABINIT main inputs get their own language (`*.abi`, `*.abinit`; a `.in` file is never claimed). ABINIT reads the file as one stream of blank-separated words, so the parser does the same: several variables per line, values on later lines, `#` and `!` comments, `=` as a blank, case-insensitive names, units after the values (`ecut 20 Ry`, `acell 3*7.5 Angstrom`), repeats (`3*10.2`, `*0.0`), fractions and `sqrt()`, quoted strings, and the dataset syntax (`ecut1`, `ecut?2`, `ecut1?`, and the series `ecut:` with `ecut+` or `ecut*`).
+
+- **Highlighting, hover and completion** for the 1056 variables of the ABINIT documentation (type, dimension, default, mnemonic, units, the description and the allowed values, from `abimkdocs/variables_abinit.py`), plus the 46 names ABINIT reads without documenting them. Completion offers variable names, the listed values after an integer or string variable (`optdriver`, `ixc`, `geoopt`, …) and the units after the values of an energy or length variable.
+- **Checks that follow ABINIT's parser and readers** (`m_parser.F90`, `m_invars1.F90`, `m_invars2.F90`, `m_ingeo.F90`, `m_inkpts.F90`, `m_chkinp.F90`); each names where the rule comes from. Errors are kept for what stops ABINIT: an unknown variable (with *did you mean*), a number it cannot read (`natom 2.0`), a tab or a minus sign followed by a blank, a string without quotes (`geoopt bfgs`), a dataset index or series without `ndtset`, a variable appended with `0`, the same variable twice, `jdtset`/`udtset` that do not fit `ndtset`, missing `natom`, `znucl`, `ecut` or `xred`/`xcart` (or both positions), arrays with too few values, `typat` outside 1…`ntypat`, a `pseudos` list that is not `npsp` long, `ntypat` differing between datasets without `npsp`, `ngkpt` together with `kptrlatt`, `nshiftk` without `shiftk`, a band structure (`kptopt < 0`) without `kptbounds`, `ndivsm`/`ndivk` or `iscf -2`, an `ionmov` ABINIT does not know, `optcell` with an `ionmov` that cannot optimize the cell, and the SCF convergence criteria: more than one of `toldfe`, `toldff`, `tolrff`, `toldmag` and `tolvrs`, or none (with `tolwfr` coupled where ABINIT allows it).
+- **Warnings** for what ABINIT silently ignores: more values than an array reads (`typat` longer than `natom`), a dataset index the datasets do not run (`ecut3` with `ndtset 2`), `ngkpt`/`kptrlatt`/`shiftk` with a `kptopt` that does not read them, `optforces` other than 1 with `toldff`/`tolrff`, a series without its partner, and a suffix ABINIT never matches.
+- **Across datasets**: every check looks up the value ABINIT would use for each dataset (the dataset's own `natom1`, a `?` pattern, or the plain name), so `typat` is compared with each dataset's `natom`; arrays shared between datasets of different sizes are not flagged, as the tutorial does.
+- **Format Document** is deliberately conservative: it puts every variable on its own line, aligns the values of consecutive lines (a variable with rows below lines up with them), trims whitespace and collapses blank lines, and leaves comments, ordering, words, units and numbers exactly as written. It refuses a file with a tab or an unmatched quote.
+
+The table is generated with `node scripts/fetch-abinit-variables.mjs`, which reads the ABINIT sources as data and never runs them; 1339 inputs of the ABINIT test suite are checked without a false alarm (the checks that fire there are real: a duplicated `plowan_compute3`, variables for datasets that are not run, `ngkpt` left over with `kptopt 0`) and format idempotently without a changed word or comment.
+
 ## Structure viewer
 
 *Open Structure Viewer* (the button in the editor title, or *Open With…*) shows the crystal structure of a POSCAR, CONTCAR or pw.x input in 3D, in the style of Crystal Toolkit:

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "ABINIT input",
+  "scopeName": "source.abinit",
+  "patterns": [
+    { "name": "comment.line.number-sign.abinit", "match": "[#!].*$" },
+    { "name": "string.quoted.double.abinit", "match": "\"[^\"]*\"?" },
+    {
+      "name": "keyword.other.unit.abinit",
+      "match": "(?i)(?<=[\\d.]\\s|[\\d.]\\s\\s|[\\d.]\\s\\s\\s|[\\d.])\\b(?:ha|hartrees?|ry|rydbergs?|ev|mev|bohrs?|angstroms?|angstr|ang|nm|kelvin|k|tesla|t|au|s|sec|fs|ps|as)\\b(?=\\s|$)"
+    },
+    {
+      "name": "variable.other.keyword.abinit",
+      "match": "(?<![\\w.+\\-*/\"?:])[A-Za-z_][A-Za-z0-9_]*(?:\\d+\\??|\\?\\d|[:+*]\\??|\\?[:+*])?(?=\\s|$|=)"
+    },
+    { "name": "keyword.operator.abinit", "match": "[*/=]" },
+    { "name": "support.function.abinit", "match": "(?i)-?\\bsqrt(?=\\()" },
+    {
+      "name": "constant.numeric.abinit",
+      "match": "(?<![\\w.])[+-]?(?:\\d+\\.?\\d*|\\.\\d+)(?:[eEdD][+-]?\\d+)?(?![\\w.])"
+    }
+  ]
+}

@@ -82,5 +82,12 @@ export * from './bgw/format';
 export * from './bgw/reader';
 export * from './bgw/edit';
 export * from './bgw/workflow';
+// ABINIT
+export * from './abinit/tags';
+export * from './abinit/values';
+export * from './abinit/parse';
+export * from './abinit/validate';
+export * from './abinit/hover';
+export * from './abinit/format';
 export * from './structure/view';
 export * from './structure/elementData';

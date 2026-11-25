@@ -33,6 +33,8 @@ import {
   type QeCompletion,
   type QeProgram,
 } from '../core';
+// ABINIT
+import { abinitCompletions, abinitHover, formatAbinit, parseAbinit, validateAbinit } from '../core';
 import { FolderWatch, findPoscar, findPotcar } from './inputs';
 import { findPseudos } from './pseudos';
 import { findBgwNeighbors } from './bgwSiblings';
@@ -92,6 +94,15 @@ const LANGUAGES: InputLanguage[] = [
       const program = detectBgwProgram(uri.path, text);
       return program ? bgwCompletions(parseBgw(text), program, offset) : [];
     },
+  },
+  {
+    // ABINIT main inputs (*.abi): free-format `variable values` words, checked against the parser and readers of ABINIT.
+    id: 'abinit',
+    label: 'ABINIT',
+    lint: async (text) => validateAbinit(parseAbinit(text)),
+    format: formatAbinit,
+    hover: async (text, offset) => abinitHover(parseAbinit(text), offset),
+    complete: (text, offset) => abinitCompletions(parseAbinit(text), offset),
   },
   {
     // plotband.x and plotrho.x read answers to prompts, one per line: no namelist to recognize them by, so by file name.

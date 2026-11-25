@@ -187,6 +187,19 @@ function format(lang, text, name) {
   const bacts = await providers.actions.bgw.provideCodeActions(bgwTypo, new Range(new Position(0, 2), new Position(0, 2)), { diagnostics: [] });
   check(bacts.length === 1 && bacts[0].edit.edits[0].newText === 'epsilon_cutoff', `BerkeleyGW quick fix: ${bacts.map((a) => a.title)}`);
 
+  // ABINIT.
+  for (const id of ['hover', 'completion', 'actions', 'format']) check(!!providers[id].abinit, `ABINIT ${id} registered`);
+  const abText = 'ecut 20 Ha\nixc 1\nnat';
+  const ad = doc('abinit', abText, 'abinit/x/run.abi');
+  const ah = await providers.hover.abinit.provideHover(ad, ad.positionAt(2));
+  check(ah && ah.contents.value.includes('**ecut** · real'), 'ABINIT hover describes the variable');
+  const ac = await providers.completion.abinit.provideCompletionItems(ad, new Position(2, 3));
+  check(ac.some((c) => c.label === 'natom'), 'ABINIT completes variables');
+  check(format('abinit', 'ecut 20 Ha   \nnatom 2 ntypat 1\n\n\n\n# c\n', 'abinit/x/run.abi') === 'ecut   20 Ha\nnatom  2\nntypat 1\n\n# c\n', 'ABINIT Format Document aligns and tidies');
+  const abTypo = doc('abinit', 'ecut 20\nntypa 1\n', 'abinit/typo/run.abi');
+  const aacts = await providers.actions.abinit.provideCodeActions(abTypo, new Range(new Position(1, 2), new Position(1, 2)), { diagnostics: [] });
+  check(aacts.length === 1 && aacts[0].edit.edits[0].newText === 'ntypat', `ABINIT quick fix: ${aacts.map((a) => a.title)}`);
+
   // Quick fixes, through the code-action provider.
   for (const id of ['incar', 'kpoints', 'poscar']) check(!!providers.actions[id], `quick fixes registered for ${id}`);
   const typo = doc('incar', 'ENCTU = 400\nISMEAR = 0\n', 'INCAR.typo');

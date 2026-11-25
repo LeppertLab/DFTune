@@ -164,6 +164,18 @@
           "absp_*.inp"
         ],
         "configuration": "./bgw-language-configuration.json"
+      },
+      {
+        "id": "abinit",
+        "aliases": [
+          "ABINIT",
+          "ABINIT input"
+        ],
+        "filenamePatterns": [
+          "*.abi",
+          "*.abinit"
+        ],
+        "configuration": "./abinit-language-configuration.json"
       }
     ],
     "grammars": [
@@ -191,6 +203,11 @@
         "language": "bgw",
         "scopeName": "source.bgw",
         "path": "./syntaxes/bgw.tmLanguage.json"
+      },
+      {
+        "language": "abinit",
+        "scopeName": "source.abinit",
+        "path": "./syntaxes/abinit.tmLanguage.json"
       }
     ],
     "customEditors": [

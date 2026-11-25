@@ -1,0 +1,6 @@
+task : geomopt
+xc_functional : LDA
+cut_off_energy : 500 eV
+spin_polarised : true
+geom_method : LBFGS
+write_cell_structure : true

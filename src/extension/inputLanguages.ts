@@ -40,6 +40,7 @@ import { findPwInput } from './siblings';
 import { toVscodeDiagnostics } from './language';
 import { LintCache } from './lintCache';
 import { registerQuickFixes } from './quickFixes';
+import { CASTEP_LANGUAGES } from './castepLanguages';
 
 type HoverResult = { markdown: string; start: number; end: number } | undefined;
 
@@ -74,6 +75,7 @@ async function cellNear(uri: vscode.Uri) {
 }
 
 const LANGUAGES: InputLanguage[] = [
+  ...CASTEP_LANGUAGES,
   {
     // BerkeleyGW keyword inputs: the program comes from the file name (epsilon.inp, sig_GPP.inp, …).
     id: 'bgw',

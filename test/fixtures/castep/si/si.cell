@@ -1,0 +1,21 @@
+# Silicon, two-atom primitive cell
+%BLOCK LATTICE_ABC
+ang
+3.8403 3.8403 3.8403
+60 60 60
+%ENDBLOCK LATTICE_ABC
+
+%BLOCK POSITIONS_FRAC
+Si 0.00 0.00 0.00
+Si 0.25 0.25 0.25   ! second atom
+%ENDBLOCK POSITIONS_FRAC
+
+KPOINT_MP_GRID : 6 6 6
+symmetry_generate
+
+%block spectral_kpoint_path
+0.0 0.0 0.0 ; Gamma
+0.5 0.0 0.5   # X
+0.5 0.25 0.75 ! W
+0.0 0.0 0.0
+%endblock spectral_kpoint_path

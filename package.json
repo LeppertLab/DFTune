@@ -164,6 +164,28 @@
           "absp_*.inp"
         ],
         "configuration": "./bgw-language-configuration.json"
+      },
+      {
+        "id": "castep-cell",
+        "aliases": [
+          "CASTEP cell",
+          "CASTEP cell file"
+        ],
+        "extensions": [
+          ".cell"
+        ],
+        "configuration": "./castep-language-configuration.json"
+      },
+      {
+        "id": "castep-param",
+        "aliases": [
+          "CASTEP param",
+          "CASTEP param file"
+        ],
+        "extensions": [
+          ".param"
+        ],
+        "configuration": "./castep-language-configuration.json"
       }
     ],
     "grammars": [
@@ -191,6 +213,16 @@
         "language": "bgw",
         "scopeName": "source.bgw",
         "path": "./syntaxes/bgw.tmLanguage.json"
+      },
+      {
+        "language": "castep-cell",
+        "scopeName": "source.castep-cell",
+        "path": "./syntaxes/castep-cell.tmLanguage.json"
+      },
+      {
+        "language": "castep-param",
+        "scopeName": "source.castep-param",
+        "path": "./syntaxes/castep-param.tmLanguage.json"
       }
     ],
     "customEditors": [

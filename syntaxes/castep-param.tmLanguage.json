@@ -1,0 +1,61 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "CASTEP param file",
+  "scopeName": "source.castep-param",
+  "patterns": [
+    {
+      "name": "comment.line.castep-param",
+      "match": "[#!;].*$"
+    },
+    {
+      "begin": "(?i)^\\s*(%block)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+      "end": "(?i)^\\s*(%endblock)(?:\\s+(?:end\\s+)?([A-Za-z_][A-Za-z0-9_]*))?",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.block.begin.castep-param"
+        },
+        "2": {
+          "name": "entity.name.section.castep-param"
+        }
+      },
+      "endCaptures": {
+        "1": {
+          "name": "keyword.control.block.end.castep-param"
+        },
+        "2": {
+          "name": "entity.name.section.castep-param"
+        }
+      },
+      "patterns": [
+        {
+          "name": "comment.line.castep-param",
+          "match": "[#!;].*$"
+        },
+        {
+          "name": "variable.parameter.flag.castep-param",
+          "match": "(?i)\\bspin(?==)"
+        },
+        {
+          "name": "constant.numeric.castep-param",
+          "match": "(?<![\\w.])[+-]?(?:\\d+\\.?\\d*|\\.\\d+)(?:[eEdD][+-]?\\d+)?(?![\\w.])"
+        }
+      ]
+    },
+    {
+      "name": "variable.other.keyword.castep-param",
+      "match": "^\\s*[A-Za-z_][A-Za-z0-9_]*(?=\\s*[:=]|\\s+\\S|\\s*$)"
+    },
+    {
+      "name": "constant.language.boolean.castep-param",
+      "match": "(?i)(?<![\\w.])(true|false|t|f|yes|no)(?![\\w.])"
+    },
+    {
+      "name": "constant.numeric.castep-param",
+      "match": "(?<![\\w.])[+-]?(?:\\d+\\.?\\d*|\\.\\d+)(?:[eEdD][+-]?\\d+)?(?![\\w.])"
+    },
+    {
+      "name": "keyword.other.unit.castep-param",
+      "match": "(?i)(?<=\\d\\s)(ev|ha|ry|ang|bohr|fs|ps|k|gpa|kbar|bar)\\b"
+    }
+  ]
+}

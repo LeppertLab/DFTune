@@ -1,0 +1,65 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "CASTEP cell file",
+  "scopeName": "source.castep-cell",
+  "patterns": [
+    {
+      "name": "comment.line.castep-cell",
+      "match": "[#!;].*$"
+    },
+    {
+      "begin": "(?i)^\\s*(%block)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+      "end": "(?i)^\\s*(%endblock)(?:\\s+(?:end\\s+)?([A-Za-z_][A-Za-z0-9_]*))?",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.block.begin.castep-cell"
+        },
+        "2": {
+          "name": "entity.name.section.castep-cell"
+        }
+      },
+      "endCaptures": {
+        "1": {
+          "name": "keyword.control.block.end.castep-cell"
+        },
+        "2": {
+          "name": "entity.name.section.castep-cell"
+        }
+      },
+      "patterns": [
+        {
+          "name": "comment.line.castep-cell",
+          "match": "[#!;].*$"
+        },
+        {
+          "name": "variable.parameter.flag.castep-cell",
+          "match": "(?i)\\bspin(?==)"
+        },
+        {
+          "name": "constant.numeric.castep-cell",
+          "match": "(?<![\\w.])[+-]?(?:\\d+\\.?\\d*|\\.\\d+)(?:[eEdD][+-]?\\d+)?(?![\\w.])"
+        },
+        {
+          "name": "keyword.other.unit.castep-cell",
+          "match": "(?i)^\\s*(ang|bohr|a0|nm|m|cm|ev|ha|ry|gpa|kbar|bar)\\s*(?=[#!;]|$)"
+        }
+      ]
+    },
+    {
+      "name": "variable.other.keyword.castep-cell",
+      "match": "^\\s*[A-Za-z_][A-Za-z0-9_]*(?=\\s*[:=]|\\s+\\S|\\s*$)"
+    },
+    {
+      "name": "constant.language.boolean.castep-cell",
+      "match": "(?i)(?<![\\w.])(true|false|t|f|yes|no)(?![\\w.])"
+    },
+    {
+      "name": "constant.numeric.castep-cell",
+      "match": "(?<![\\w.])[+-]?(?:\\d+\\.?\\d*|\\.\\d+)(?:[eEdD][+-]?\\d+)?(?![\\w.])"
+    },
+    {
+      "name": "keyword.other.unit.castep-cell",
+      "match": "(?i)(?<=\\d\\s)(ev|ha|ry|ang|bohr|fs|ps|k|gpa|kbar|bar)\\b"
+    }
+  ]
+}

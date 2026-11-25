@@ -1,0 +1,13 @@
+%BLOCK LATTICE_CART
+bohr
+ -2.7 2.7 2.7
+  2.7 -2.7 2.7
+  2.7 2.7 -2.7
+%ENDBLOCK LATTICE_CART
+
+%BLOCK POSITIONS_ABS
+bohr
+Fe 0.0 0.0 0.0 SPIN=2
+%ENDBLOCK POSITIONS_ABS
+
+kpoints_mp_spacing 0.05

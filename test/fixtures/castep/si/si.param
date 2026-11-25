@@ -1,0 +1,6 @@
+task = spectral
+spectral_task : BandStructure
+xc_functional PBE
+cut_off_energy : 400 eV   ! converged for this pseudopotential
+fix_occupancy = true
+spectral_nbands 8

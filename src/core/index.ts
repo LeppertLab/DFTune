@@ -82,5 +82,11 @@ export * from './bgw/format';
 export * from './bgw/reader';
 export * from './bgw/edit';
 export * from './bgw/workflow';
+// MolGW (explicit names: the generic helpers of molgw/tags.ts and molgw/reader.ts stay inside the module)
+export { isMolgwInput, startsWithMolgwNamelist, lookupMolgw, molgwKeywords, molgwManualUrl, MOLGW_VERSION, type MolgwKeyword } from './molgw/tags';
+export * from './molgw/parse';
+export * from './molgw/validate';
+export * from './molgw/hover';
+export * from './molgw/format';
 export * from './structure/view';
 export * from './structure/elementData';

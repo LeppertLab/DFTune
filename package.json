@@ -164,6 +164,20 @@
           "absp_*.inp"
         ],
         "configuration": "./bgw-language-configuration.json"
+      },
+      {
+        "id": "molgw",
+        "aliases": [
+          "MolGW",
+          "MolGW input"
+        ],
+        "filenamePatterns": [
+          "molgw.in",
+          "*.molgw",
+          "*.molgw.in"
+        ],
+        "firstLine": "^\\s*&\\s*[Mm][Oo][Ll][Gg][Ww]\\b",
+        "configuration": "./molgw-language-configuration.json"
       }
     ],
     "grammars": [
@@ -191,6 +205,11 @@
         "language": "bgw",
         "scopeName": "source.bgw",
         "path": "./syntaxes/bgw.tmLanguage.json"
+      },
+      {
+        "language": "molgw",
+        "scopeName": "source.molgw",
+        "path": "./syntaxes/molgw.tmLanguage.json"
       }
     ],
     "customEditors": [

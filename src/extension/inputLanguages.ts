@@ -11,6 +11,7 @@ import {
   detectProgram,
   formatBgw,
   formatKpoints,
+  formatMolgw,
   formatPoscar,
   formatQe,
   kpointsHover,
@@ -19,7 +20,12 @@ import {
   minimalEdit,
   parsePoscar,
   lintPlotInput,
+  molgwCompletions,
+  molgwHover,
   parseBgw,
+  parseMolgw,
+  startsWithMolgwNamelist,
+  validateMolgw,
   parseQe,
   plotHover,
   plotProgramOf,
@@ -36,6 +42,7 @@ import {
 import { FolderWatch, findPoscar, findPotcar } from './inputs';
 import { findPseudos } from './pseudos';
 import { findBgwNeighbors } from './bgwSiblings';
+import { findXyzAtoms } from './molgwSiblings';
 import { findPwInput } from './siblings';
 import { toVscodeDiagnostics } from './language';
 import { LintCache } from './lintCache';
@@ -94,6 +101,16 @@ const LANGUAGES: InputLanguage[] = [
     },
   },
   {
+    // MolGW: a Fortran namelist `&molgw … /` followed by the atoms.
+    id: 'molgw',
+    label: 'MolGW',
+    lint: async (text, uri) => validateMolgw(parseMolgw(text), { xyzAtoms: await findXyzAtoms(uri, text) }),
+    format: formatMolgw,
+    hover: async (text, offset) => molgwHover(parseMolgw(text), offset),
+    complete: (text, offset) => molgwCompletions(parseMolgw(text), offset),
+    triggers: ['=', "'", '"'],
+  },
+  {
     // plotband.x and plotrho.x read answers to prompts, one per line: no namelist to recognize them by, so by file name.
     id: 'qe-plot',
     label: 'QE',
@@ -140,6 +157,17 @@ const LANGUAGES: InputLanguage[] = [
 export function registerInputLanguages(context: vscode.ExtensionContext) {
   for (const lang of LANGUAGES) register(context, lang);
   registerQeDetection(context);
+  registerMolgwDetection(context);
+}
+
+/** A plain-text .in file whose first non-comment line opens `&molgw` is a MolGW input (names alone do not tell). */
+function registerMolgwDetection(context: vscode.ExtensionContext) {
+  const sniff = (doc: vscode.TextDocument) => {
+    if (doc.languageId !== 'plaintext' || !/\.(in|inp|dat|txt)$/i.test(doc.uri.path) || doc.lineCount > 20000) return;
+    if (startsWithMolgwNamelist(doc.getText().slice(0, 4000))) vscode.languages.setTextDocumentLanguage(doc, 'molgw');
+  };
+  vscode.workspace.textDocuments.forEach(sniff);
+  context.subscriptions.push(vscode.workspace.onDidOpenTextDocument(sniff));
 }
 
 /**

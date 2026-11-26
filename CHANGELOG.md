@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.0.2 (2026-11-26)
+
+### Changed
+- Marketplace keywords tidied: one name per code, the input-file names, and plain-language terms (dropped `pw.x`, `HPC`, `viewer`, `materials`).
+
 ## 4.0.1 (2026-11-26)
 
 ### Added

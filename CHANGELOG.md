@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.0.1 (2026-11-26)
+
+### Added
+- Releases are also published to Open VSX, so the extension can be installed in VSCodium and other builds without the Microsoft Marketplace.
+
 ## 4.0.0 (2026-11-26)
 
 Six codes are now supported (VASP, Quantum ESPRESSO, BerkeleyGW, CASTEP, ABINIT, MolGW). This release is the independent review of the 3.6.0 additions.

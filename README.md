@@ -45,7 +45,9 @@ See [docs/features.md](docs/features.md) for every feature and check per file ty
 
 In a VS Code window connected to the cluster, search for **DFTune** in the Extensions view and click *Install in SSH: …*, or install it from the [Marketplace](https://marketplace.visualstudio.com/items?itemName=DaanHolleman.dftune). VS Code installs it on the cluster and keeps it up to date.
 
-Without Marketplace access, download the `.vsix` from the [latest release](https://github.com/LeppertLab/DFTune/releases/latest) and run *Extensions: Install from VSIX…* in the remote window.
+In VSCodium and other builds without the Microsoft Marketplace, search for **DFTune** in the Extensions view; it is published on [Open VSX](https://open-vsx.org/extension/DaanHolleman/dftune) too.
+
+Without either registry, download the `.vsix` from the [latest release](https://github.com/LeppertLab/DFTune/releases/latest) and run *Extensions: Install from VSIX…* in the remote window.
 
 ## Development
 

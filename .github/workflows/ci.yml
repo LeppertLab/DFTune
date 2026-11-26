@@ -58,3 +58,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
       - run: npx --yes @vscode/vsce@4.1.0 publish --oidc --packagePath *.vsix
+      # VSCodium and other builds without the Microsoft Marketplace read Open VSX.
+      - run: npx --yes ovsx@1.4.0 publish *.vsix -p "$OVSX_PAT"
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}

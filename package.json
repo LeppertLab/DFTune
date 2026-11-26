@@ -2,7 +2,7 @@
   "name": "dftune",
   "displayName": "DFTune",
   "description": "DFTune is a helper tool that helps with formatting, error checking, and adjusting of files related to first-principles codes, as well as a 3D structure viewer for coordinate files. The codes that are currently supported are VASP, Quantum ESPRESSO, BerkeleyGW, CASTEP, ABINIT, and MolGW. Works on remote hosts over SSH.",
-  "version": "4.0.2",
+  "version": "4.0.3",
   "publisher": "DaanHolleman",
   "icon": "images/icon.png",
   "license": "MIT",
@@ -51,8 +51,7 @@
       {
         "id": "incar",
         "aliases": [
-          "INCAR",
-          "VASP INCAR"
+          "INCAR"
         ],
         "filenames": [
           "INCAR"
@@ -67,8 +66,7 @@
       {
         "id": "kpoints",
         "aliases": [
-          "KPOINTS",
-          "VASP KPOINTS"
+          "KPOINTS"
         ],
         "filenames": [
           "KPOINTS"
@@ -83,9 +81,7 @@
       {
         "id": "poscar",
         "aliases": [
-          "POSCAR",
-          "VASP POSCAR",
-          "CONTCAR"
+          "POSCAR"
         ],
         "filenames": [
           "POSCAR",
@@ -104,8 +100,7 @@
       {
         "id": "qe",
         "aliases": [
-          "Quantum ESPRESSO",
-          "QE input"
+          "Quantum ESPRESSO"
         ],
         "filenamePatterns": [
           "*.pwi",
@@ -132,7 +127,7 @@
       {
         "id": "qe-plot",
         "aliases": [
-          "QE plotband/plotrho input"
+          "QE plot"
         ],
         "filenamePatterns": [
           "plotband.in",
@@ -147,8 +142,7 @@
       {
         "id": "bgw",
         "aliases": [
-          "BerkeleyGW",
-          "BerkeleyGW input"
+          "BerkeleyGW"
         ],
         "filenamePatterns": [
           "epsilon.inp",
@@ -170,8 +164,7 @@
       {
         "id": "castep-cell",
         "aliases": [
-          "CASTEP cell",
-          "CASTEP cell file"
+          "CASTEP cell"
         ],
         "extensions": [
           ".cell"
@@ -181,8 +174,7 @@
       {
         "id": "castep-param",
         "aliases": [
-          "CASTEP param",
-          "CASTEP param file"
+          "CASTEP param"
         ],
         "extensions": [
           ".param"
@@ -192,8 +184,7 @@
       {
         "id": "abinit",
         "aliases": [
-          "ABINIT",
-          "ABINIT input"
+          "ABINIT"
         ],
         "filenamePatterns": [
           "*.abi",
@@ -204,8 +195,7 @@
       {
         "id": "molgw",
         "aliases": [
-          "MolGW",
-          "MolGW input"
+          "MolGW"
         ],
         "filenamePatterns": [
           "molgw.in",

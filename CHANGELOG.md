@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.0.3 (2026-11-26)
+
+### Changed
+- Each language has one alias (its display name). The registries turn language ids and aliases into tags, which produced clutter such as `VASPKPOINTS` and `QEplotbandplotrhoinput`. `CONTCAR` files are still recognised by file name.
+
 ## 4.0.2 (2026-11-26)
 
 ### Changed
